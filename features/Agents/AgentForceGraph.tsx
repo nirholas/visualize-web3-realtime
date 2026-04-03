@@ -364,6 +364,227 @@ const TaskNodes = memo<TaskNodesProps>(({ tasks, selectedAgentId }) => {
 TaskNodes.displayName = 'TaskNodes';
 
 // ---------------------------------------------------------------------------
+// ToolCallParticles — Animated tool invocation dots
+// ---------------------------------------------------------------------------
+
+interface ToolCallParticlesProps {
+  particles: ToolParticleState[];
+}
+
+const ToolCallParticles = memo<ToolCallParticlesProps>(({ particles }) => {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const tempObj = useMemo(() => new THREE.Object3D(), []);
+  const tempColor = useMemo(() => new THREE.Color(), []);
+  const geometry = useMemo(() => new THREE.SphereGeometry(1, 6, 6), []);
+  const material = useMemo(
+    () => new THREE.MeshStandardMaterial({
+      roughness: 0.3,
+      metalness: 0.7,
+      transparent: true,
+      emissive: AGENT_COLORS.toolParticle,
+    }),
+    [],
+  );
+
+  useFrame(() => {
+    const mesh = meshRef.current;
+    if (!mesh) return;
+
+    let instanceIndex = 0;
+    const maxInstances = AGENT_GRAPH_CONFIG.maxToolParticles;
+
+    for (const particle of particles) {
+      if (instanceIndex >= maxInstances) break;
+
+      // Bezier interpolation along path
+      const t = particle.progress;
+      const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+      let position: THREE.Vector3;
+      if (particle.path.length >= 2) {
+        // Cubic bezier: start, start control, end control, end
+        const p0 = particle.startPos;
+        const p3 = particle.targetPos;
+        const p1 = new THREE.Vector3().addVectors(p0, p3).multiplyScalar(0.3).add(p0);
+        const p2 = new THREE.Vector3().addVectors(p0, p3).multiplyScalar(0.7).add(p3);
+
+        position = new THREE.Vector3()
+          .copy(p0)
+          .multiplyScalar((1 - eased) ** 3)
+          .addScaledVector(p1, 3 * (1 - eased) ** 2 * eased)
+          .addScaledVector(p2, 3 * (1 - eased) * eased ** 2)
+          .addScaledVector(p3, eased ** 3);
+      } else {
+        position = new THREE.Vector3().lerpVectors(particle.startPos, particle.targetPos, eased);
+      }
+
+      tempObj.position.copy(position);
+      tempObj.scale.setScalar(0.1);
+      tempObj.updateMatrix();
+      mesh.setMatrixAt(instanceIndex, tempObj.matrix);
+
+      // Color with fade
+      const fadeOpacity = 1 - (eased * 0.3);
+      tempColor.set(AGENT_COLORS.toolParticle).multiplyScalar(fadeOpacity);
+      mesh.setColorAt(instanceIndex, tempColor);
+
+      instanceIndex++;
+    }
+
+    mesh.count = instanceIndex;
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  });
+
+  return (
+    <instancedMesh
+      ref={meshRef}
+      args={[geometry, material, AGENT_GRAPH_CONFIG.maxToolParticles]}
+      frustumCulled={false}
+    />
+  );
+});
+ToolCallParticles.displayName = 'ToolCallParticles';
+
+// ---------------------------------------------------------------------------
+// SubAgentEdges — Parent-to-child agent connections
+// ---------------------------------------------------------------------------
+
+interface SubAgentEdgesProps {
+  edges: Array<{ parentId: string; childId: string; parentPos: THREE.Vector3; childPos: THREE.Vector3 }>;
+}
+
+const SubAgentEdges = memo<SubAgentEdgesProps>(({ edges }) => {
+  const lineRef = useRef<THREE.LineSegments>(null);
+  const posAttr = useRef<THREE.Float32BufferAttribute | null>(null);
+  const colorAttr = useRef<THREE.Float32BufferAttribute | null>(null);
+  const maxEdges = 500;
+
+  useEffect(() => {
+    const geo = new THREE.BufferGeometry();
+    const positions = new Float32Array(maxEdges * 6);
+    const colors = new Float32Array(maxEdges * 6);
+    const pAttr = new THREE.Float32BufferAttribute(positions, 3);
+    const cAttr = new THREE.Float32BufferAttribute(colors, 3);
+    pAttr.setUsage(THREE.DynamicDrawUsage);
+    cAttr.setUsage(THREE.DynamicDrawUsage);
+    geo.setAttribute('position', pAttr);
+    geo.setAttribute('color', cAttr);
+    geo.setDrawRange(0, 0);
+    posAttr.current = pAttr;
+    colorAttr.current = cAttr;
+
+    if (lineRef.current) {
+      lineRef.current.geometry.dispose();
+      lineRef.current.geometry = geo;
+    }
+  }, []);
+
+  useFrame((state) => {
+    const pA = posAttr.current;
+    const cA = colorAttr.current;
+    if (!pA || !cA || !lineRef.current) return;
+
+    const count = Math.min(edges.length, maxEdges);
+
+    for (let i = 0; i < count; i++) {
+      const edge = edges[i];
+      const idx = i * 6;
+
+      pA.array[idx] = edge.parentPos.x;
+      pA.array[idx + 1] = edge.parentPos.y;
+      pA.array[idx + 2] = edge.parentPos.z;
+      pA.array[idx + 3] = edge.childPos.x;
+      pA.array[idx + 4] = edge.childPos.y;
+      pA.array[idx + 5] = edge.childPos.z;
+
+      // Pulsing opacity
+      const pulse = 0.5 + Math.sin(state.clock.getElapsedTime() * AGENT_GRAPH_CONFIG.edgePulseSpeed * 2 * Math.PI) * 0.3;
+      const colorVal = pulse * 0.8;
+      cA.array[idx] = colorVal;
+      cA.array[idx + 1] = colorVal * 0.7;
+      cA.array[idx + 2] = colorVal;
+      cA.array[idx + 3] = colorVal;
+      cA.array[idx + 4] = colorVal * 0.7;
+      cA.array[idx + 5] = colorVal;
+    }
+
+    pA.needsUpdate = true;
+    cA.needsUpdate = true;
+    lineRef.current.geometry.setDrawRange(0, count * 2);
+  });
+
+  return (
+    <lineSegments ref={lineRef}>
+      <bufferGeometry />
+      <lineBasicMaterial vertexColors transparent opacity={0.5} linewidth={1} />
+    </lineSegments>
+  );
+});
+SubAgentEdges.displayName = 'SubAgentEdges';
+
+// ---------------------------------------------------------------------------
+// ExecutorHeartbeat — Global pulse indicator
+// ---------------------------------------------------------------------------
+
+interface ExecutorHeartbeatProps {
+  executorState: ExecutorState | null;
+}
+
+const ExecutorHeartbeat = memo<ExecutorHeartbeatProps>(({ executorState }) => {
+  const groupRef = useRef<THREE.Group>(null);
+  const ringRef = useRef<THREE.Mesh>(null);
+  const materialRef = useRef<THREE.MeshStandardMaterial>(null);
+
+  // Determine health status
+  const getHealthColor = () => {
+    if (!executorState) return AGENT_COLORS.heartbeatDead;
+    const timeSinceHeartbeat = Date.now() - executorState.lastHeartbeat;
+    if (timeSinceHeartbeat > 60000) return AGENT_COLORS.heartbeatDead;
+    if (timeSinceHeartbeat > 30000) return AGENT_COLORS.heartbeatWarning;
+    return AGENT_COLORS.heartbeatHealthy;
+  };
+
+  useFrame((state) => {
+    if (!groupRef.current || !ringRef.current || !materialRef.current) return;
+
+    const pulseTime = state.clock.getElapsedTime();
+    const pulse = 1 + Math.sin(pulseTime * 2) * 0.3;
+    ringRef.current.scale.setScalar(pulse);
+
+    materialRef.current.color.set(getHealthColor());
+    materialRef.current.emissive.set(getHealthColor());
+  });
+
+  const uptime = executorState?.uptime || 0;
+  const uptimeStr = `${Math.floor(uptime / 3600000)}h${Math.floor((uptime % 3600000) / 60000)}m`;
+
+  return (
+    <group ref={groupRef} position={[0, -5, 0]}>
+      {/* Expanding ring pulse */}
+      <mesh ref={ringRef}>
+        <torusGeometry args={[2, 0.1, 16, 32]} />
+        <meshStandardMaterial
+          ref={materialRef}
+          color={AGENT_COLORS.heartbeatHealthy}
+          emissive={AGENT_COLORS.heartbeatHealthy}
+          transparent
+          opacity={0.6}
+        />
+      </mesh>
+
+      {/* Status text (via Html) */}
+      {executorState && (
+        <group position={[0, -1.5, 0]}>
+          {/* Note: In a real implementation, use <Html> from drei for text rendering */}
+        </group>
+      )}
+    </group>
+  );
+});
+ExecutorHeartbeat.displayName = 'ExecutorHeartbeat';
+
+// ---------------------------------------------------------------------------
 // Camera setup
 // ---------------------------------------------------------------------------
 
@@ -449,15 +670,26 @@ CameraSetup.displayName = 'CameraSetup';
 interface NetworkSceneProps {
   hubs: AgentHubState[];
   tasks: Map<string, TaskNodeState[]>;
+  particles: ToolParticleState[];
+  subAgentEdges: Array<{ parentId: string; childId: string; parentPos: THREE.Vector3; childPos: THREE.Vector3 }>;
+  executorState: ExecutorState | null;
   activeAgentId: string | null;
   onSelectAgent: (agentId: string | null) => void;
   shareColors?: ShareColors;
 }
 
 const NetworkScene = memo<NetworkSceneProps>(
-  ({ hubs, tasks, activeAgentId, onSelectAgent, shareColors }) => {
+  ({
+    hubs,
+    tasks,
+    particles,
+    subAgentEdges,
+    executorState,
+    activeAgentId,
+    onSelectAgent,
+    shareColors,
+  }) => {
     const [hoveredAgent, setHoveredAgent] = useState<string | null>(null);
-    const [hoveredTask, setHoveredTask] = useState<string | null>(null);
 
     return (
       <>
@@ -484,6 +716,15 @@ const NetworkScene = memo<NetworkSceneProps>(
 
         {/* Task nodes */}
         <TaskNodes tasks={tasks} selectedAgentId={activeAgentId} />
+
+        {/* Tool call particles */}
+        <ToolCallParticles particles={particles} />
+
+        {/* Sub-agent edges */}
+        <SubAgentEdges edges={subAgentEdges} />
+
+        {/* Executor heartbeat */}
+        <ExecutorHeartbeat executorState={executorState} />
 
         <Ground />
       </>
@@ -518,6 +759,8 @@ const AgentForceGraphInner = forwardRef<AgentForceGraphHandle, AgentForceGraphPr
     // Maintain hub and task state from props
     const [hubs, setHubs] = useState<AgentHubState[]>([]);
     const [tasks, setTasks] = useState<Map<string, TaskNodeState[]>>(new Map());
+    const [particles, setParticles] = useState<ToolParticleState[]>([]);
+    const [subAgentEdges, setSubAgentEdges] = useState<Array<{ parentId: string; childId: string; parentPos: THREE.Vector3; childPos: THREE.Vector3 }>>([]);
 
     // Update hubs from agents and flows
     useEffect(() => {
@@ -592,9 +835,70 @@ const AgentForceGraphInner = forwardRef<AgentForceGraphHandle, AgentForceGraphPr
               h.id === event.agentId ? { ...h, isReasoning: false } : h,
             ),
           );
+        } else if (event.type === 'tool:started') {
+          // Spawn a new tool call particle
+          const agentHub = hubs.find((h) => h.id === event.agentId);
+          if (agentHub && event.payload) {
+            const toolCategory = (event.payload.toolCategory as string) || 'code';
+            const toolClusterKey = toolCategory as keyof typeof TOOL_CLUSTER_POSITIONS;
+            const clusterPos = TOOL_CLUSTER_POSITIONS[toolClusterKey] || TOOL_CLUSTER_POSITIONS.code;
+
+            const newParticle: ToolParticleState = {
+              id: event.eventId,
+              agentId: event.agentId,
+              toolCategory,
+              startPos: agentHub.position.clone(),
+              targetPos: new THREE.Vector3(clusterPos[0], 0, clusterPos[1]),
+              progress: 0,
+              path: [],
+              createdAt: Date.now(),
+            };
+
+            setParticles((prev) => [...prev.slice(-AGENT_GRAPH_CONFIG.maxToolParticles), newParticle]);
+          }
         }
       }
-    }, [recentEvents]);
+    }, [recentEvents, hubs]);
+
+    // Update particle progress
+    useEffect(() => {
+      const interval = setInterval(() => {
+        setParticles((prev) =>
+          prev
+            .map((p) => ({
+              ...p,
+              progress: Math.min(p.progress + AGENT_GRAPH_CONFIG.toolParticleSpeed, 1),
+            }))
+            .filter((p) => p.progress < 1),
+        );
+      }, 16); // ~60fps
+
+      return () => clearInterval(interval);
+    }, []);
+
+    // Update sub-agent edges
+    useEffect(() => {
+      const edges: Array<{ parentId: string; childId: string; parentPos: THREE.Vector3; childPos: THREE.Vector3 }> = [];
+
+      for (const [agentId, flow] of flows) {
+        const parentHub = hubs.find((h) => h.id === agentId);
+        if (!parentHub) continue;
+
+        for (const subAgent of flow.subAgents) {
+          const childHub = hubs.find((h) => h.id === subAgent.agentId);
+          if (childHub) {
+            edges.push({
+              parentId: agentId,
+              childId: subAgent.agentId,
+              parentPos: parentHub.position,
+              childPos: childHub.position,
+            });
+          }
+        }
+      }
+
+      setSubAgentEdges(edges);
+    }, [flows, hubs]);
 
     useImperativeHandle(ref, () => ({
       getCanvasElement: () => containerRef.current?.querySelector('canvas') ?? null,
@@ -675,6 +979,9 @@ const AgentForceGraphInner = forwardRef<AgentForceGraphHandle, AgentForceGraphPr
           <NetworkScene
             hubs={hubs}
             tasks={tasks}
+            particles={particles}
+            subAgentEdges={subAgentEdges}
+            executorState={executorState}
             activeAgentId={activeAgentId}
             onSelectAgent={onAgentSelect}
             shareColors={shareColors}

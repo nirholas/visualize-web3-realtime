@@ -60,12 +60,12 @@ function pumpFunEventsToUnified(events: RawEvent[]): UnifiedEvent[] {
     if (e.type === 'tokenCreate') {
       const d = e.data as Token;
       return {
-        id: d.signature || d.mint,
+        id: d.signature || d.mint || d.tokenAddress || '',
         category: (d.isAgent ? 'agentLaunches' : 'launches') as CategoryId,
         timestamp: d.timestamp,
-        label: d.symbol || d.name || d.mint.slice(0, 8),
+        label: d.symbol || d.name || (d.mint ?? d.tokenAddress ?? '').slice(0, 8),
         amount: d.initialBuy ? d.initialBuy / 1e9 : undefined,
-        address: d.traderPublicKey,
+        address: d.traderPublicKey ?? d.creatorAddress ?? '',
         mint: d.mint,
       };
     }
@@ -75,9 +75,9 @@ function pumpFunEventsToUnified(events: RawEvent[]): UnifiedEvent[] {
       id: d.signature,
       category: 'trades' as CategoryId,
       timestamp: d.timestamp,
-      label: d.symbol || d.name || d.mint.slice(0, 8),
-      amount: d.solAmount / 1e9,
-      address: d.traderPublicKey,
+      label: d.symbol || d.name || (d.mint ?? d.tokenAddress ?? '').slice(0, 8),
+      amount: (d.solAmount ?? d.nativeAmount ?? 0) / 1e9,
+      address: d.traderPublicKey ?? d.traderAddress ?? '',
       mint: d.mint,
       meta: { txType: d.txType },
     };
@@ -94,7 +94,7 @@ function claimsToUnified(claims: RawEvent[]): UnifiedEvent[] {
       category: 'claimsWallet' as CategoryId,
       timestamp: d.timestamp,
       label: 'Wallet Claim',
-      address: d.wallet,
+      address: d.wallet ?? d.claimer ?? '',
       meta: { solAmount: d.solAmount },
     });
   }
@@ -165,6 +165,7 @@ export function useDataProvider({ paused = false }: { paused?: boolean } = {}) {
       recentEvents: allEvents,
       topTokens: pumpFun.stats.topTokens,
       traderEdges: pumpFun.stats.traderEdges,
+      rawEvents: pumpFun.stats.recentEvents,
       rawPumpFunEvents: pumpFun.stats.recentEvents,
     };
   }, [pumpFun.stats, pumpFun.connected, claims.stats, claims.connected]);

@@ -84,7 +84,7 @@ function mergeProviderStats(
       mergedCounts[key] = (mergedCounts[key] || 0) + value;
     }
 
-    for (const [chain, vol] of Object.entries(stats.totalVolume)) {
+    for (const [chain, vol] of Object.entries(stats.totalVolume ?? {})) {
       mergedVolume[chain] = (mergedVolume[chain] || 0) + vol;
     }
 
@@ -96,7 +96,7 @@ function mergeProviderStats(
     allRawEvents.push(...stats.rawEvents);
   }
 
-  allTopTokens.sort((a, b) => b.volume - a.volume);
+  allTopTokens.sort((a, b) => (b.volume ?? b.volumeSol ?? 0) - (a.volume ?? a.volumeSol ?? 0));
   allRecentEvents.sort((a, b) => b.timestamp - a.timestamp);
 
   return {
@@ -280,7 +280,7 @@ export function useProviders(options: UseProvidersOptions): UseProvidersReturn {
     () =>
       allEvents.filter(
         (e) =>
-          enabledCategories.has(e.category) && enabledProviders.has(e.providerId),
+          enabledCategories.has(e.category) && enabledProviders.has(e.providerId ?? ''),
       ),
     [allEvents, enabledCategories, enabledProviders],
   );

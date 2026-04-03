@@ -106,9 +106,9 @@ export function useDataProvider({ paused = false }: { paused?: boolean } = {}) {
   const erc8004 = useERC8004Provider({ paused });
   const cex = useCEXProvider({ paused });
 
-  // --- Source visibility (all enabled by default) ---
+  // --- Source visibility (agents OFF by default for pure crypto view) ---
   const [enabledSources, setEnabledSources] = useState<Set<string>>(
-    () => new Set(ALL_SOURCES.map((s) => s.id)),
+    () => new Set(ALL_SOURCES.map((s) => s.id).filter((id) => id !== 'agents')),
   );
 
   const toggleSource = useCallback((sourceId: string) => {

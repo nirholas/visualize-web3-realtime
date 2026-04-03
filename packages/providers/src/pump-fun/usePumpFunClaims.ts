@@ -80,6 +80,9 @@ function parseClaimInstruction(raw: unknown): Claim | null {
     signature,
     slot,
     timestamp: Date.now(),
+    claimType: 'wallet',
+    programId: 'pump-fun',
+    isFirstClaim: false,
   };
 }
 
@@ -131,7 +134,7 @@ export function usePumpFunClaims({ paused = false }: { paused?: boolean } = {}) 
 
         setStats((prev) => ({
           totalClaims: prev.totalClaims + 1,
-          totalClaimSol: prev.totalClaimSol + claim.solAmount,
+          totalClaimSol: prev.totalClaimSol + (claim.solAmount ?? 0),
           recentClaims: [
             { type: 'claim' as const, data: claim },
             ...prev.recentClaims,

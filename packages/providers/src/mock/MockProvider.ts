@@ -232,6 +232,9 @@ export class MockProvider implements DataProvider {
           signature: `sig-${Date.now()}`,
           slot: Math.floor(Math.random() * 300000000),
           timestamp: Date.now(),
+          claimType: 'wallet',
+          programId: 'mock-program',
+          isFirstClaim: false,
         },
       });
     }

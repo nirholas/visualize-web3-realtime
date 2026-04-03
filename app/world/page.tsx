@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 import { memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import Link from 'next/link';
 import InfoPopover from '@/features/World/InfoPopover';
 import JourneyOverlay from '@/features/World/JourneyOverlay';
 import LoadingScreen from '@/features/World/LoadingScreen';
@@ -131,7 +132,7 @@ export default function WorldPage() {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState<'world' | 'snapshot' | null>(null);
 
-  const { stats, enabledCategories, connected } =
+  const { stats, enabledCategories, connected, showAgents, toggleAgents, enabledSources } =
     useDataProvider({ paused: !isPlaying });
 
   // Mark canvas ready once first data arrives
@@ -470,6 +471,22 @@ export default function WorldPage() {
         >
           World of PumpFun
         </span>
+        <Link
+          href="/agents"
+          style={{
+            fontSize: 10,
+            fontFamily: "'IBM Plex Mono', monospace",
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: '#c084fc',
+            textDecoration: 'none',
+            padding: '2px 8px',
+            border: '1px solid rgba(192,132,252,0.3)',
+            borderRadius: 10,
+          }}
+        >
+          ⬡ Agents
+        </Link>
         <div style={{ position: 'relative' }}>
           <button
             aria-controls="world-info-popover"
@@ -525,6 +542,8 @@ export default function WorldPage() {
         tokens={displayTopTokens}
         activeMint={activeHubMint}
         onToggle={handleProtocolToggle}
+        showAgents={showAgents}
+        onToggleAgents={toggleAgents}
       />
 
       {/* Bottom stats bar */}

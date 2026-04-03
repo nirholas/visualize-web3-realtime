@@ -1,0 +1,13 @@
+
+> @web3viz/executor@0.1.0 build
+> tsc
+
+src/EventBroadcaster.ts(1,49): error TS2307: Cannot find module 'ws' or its corresponding type declarations.
+src/EventBroadcaster.ts(17,32): error TS7006: Parameter 'ws' implicitly has an 'any' type.
+npm error Lifecycle script `build` failed with error:
+npm error code 2
+npm error path /workspaces/visualize-web3-realtime/packages/executor
+npm error workspace @web3viz/executor@0.1.0
+npm error location /workspaces/visualize-web3-realtime/packages/executor
+npm error command failed
+npm error command sh -c tsc
