@@ -1,21 +1,29 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { memo, useMemo, useState } from 'react';
+import { memo, Suspense, useCallback, useMemo, useRef, useState } from 'react';
 
+import InfoPopover from '@/features/World/InfoPopover';
+import JourneyOverlay from '@/features/World/JourneyOverlay';
+import ShareOverlay from '@/features/World/ShareOverlay';
+import SharePanel, { type ShareColors } from '@/features/World/SharePanel';
 import {
   useDataProvider,
   CATEGORY_CONFIGS,
   type PumpFunCategory,
 } from '@/hooks/useDataProvider';
 import LiveFeed from '@/features/World/LiveFeed';
+import StartJourney from '@/features/World/StartJourney';
+import StatsBar from '@/features/World/StatsBar';
+import { useJourney } from '@/features/World/useJourney';
+import type { X402NetworkHandle } from '@/features/X402Flow/X402Network';
 import type { X402FlowTrace } from '@/features/X402Flow/types';
 
 // Lazy-load the 3D network to avoid SSR issues with Three.js
 const X402Network = dynamic(() => import('@/features/X402Flow/X402Network'), {
   ssr: false,
   loading: () => <div style={{ width: '100%', height: '100%', background: '#08080f' }} />,
-});
+}) as any;
 
 // ---------------------------------------------------------------------------
 // Map provider data → X402FlowTrace for the network visualization
@@ -141,8 +149,42 @@ ConnectionDot.displayName = 'ConnectionDot';
 
 export default function WorldPage() {
   const [paused, setPaused] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [userAddress, setUserAddress] = useState('');
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareColors, setShareColors] = useState<ShareColors>({
+    background: '#ffffff',
+    protocol: '#1a1a1a',
+    user: '#1a1a1a',
+  });
+  const infoButtonRef = useRef<HTMLButtonElement>(null);
+  const networkRef = useRef<X402NetworkHandle | null>(null);
+
   const { stats, filteredEvents, enabledCategories, toggleCategory, connected } =
     useDataProvider({ paused });
+
+  const handleAddressSearch = useCallback((address: string) => {
+    setUserAddress(address);
+  }, []);
+
+  const shareTheme = useMemo(
+    () => ({
+      bg: shareColors.background,
+      nodeColor: shareColors.protocol,
+      userColor: shareColors.user,
+    }),
+    [shareColors],
+  );
+
+  const handleOpenShare = useCallback(() => setShareOpen(true), []);
+  const handleCloseShare = useCallback(() => setShareOpen(false), []);
+
+  const { isComplete, isRunning, overlay, skipJourney, startJourney } = useJourney({
+    enabledCategories,
+    networkRef,
+    stats,
+    userAddress,
+  });
 
   const flow = useMemo<X402FlowTrace | null>(
     () =>
@@ -170,11 +212,79 @@ export default function WorldPage() {
         categoryColors={CATEGORY_CONFIGS.filter((c) => enabledCategories.has(c.id)).map((c) => c.color)}
         flow={flow}
         height="100%"
+        onShare={handleOpenShare}
+        ref={networkRef}
         stage={stats.totalTransactions > 0 ? 'calling' : 'idle'}
+        theme={shareTheme}
         title="PumpFun · Live Network"
       />
 
-      {/* Stats overlay — top left */}
+      <JourneyOverlay
+        description={overlay.description}
+        isVisible={overlay.visible}
+        label={overlay.label}
+        onSkip={skipJourney}
+        title={overlay.title}
+      />
+
+      <div
+        style={{
+          alignItems: 'center',
+          display: 'flex',
+          gap: 8,
+          left: '50%',
+          position: 'absolute',
+          top: 12,
+          transform: 'translateX(-50%)',
+          zIndex: 40,
+        }}
+      >
+        <span
+          style={{
+            color: 'rgba(176 176 200 / 55%)',
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 11,
+            letterSpacing: '0.1em',
+            textTransform: 'uppercase',
+          }}
+        >
+          World of PumpFun
+        </span>
+        <div style={{ position: 'relative' }}>
+          <button
+            aria-controls="world-info-popover"
+            aria-expanded={infoOpen}
+            aria-label="Open world information"
+            onClick={() => setInfoOpen((prev) => !prev)}
+            ref={infoButtonRef}
+            style={{
+              alignItems: 'center',
+              background: 'rgba(176 176 200 / 12%)',
+              border: '1px solid rgba(176 176 200 / 35%)',
+              borderRadius: '50%',
+              color: '#ffffff',
+              cursor: 'pointer',
+              display: 'flex',
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 12,
+              height: 20,
+              justifyContent: 'center',
+              width: 20,
+            }}
+            type="button"
+          >
+            i
+          </button>
+          <InfoPopover
+            anchorRef={infoButtonRef}
+            id="world-info-popover"
+            isOpen={infoOpen}
+            onClose={() => setInfoOpen(false)}
+          />
+        </div>
+      </div>
+
+      {/* Connection status — top left */}
       <div
         style={{
           position: 'absolute',
@@ -184,13 +294,8 @@ export default function WorldPage() {
           display: 'flex',
           gap: 4,
           alignItems: 'center',
-          flexWrap: 'wrap',
         }}
       >
-        <StatPill label="Total Agents" value={formatStat(stats.counts.launches + stats.counts.agentLaunches)} />
-        <StatPill label="Volume" value={formatStat(stats.totalVolumeSol, '$')} />
-        <StatPill label="Transactions" value={formatStat(stats.totalTransactions)} />
-        <StatPill label="Claims" value={formatStat(stats.counts.claimsWallet + stats.counts.claimsGithub)} />
         <ConnectionDot connected={connected.pumpFun} label="PF" />
         <ConnectionDot connected={connected.claims} label="SOL" />
       </div>
@@ -248,16 +353,16 @@ export default function WorldPage() {
         })}
       </div>
 
-      {/* Pause toggle — bottom left */}
+      {/* Pause toggle — top right of bottom bar */}
       <button
         onClick={() => setPaused((p) => !p)}
         style={{
           position: 'absolute',
-          bottom: 12,
+          bottom: 68,
           left: 12,
           zIndex: 20,
           padding: '4px 12px',
-          fontFamily: 'monospace',
+          fontFamily: "'IBM Plex Mono', monospace",
           fontSize: 10,
           color: 'rgb(176 176 200 / 50%)',
           background: 'rgb(176 176 200 / 4%)',
@@ -271,8 +376,42 @@ export default function WorldPage() {
         {paused ? '\u25B6 Resume' : '\u23F8 Pause'}
       </button>
 
+      {/* Bottom stats bar */}
+      <Suspense fallback={null}>
+        <StatsBar
+          totalTokens={stats.counts.launches + stats.counts.agentLaunches}
+          totalVolumeSol={Math.round(stats.totalVolumeSol)}
+          totalTrades={stats.totalTransactions}
+          onAddressSearch={handleAddressSearch}
+        />
+      </Suspense>
+
       {/* Live trade feed — bottom right */}
       <LiveFeed events={stats.rawPumpFunEvents} unifiedEvents={filteredEvents} />
+
+      <StartJourney
+        disabled={isRunning}
+        isRunning={isRunning}
+        onClick={startJourney}
+        restarted={isComplete}
+      />
+
+      {/* Share panel + overlay */}
+      {shareOpen && (
+        <>
+          <ShareOverlay
+            address={userAddress || 'pump.fun'}
+            activeSince="Jan 2025"
+            transactionCount={stats.totalTransactions}
+            volume={Math.round(stats.totalVolumeSol)}
+          />
+          <SharePanel
+            colors={shareColors}
+            onChange={setShareColors}
+            onClose={handleCloseShare}
+          />
+        </>
+      )}
     </div>
   );
 }

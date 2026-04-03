@@ -24,7 +24,17 @@
 
 import { Html } from '@react-three/drei';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Suspense, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    Suspense,
+    forwardRef,
+    memo,
+    useCallback,
+    useEffect,
+    useImperativeHandle,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import * as THREE from 'three';
 
 import type { X402FlowTrace, VortexStage } from './types';
@@ -62,6 +72,14 @@ const NETWORK_CONFIG = {
     DRIFT_SPEED: 0.3,
 } as const;
 
+/** User highlight color (blue) for "You Are Here" node */
+const HIGHLIGHT_COLOR = '#3d63ff';
+
+function truncateAddress(address: string): string {
+    if (address.length <= 10) return address;
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
+}
+
 // Light theme — clean white background, dark nodes (Giza-inspired)
 const NETWORK_COLORS = {
     bg: '#ffffff',
@@ -79,6 +97,30 @@ const NETWORK_COLORS = {
     surface: 'rgba(0, 0, 0, 0.04)',
     surfaceBorder: 'rgba(0, 0, 0, 0.10)',
 };
+
+export interface CameraMoveRequest {
+    durationMs?: number;
+    lookAt?: [number, number, number];
+    position: [number, number, number];
+}
+
+export interface X402NetworkHandle {
+    animateCameraTo: (request: CameraMoveRequest) => Promise<void>;
+    focusHub: (index: number, durationMs?: number) => Promise<void>;
+    getHubCount: () => number;
+    getHubPosition: (index: number) => [number, number, number] | null;
+    setOrbitEnabled: (enabled: boolean) => void;
+}
+
+interface CameraAnimation {
+    durationMs: number;
+    fromLookAt: THREE.Vector3;
+    fromPos: THREE.Vector3;
+    onDone?: () => void;
+    startedAt: number;
+    toLookAt: THREE.Vector3;
+    toPos: THREE.Vector3;
+}
 
 // ============================================================================
 // Utility: Spatial hash for proximity checks
@@ -175,12 +217,14 @@ function generateHubPositions(count: number, spread: number): THREE.Vector3[] {
 // ============================================================================
 
 interface OriginSpokesProps {
+    /** Hub index to highlight (null = no filter) */
+    highlightedHubIndex?: number | null;
     hubPositions: THREE.Vector3[];
     nodeColor: string;
     stage: VortexStage;
 }
 
-const OriginSpokes = memo<OriginSpokesProps>(({ hubPositions, nodeColor, stage }) => {
+const OriginSpokes = memo<OriginSpokesProps>(({ hubPositions, nodeColor, stage, highlightedHubIndex }) => {
     const lineRef = useRef<THREE.LineSegments>(null);
 
     // Spoke lines from origin (index 0) to each protocol hub
@@ -230,7 +274,8 @@ const OriginSpokes = memo<OriginSpokesProps>(({ hubPositions, nodeColor, stage }
 
     if (spokeCount === 0) return null;
 
-    const opacity = stage === 'calling' || stage === 'paying' ? 0.5 : 0.2;
+    const baseOpacity = stage === 'calling' || stage === 'paying' ? 0.5 : 0.2;
+    const opacity = highlightedHubIndex != null ? baseOpacity * 0.15 : baseOpacity;
 
     return (
         <lineSegments ref={lineRef}>
@@ -278,12 +323,16 @@ interface PrimaryNodesProps {
     apiEndpoints: string[];
     /** Per-hub category colors */
     categoryColors?: string[];
+    /** Externally shared ref for drifted positions (used by YouAreHereMarker) */
+    driftedPositionsRef?: React.MutableRefObject<THREE.Vector3[]>;
+    /** Hub index to highlight (e.g. for address search) */
+    highlightedHub?: number | null;
     hubPositions: THREE.Vector3[];
     nodeColor: string;
     stage: VortexStage;
 }
 
-const PrimaryNodes = memo<PrimaryNodesProps>(({ hubPositions, stage, apiEndpoints, categoryColors, nodeColor }) => {
+const PrimaryNodes = memo<PrimaryNodesProps>(({ hubPositions, stage, apiEndpoints, categoryColors, nodeColor, highlightedHub, driftedPositionsRef }) => {
     const meshRef = useRef<THREE.InstancedMesh>(null);
     const dummy = useMemo(() => new THREE.Object3D(), []);
     const scaleRef = useRef<Float32Array>(new Float32Array(hubPositions.length).fill(1));
@@ -292,18 +341,25 @@ const PrimaryNodes = memo<PrimaryNodesProps>(({ hubPositions, stage, apiEndpoint
     // Track drifted positions for labels
     const driftedPositions = useRef<THREE.Vector3[]>(hubPositions.map((p) => p.clone()));
 
-    // Apply per-instance colors when categoryColors change
+    // Sync external ref so YouAreHereMarker can track positions
+    useEffect(() => {
+        if (driftedPositionsRef) {
+            driftedPositionsRef.current = driftedPositions.current;
+        }
+    });
+
+    // Apply per-instance colors when categoryColors or highlight change
     useEffect(() => {
         if (!meshRef.current) return;
         for (let i = 0; i < hubPositions.length; i++) {
-            const c = categoryColors?.[i] || nodeColor;
+            const c = i === highlightedHub ? HIGHLIGHT_COLOR : (categoryColors?.[i] || nodeColor);
             colorObj.set(c);
             meshRef.current.setColorAt(i, colorObj);
         }
         if (meshRef.current.instanceColor) {
             meshRef.current.instanceColor.needsUpdate = true;
         }
-    }, [categoryColors, nodeColor, hubPositions.length, colorObj]);
+    }, [categoryColors, nodeColor, hubPositions.length, colorObj, highlightedHub]);
 
     useFrame((state) => {
         if (!meshRef.current) return;
@@ -312,10 +368,18 @@ const PrimaryNodes = memo<PrimaryNodesProps>(({ hubPositions, stage, apiEndpoint
         for (let i = 0; i < hubPositions.length; i++) {
             const pos = hubPositions[i];
             const isActive = stage === 'calling' || stage === 'paying';
+            const isHighlighted = i === highlightedHub;
 
             // Organic breathing pulse
             const breathe = 1 + Math.sin(time * 0.8 + i * 1.7) * 0.08;
-            const targetScale = isActive ? 1.3 * breathe : breathe;
+            let targetScale = isActive ? 1.3 * breathe : breathe;
+
+            // Highlighted node: 2.5x scale with gentle pulse
+            if (isHighlighted) {
+                const pulse = 1 + Math.sin(time * Math.PI) * 0.05; // 0.95–1.05 over ~2s
+                targetScale = 2.5 * pulse;
+            }
+
             scaleRef.current[i] += (targetScale - scaleRef.current[i]) * 0.05;
 
             const s = scaleRef.current[i];
@@ -337,6 +401,15 @@ const PrimaryNodes = memo<PrimaryNodesProps>(({ hubPositions, stage, apiEndpoint
             }
         }
         meshRef.current.instanceMatrix.needsUpdate = true;
+
+        // Re-apply highlight color each frame (since color might drift with other effects)
+        if (highlightedHub != null && meshRef.current) {
+            colorObj.set(HIGHLIGHT_COLOR);
+            meshRef.current.setColorAt(highlightedHub, colorObj);
+            if (meshRef.current.instanceColor) {
+                meshRef.current.instanceColor.needsUpdate = true;
+            }
+        }
     });
 
     // Labels for nodes that have an API endpoint name
@@ -433,15 +506,19 @@ NodeLabel.displayName = 'NodeLabel';
 // ============================================================================
 
 interface ParticleSwarmProps {
+    /** Hub index to highlight (null = no filter) */
+    highlightedHubIndex?: number | null;
     hubPositions: THREE.Vector3[];
     mouseActive: React.MutableRefObject<boolean>;
     mouseWorldPos: React.MutableRefObject<THREE.Vector3>;
+    /** Override particle color (defaults to NETWORK_COLORS.particle) */
+    particleColor?: string;
     stage: VortexStage;
     /** Set of visible hub indices (all if undefined) */
     visibleHubs?: Set<number>;
 }
 
-const ParticleSwarm = memo<ParticleSwarmProps>(({ hubPositions, stage, mouseWorldPos, mouseActive, visibleHubs }) => {
+const ParticleSwarm = memo<ParticleSwarmProps>(({ hubPositions, stage, mouseWorldPos, mouseActive, particleColor, visibleHubs, highlightedHubIndex }) => {
     const totalParticles = hubPositions.length * NETWORK_CONFIG.PARTICLES_PER_HUB;
     const pointsRef = useRef<THREE.Points>(null);
 
@@ -607,7 +684,7 @@ const ParticleSwarm = memo<ParticleSwarmProps>(({ hubPositions, stage, mouseWorl
             </bufferGeometry>
             <pointsMaterial
                 blending={THREE.AdditiveBlending}
-                color={NETWORK_COLORS.particle}
+                color={particleColor || NETWORK_COLORS.particle}
                 depthWrite={false}
                 opacity={0.7}
                 size={0.08}
@@ -828,10 +905,42 @@ PaymentPulse.displayName = 'PaymentPulse';
 // Camera Controller (slow orbit + mouse influence)
 // ============================================================================
 
-const CameraController = memo(() => {
+interface CameraControllerProps {
+    animationRef: React.MutableRefObject<CameraAnimation | null>;
+    cameraRef: React.MutableRefObject<THREE.PerspectiveCamera | null>;
+    orbitEnabledRef: React.MutableRefObject<boolean>;
+}
+
+const CameraController = memo<CameraControllerProps>(({ animationRef, cameraRef, orbitEnabledRef }) => {
     const { camera } = useThree();
 
+    useEffect(() => {
+        cameraRef.current = camera as THREE.PerspectiveCamera;
+        return () => {
+            cameraRef.current = null;
+        };
+    }, [camera, cameraRef]);
+
     useFrame((state) => {
+        const activeAnimation = animationRef.current;
+        if (activeAnimation) {
+            const now = performance.now();
+            const t = Math.min(1, (now - activeAnimation.startedAt) / activeAnimation.durationMs);
+            const eased = 1 - Math.pow(1 - t, 3);
+
+            camera.position.lerpVectors(activeAnimation.fromPos, activeAnimation.toPos, eased);
+            const lookAt = new THREE.Vector3().lerpVectors(activeAnimation.fromLookAt, activeAnimation.toLookAt, eased);
+            camera.lookAt(lookAt);
+
+            if (t >= 1) {
+                animationRef.current = null;
+                activeAnimation.onDone?.();
+            }
+            return;
+        }
+
+        if (!orbitEnabledRef.current) return;
+
         const time = state.clock.getElapsedTime();
         const radius = 35;
         const speed = NETWORK_CONFIG.CAMERA_ORBIT_SPEED;
@@ -1210,26 +1319,52 @@ StatChip.displayName = 'StatChip';
 
 interface NetworkSceneProps {
     apiEndpoints: string[];
+    animationRef: React.MutableRefObject<CameraAnimation | null>;
     /** Per-hub colors (falls back to nodeColor) */
+    cameraRef: React.MutableRefObject<THREE.PerspectiveCamera | null>;
     categoryColors?: string[];
+    /** Hub index to highlight (null = no filter) */
+    highlightedHubIndex?: number | null;
     hubPositions: THREE.Vector3[];
     mouseActive: React.MutableRefObject<boolean>;
     mouseWorldPos: React.MutableRefObject<THREE.Vector3>;
     nodeColor: string;
+    orbitEnabledRef: React.MutableRefObject<boolean>;
     stage: VortexStage;
+    /** Color for user/particle elements */
+    userColor: string;
     /** Set of hub indices that are visible (all if undefined) */
     visibleHubs?: Set<number>;
 }
 
 const NetworkScene = memo<NetworkSceneProps>(
-    ({ hubPositions, stage, apiEndpoints, categoryColors, mouseWorldPos, mouseActive, nodeColor, visibleHubs }) => {
+    ({
+        hubPositions,
+        stage,
+        apiEndpoints,
+        categoryColors,
+        highlightedHubIndex,
+        mouseWorldPos,
+        mouseActive,
+        nodeColor,
+        userColor,
+        visibleHubs,
+        animationRef,
+        orbitEnabledRef,
+        cameraRef,
+    }) => {
         return (
             <>
-                <CameraController />
+                <CameraController
+                    animationRef={animationRef}
+                    cameraRef={cameraRef}
+                    orbitEnabledRef={orbitEnabledRef}
+                />
                 <MouseTracker mouseActive={mouseActive} mouseWorldPos={mouseWorldPos} />
 
                 {/* Thick spokes from central origin to protocol hubs */}
                 <OriginSpokes
+                    highlightedHubIndex={highlightedHubIndex}
                     hubPositions={hubPositions}
                     nodeColor={nodeColor}
                     stage={stage}
@@ -1238,20 +1373,24 @@ const NetworkScene = memo<NetworkSceneProps>(
                 <PrimaryNodes
                     apiEndpoints={apiEndpoints}
                     categoryColors={categoryColors}
+                    highlightedHubIndex={highlightedHubIndex}
                     hubPositions={hubPositions}
                     nodeColor={nodeColor}
                     stage={stage}
                 />
 
                 <ParticleSwarm
+                    highlightedHubIndex={highlightedHubIndex}
                     hubPositions={hubPositions}
                     mouseActive={mouseActive}
                     mouseWorldPos={mouseWorldPos}
+                    particleColor={userColor}
                     stage={stage}
                     visibleHubs={visibleHubs}
                 />
 
                 <ConnectionLines
+                    highlightedHubIndex={highlightedHubIndex}
                     hubPositions={hubPositions}
                     stage={stage}
                 />
@@ -1350,11 +1489,27 @@ SidebarFilters.displayName = 'SidebarFilters';
 // ============================================================================
 
 interface AddressSearchProps {
+    /** Highlighted address (shows truncated in input when set) */
+    highlightedAddress?: string | null;
+    /** Called when dismiss (×) is clicked to clear the highlight */
+    onDismiss?: () => void;
     onSearch: (address: string) => void;
 }
 
-const AddressSearch = memo<AddressSearchProps>(({ onSearch }) => {
+const AddressSearch = memo<AddressSearchProps>(({ onSearch, highlightedAddress, onDismiss }) => {
     const [value, setValue] = useState('');
+
+    // Sync controlled value when highlight changes
+    useEffect(() => {
+        if (highlightedAddress) {
+            setValue(highlightedAddress);
+        }
+    }, [highlightedAddress]);
+
+    const handleDismiss = useCallback(() => {
+        setValue('');
+        onDismiss?.();
+    }, [onDismiss]);
 
     return (
         <div style={{ alignItems: 'center', display: 'flex', gap: 8 }}>
@@ -1372,8 +1527,10 @@ const AddressSearch = memo<AddressSearchProps>(({ onSearch }) => {
                 onKeyDown={(e) => e.key === 'Enter' && onSearch(value)}
                 placeholder="0x..."
                 style={{
-                    background: 'rgba(180, 180, 210, 0.06)',
-                    border: `1px solid ${NETWORK_COLORS.surfaceBorder}`,
+                    background: highlightedAddress
+                        ? `${HIGHLIGHT_COLOR}15`
+                        : 'rgba(180, 180, 210, 0.06)',
+                    border: `1px solid ${highlightedAddress ? `${HIGHLIGHT_COLOR}40` : NETWORK_COLORS.surfaceBorder}`,
                     borderRadius: 6,
                     color: NETWORK_COLORS.text,
                     fontFamily: 'monospace',
@@ -1382,8 +1539,26 @@ const AddressSearch = memo<AddressSearchProps>(({ onSearch }) => {
                     padding: '6px 10px',
                     width: 160,
                 }}
-                value={value}
+                value={highlightedAddress ? truncateAddress(highlightedAddress) : value}
             />
+            {highlightedAddress ? (
+                <button
+                    onClick={handleDismiss}
+                    style={{
+                        background: 'rgba(180, 180, 210, 0.1)',
+                        border: `1px solid ${NETWORK_COLORS.surfaceBorder}`,
+                        borderRadius: 6,
+                        color: NETWORK_COLORS.textMuted,
+                        cursor: 'pointer',
+                        fontFamily: 'monospace',
+                        fontSize: 11,
+                        fontWeight: 600,
+                        padding: '6px 14px',
+                    }}
+                >
+                    ✕
+                </button>
+            ) : (
             <button
                 onClick={() => onSearch(value)}
                 style={{
@@ -1400,6 +1575,7 @@ const AddressSearch = memo<AddressSearchProps>(({ onSearch }) => {
             >
                 Go
             </button>
+            )}
         </div>
     );
 });
@@ -1510,6 +1686,14 @@ interface X402NetworkProps {
     flow?: X402FlowTrace | null;
     /** Container height */
     height?: number | string;
+    /** Address currently highlighted (shown in search bar, null = none) */
+    highlightedAddress?: string | null;
+    /** Hub index to highlight for "You Are Here" marker */
+    highlightedHubIndex?: number | null;
+    /** Called when address search is submitted */
+    onAddressSearch?: (address: string) => void;
+    /** Called when highlight is dismissed */
+    onDismissHighlight?: () => void;
     /** Called when Share is clicked */
     onShare?: () => void;
     /** Called when Start Journey is clicked */
@@ -1522,7 +1706,7 @@ interface X402NetworkProps {
     title?: string;
 }
 
-const X402Network = memo<X402NetworkProps>(
+const X402Network = memo(forwardRef<X402NetworkHandle, X402NetworkProps>(
     ({
         stage: externalStage = 'idle',
         apiEndpoints = [],
@@ -1530,13 +1714,21 @@ const X402Network = memo<X402NetworkProps>(
         compact = false,
         flow = null,
         height: externalHeight,
+        highlightedAddress = null,
+        highlightedHubIndex = null,
+        onAddressSearch,
+        onDismissHighlight,
         onShare,
         onStartJourney,
         theme: themeOverride,
         title = 'PumpFun · Live Network',
-    }) => {
+    }, ref) => {
         const mouseWorldPos = useRef(new THREE.Vector3());
         const mouseActive = useRef(false);
+        const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+        const orbitEnabledRef = useRef(true);
+        const animationRef = useRef<CameraAnimation | null>(null);
+        const driftedPositionsRef = useRef<THREE.Vector3[]>([]);
         const containerRef = useRef<HTMLDivElement>(null);
         const [contextLost, setContextLost] = useState(false);
 
@@ -1559,10 +1751,11 @@ const X402Network = memo<X402NetworkProps>(
         // Node visibility (filtering is now handled by the page-level category toggles)
         const hiddenNodes = useMemo(() => new Set<number>(), []);
 
-        // Address search — currently a no-op; future: highlight matching node
-        const handleAddressSearch = useCallback((_address: string) => {
-            // No-op: address search visualization is not yet implemented
-        }, []);
+        const handleAddressSearch = useCallback((address: string) => {
+            if (onAddressSearch) {
+                onAddressSearch(address);
+            }
+        }, [onAddressSearch]);
 
         // Generate hub positions based on API count or default
         const hubPositions = useMemo(() => {
@@ -1629,6 +1822,52 @@ const X402Network = memo<X402NetworkProps>(
         }, []);
 
         const height = externalHeight ?? (compact ? 300 : 600);
+
+        const animateCameraTo = useCallback(async (request: CameraMoveRequest) => {
+            if (!cameraRef.current) return;
+
+            const fromPos = cameraRef.current.position.clone();
+            const fromLookAt = new THREE.Vector3(0, 0, 0);
+            const toPos = new THREE.Vector3(...request.position);
+            const toLookAt = new THREE.Vector3(...(request.lookAt ?? [0, 0, 0]));
+
+            await new Promise<void>((resolve) => {
+                animationRef.current = {
+                    durationMs: request.durationMs ?? 1200,
+                    fromLookAt,
+                    fromPos,
+                    onDone: resolve,
+                    startedAt: performance.now(),
+                    toLookAt,
+                    toPos,
+                };
+            });
+        }, []);
+
+        const focusHub = useCallback(async (index: number, durationMs = 1200) => {
+            const hub = hubPositions[index];
+            if (!hub) return;
+
+            const offset = new THREE.Vector3(7, 4, 9);
+            await animateCameraTo({
+                durationMs,
+                lookAt: [hub.x, hub.y, hub.z],
+                position: [hub.x + offset.x, hub.y + offset.y, hub.z + offset.z],
+            });
+        }, [animateCameraTo, hubPositions]);
+
+        useImperativeHandle(ref, () => ({
+            animateCameraTo,
+            focusHub,
+            getHubCount: () => hubPositions.length,
+            getHubPosition: (index: number) => {
+                const hub = hubPositions[index];
+                return hub ? [hub.x, hub.y, hub.z] : null;
+            },
+            setOrbitEnabled: (enabled: boolean) => {
+                orbitEnabledRef.current = enabled;
+            },
+        }), [animateCameraTo, focusHub, hubPositions]);
 
         return (
             <div
@@ -1706,12 +1945,19 @@ const X402Network = memo<X402NetworkProps>(
                     <Suspense fallback={null}>
                         <NetworkScene
                             apiEndpoints={apiEndpoints}
+                            animationRef={animationRef}
+                            cameraRef={cameraRef}
                             categoryColors={categoryColors}
+                            driftedPositionsRef={driftedPositionsRef}
+                            highlightedHubIndex={highlightedHubIndex}
                             hubPositions={hubPositions}
                             mouseActive={mouseActive}
                             mouseWorldPos={mouseWorldPos}
                             nodeColor={theme.nodeColor}
+                            onDismissHighlight={onDismissHighlight}
+                            orbitEnabledRef={orbitEnabledRef}
                             stage={activeStage}
+                            userColor={theme.userColor}
                             visibleHubs={visibleHubs}
                         />
                     </Suspense>
@@ -1765,7 +2011,11 @@ const X402Network = memo<X402NetworkProps>(
                         timeline={timeline}
                     />
                     {!compact && (
-                        <AddressSearch onSearch={handleAddressSearch} />
+                        <AddressSearch
+                            highlightedAddress={highlightedAddress}
+                            onDismiss={onDismissHighlight}
+                            onSearch={handleAddressSearch}
+                        />
                     )}
                 </div>
 
@@ -1779,7 +2029,7 @@ const X402Network = memo<X402NetworkProps>(
             </div>
         );
     },
-);
+));
 
 X402Network.displayName = 'X402Network';
 
