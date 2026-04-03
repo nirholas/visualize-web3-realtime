@@ -239,6 +239,7 @@ export class PumpFunProvider implements DataProvider {
     this.tradesWs = ws;
 
     ws.onopen = () => {
+      console.log('[PumpFunProvider] Trades WS connected');
       this.tradesConnected = true;
       // Subscribe to new tokens and trades
       ws.send(JSON.stringify({ method: 'subscribeNewToken' }));
@@ -265,11 +266,13 @@ export class PumpFunProvider implements DataProvider {
     };
 
     ws.onclose = () => {
+      console.log('[PumpFunProvider] Trades WS closed');
       this.tradesConnected = false;
       this.tradesReconnectTimer = setTimeout(() => this.connectTrades(), 3000);
     };
 
-    ws.onerror = () => {
+    ws.onerror = (error) => {
+      console.error('[PumpFunProvider] Trades WS error:', error);
       ws.close();
     };
   }
@@ -419,6 +422,7 @@ export class PumpFunProvider implements DataProvider {
     this.claimsWs = ws;
 
     ws.onopen = () => {
+      console.log('[PumpFunProvider] Claims WS connected');
       this.claimsConnected = true;
       // Subscribe to logs for each PumpFun program
       const programs = [PUMP_PROGRAM_ID, PUMP_AMM_PROGRAM_ID, PUMP_FEE_PROGRAM_ID];
@@ -465,12 +469,14 @@ export class PumpFunProvider implements DataProvider {
     };
 
     ws.onclose = () => {
+      console.log('[PumpFunProvider] Claims WS closed');
       this.claimsConnected = false;
       this.solanaSubIds = [];
       this.claimsReconnectTimer = setTimeout(() => this.connectClaims(), 5000);
     };
 
-    ws.onerror = () => {
+    ws.onerror = (error) => {
+      console.error('[PumpFunProvider] Claims WS error:', error);
       ws.close();
     };
   }

@@ -15,6 +15,12 @@ const LoadingScreen = memo<LoadingScreenProps>(({ ready = false }) => {
     return () => clearTimeout(timer);
   }, [ready]);
 
+  // Force hide after 10 seconds even if not ready to prevent infinite loading
+  useEffect(() => {
+    const forceHideTimer = setTimeout(() => setVisible(false), 10000);
+    return () => clearTimeout(forceHideTimer);
+  }, []);
+
   if (!visible) return null;
 
   return (
