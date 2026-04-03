@@ -18,6 +18,7 @@
     "typecheck": "turbo run typecheck"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.82.0",
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^8.18.0",
     "@react-three/postprocessing": "^2.19.1",
@@ -27,7 +28,8 @@
     "postprocessing": "^6.39.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
-    "three": "^0.169.0"
+    "three": "^0.169.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/d3-force": "^3.0.10",
