@@ -68,7 +68,7 @@ export default function JourneyOverlay({
                   color: '#161616',
                   fontFamily: 'IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace',
                   fontSize: 'clamp(28px, 4vw, 52px)',
-                  fontWeight: 600,
+                  fontWeight: 200,
                   lineHeight: 1.05,
                   marginBottom: 10,
                 }}

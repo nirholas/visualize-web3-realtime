@@ -115,7 +115,6 @@ export default function WorldPage() {
   const [userAddress, setUserAddress] = useState('');
   const [highlightedAddress, setHighlightedAddress] = useState<string | null>(null);
   const [highlightedHubIndex, setHighlightedHubIndex] = useState<number | null>(null);
-  const [activeProtocol, setActiveProtocol] = useState<PumpFunCategory | null>(null);
   const [activeHubMint, setActiveHubMint] = useState<string | null>(null);
   const [searchToast, setSearchToast] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
@@ -221,10 +220,10 @@ export default function WorldPage() {
     return stats.rawPumpFunEvents.filter((e) => e.data.timestamp <= timeFilter);
   }, [stats.rawPumpFunEvents, timeFilter]);
 
-  // Protocol filter sidebar: toggle highlight (single select)
-  const handleProtocolToggle = useCallback((id: PumpFunCategory) => {
-    setActiveProtocol((prev) => {
-      const next = prev === id ? null : id;
+  // Protocol filter sidebar: toggle highlight by mint (single select)
+  const handleProtocolToggle = useCallback((mint: string) => {
+    setActiveHubMint((prev) => {
+      const next = prev === mint ? null : mint;
       // Sync to URL
       const url = new URL(window.location.href);
       if (next) {
@@ -237,26 +236,14 @@ export default function WorldPage() {
     });
   }, []);
 
-  // Compute the hub index for the active protocol filter
-  const protocolFilterHubIndex = useMemo<number | null>(() => {
-    if (!activeProtocol) return null;
-    const enabledConfigs = CATEGORY_CONFIGS.filter((c) => enabledCategories.has(c.id));
-    const idx = enabledConfigs.findIndex((c) => c.id === activeProtocol);
-    return idx >= 0 ? idx : null;
-  }, [activeProtocol, enabledCategories]);
-
   // Read ?protocols= param on mount to restore filter
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const proto = params.get('protocols');
-    if (proto && CATEGORY_CONFIGS.some((c) => c.id === proto)) {
-      setActiveProtocol(proto as PumpFunCategory);
+    if (proto) {
+      setActiveHubMint(proto);
     }
   }, []);
-
-  // Merge address search highlight with protocol filter highlight
-  // Address search takes precedence when active
-  const effectiveHighlightedHubIndex = highlightedHubIndex ?? protocolFilterHubIndex;
 
   // Search for an address in recent events and highlight the corresponding hub
   const handleAddressSearch = useCallback((address: string) => {
@@ -393,6 +380,7 @@ export default function WorldPage() {
           activeProtocol={activeHubMint}
           onSelectProtocol={setActiveHubMint}
           height="100%"
+          shareColors={shareOpen ? shareColors : undefined}
         />
       </div>
 
@@ -529,6 +517,36 @@ export default function WorldPage() {
         onClick={startJourney}
         restarted={isComplete}
       />
+
+      {/* Share trigger button — bottom right, next to Start Journey */}
+      {!shareOpen && (
+        <button
+          onClick={handleOpenShare}
+          style={{
+            alignItems: 'center',
+            background: '#ffffff',
+            border: '1px solid #e8e8e8',
+            borderRadius: 20,
+            bottom: 18,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+            color: '#666',
+            cursor: 'pointer',
+            display: 'flex',
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 11,
+            gap: 6,
+            letterSpacing: '0.06em',
+            padding: '8px 18px',
+            position: 'absolute',
+            right: 100,
+            textTransform: 'uppercase',
+            zIndex: 35,
+          }}
+          type="button"
+        >
+          Share
+        </button>
+      )}
 
       {/* Share panel + overlay */}
       {shareOpen && (

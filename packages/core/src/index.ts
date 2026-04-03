@@ -41,11 +41,16 @@ export {
   CATEGORIES,
   CATEGORY_CONFIGS,
   CATEGORY_CONFIG_MAP,
+  SOURCE_CONFIGS,
+  SOURCE_CONFIG_MAP,
   createCategory,
+  createSource,
+  getCategoriesForSource,
   mergeCategories,
   buildCategoryMap,
   type BuiltInCategory,
   type CategoryConfig,
+  type SourceConfig,
 } from './categories';
 
 // Providers
@@ -56,7 +61,9 @@ export {
   registerProvider,
   getProvider,
   getAllProviders,
+  getEnabledProviders,
   unregisterProvider,
+  onRegistryChange,
   createProvider,
   type CreateProviderConfig,
 } from './providers';

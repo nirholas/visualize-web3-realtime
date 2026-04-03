@@ -2,12 +2,13 @@
 // @web3viz/core — Data Provider Interface
 //
 // Abstract interface that any blockchain data source must implement.
-// The SDK ships with PumpFun and Mock providers. Users can create their own
-// by implementing this interface for any chain or protocol.
+// Each provider represents one data source (e.g. PumpFun, Ethereum, Base).
+// Users can create their own by implementing this interface for any chain,
+// protocol, or API — then register it so it appears in the visualization.
 // ============================================================================
 
 import type { DataProviderEvent, DataProviderStats, TopToken, TraderEdge, RawEvent } from '../types';
-import type { CategoryConfig } from '../categories';
+import type { CategoryConfig, SourceConfig } from '../categories';
 
 // ---------------------------------------------------------------------------
 // Provider interface
@@ -35,29 +36,39 @@ export interface ConnectionState {
  *
  * Implementations feed real-time blockchain data into the visualization engine.
  * The provider is responsible for:
- * - Connecting to data sources (WebSocket, REST, etc.)
+ * - Connecting to data sources (WebSocket, REST polling, etc.)
  * - Converting raw events into unified `DataProviderEvent` format
- * - Maintaining aggregate stats (volumes, counts, top tokens)
- * - Tracking trader → token edges for the graph
+ * - Maintaining aggregate stats (volumes, counts, top tokens/entities)
+ * - Tracking participant → entity edges for the graph
  *
  * @example
  * ```ts
  * class MyChainProvider implements DataProvider {
+ *   readonly id = 'mychain';
+ *   readonly name = 'My Chain';
+ *   readonly sourceConfig = { id: 'mychain', label: 'My Chain', color: '#ff0', icon: '⬡' };
  *   connect() { ... }
  *   disconnect() { ... }
  *   getStats() { ... }
  *   getConnections() { ... }
  *   onEvent(callback) { ... }
- *   // ...
  * }
+ *
+ * registerProvider(new MyChainProvider());
  * ```
  */
 export interface DataProvider {
-  /** Unique identifier for this provider */
+  /** Unique identifier for this provider (matches source ID) */
   readonly id: string;
 
   /** Human-readable name */
   readonly name: string;
+
+  /** Source configuration (color, icon, description) for UI rendering */
+  readonly sourceConfig: SourceConfig;
+
+  /** Categories this provider emits */
+  readonly categories: CategoryConfig[];
 
   /** Start connecting to data sources */
   connect(): void;
@@ -82,6 +93,12 @@ export interface DataProvider {
 
   /** Get current paused state */
   isPaused(): boolean;
+
+  /** Whether this provider is currently enabled (shown in the visualization) */
+  isEnabled(): boolean;
+
+  /** Enable or disable this provider */
+  setEnabled(enabled: boolean): void;
 }
 
 // ---------------------------------------------------------------------------
@@ -89,10 +106,12 @@ export interface DataProvider {
 // ---------------------------------------------------------------------------
 
 const providers = new Map<string, DataProvider>();
+const registryListeners = new Set<() => void>();
 
 /** Register a data provider */
 export function registerProvider(provider: DataProvider): void {
   providers.set(provider.id, provider);
+  registryListeners.forEach((fn) => fn());
 }
 
 /** Get a registered provider by ID */
@@ -105,9 +124,22 @@ export function getAllProviders(): DataProvider[] {
   return Array.from(providers.values());
 }
 
+/** Get all enabled providers */
+export function getEnabledProviders(): DataProvider[] {
+  return Array.from(providers.values()).filter((p) => p.isEnabled());
+}
+
 /** Unregister a provider */
 export function unregisterProvider(id: string): boolean {
-  return providers.delete(id);
+  const result = providers.delete(id);
+  if (result) registryListeners.forEach((fn) => fn());
+  return result;
+}
+
+/** Subscribe to registry changes. Returns unsubscribe function. */
+export function onRegistryChange(callback: () => void): () => void {
+  registryListeners.add(callback);
+  return () => registryListeners.delete(callback);
 }
 
 // ---------------------------------------------------------------------------
@@ -117,6 +149,8 @@ export function unregisterProvider(id: string): boolean {
 export interface CreateProviderConfig {
   id: string;
   name: string;
+  sourceConfig: SourceConfig;
+  categories: CategoryConfig[];
   connect: () => void;
   disconnect: () => void;
   getStats: () => DataProviderStats;
@@ -127,10 +161,13 @@ export interface CreateProviderConfig {
 export function createProvider(config: CreateProviderConfig): DataProvider {
   const listeners = new Set<(event: DataProviderEvent) => void>();
   let paused = false;
+  let enabled = true;
 
   return {
     id: config.id,
     name: config.name,
+    sourceConfig: config.sourceConfig,
+    categories: config.categories,
     connect: config.connect,
     disconnect: config.disconnect,
     getStats: config.getStats,
@@ -144,6 +181,12 @@ export function createProvider(config: CreateProviderConfig): DataProvider {
     },
     isPaused() {
       return paused;
+    },
+    isEnabled() {
+      return enabled;
+    },
+    setEnabled(e) {
+      enabled = e;
     },
   };
 }

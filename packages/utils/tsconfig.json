@@ -1,0 +1,7 @@
+{
+  "extends": "@web3viz/tsconfig/react-library.json",
+  "compilerOptions": {
+    "outDir": "./dist"
+  },
+  "include": ["src"]
+}

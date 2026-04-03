@@ -148,15 +148,15 @@ export default function InfoPopover({ anchorRef, id, isOpen, onClose }: InfoPopo
         </button>
       </div>
 
-      <p style={{ fontSize: 16, lineHeight: 1.55, margin: '0 0 10px 0' }}>
+      <p style={{ fontSize: 14, fontWeight: 300, lineHeight: 1.6, margin: '0 0 10px 0' }}>
         This is a live visualization of every token and trade on PumpFun, a real-time map
         of Solana&apos;s most active token launch platform.
       </p>
-      <p style={{ fontSize: 16, lineHeight: 1.55, margin: '0 0 10px 0' }}>
+      <p style={{ fontSize: 14, fontWeight: 300, lineHeight: 1.6, margin: '0 0 10px 0' }}>
         Each point represents a wallet actively trading tokens. Larger hubs represent the
         busiest categories by activity, and every line reveals a fresh trade relationship.
       </p>
-      <p style={{ fontSize: 16, lineHeight: 1.55, margin: 0 }}>
+      <p style={{ fontSize: 14, fontWeight: 300, lineHeight: 1.6, margin: 0 }}>
         Everything you see is backed by on-chain data streaming in over WebSocket. Let it run
         and watch the network evolve in real time.
       </p>

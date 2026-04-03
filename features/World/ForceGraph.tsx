@@ -16,6 +16,7 @@ import {
 } from 'd3-force';
 
 import type { TopToken, TraderEdge } from '@/hooks/usePumpFun';
+import type { ShareColors } from './SharePanel';
 
 import { ProtocolLabel } from './ProtocolLabel';
 import { COLOR_PALETTE, PROTOCOL_COLORS } from './constants';
@@ -205,6 +206,7 @@ function HubNodeMesh({
   nodeId,
   paletteIndex,
   isActive,
+  isDimmed,
   isHovered,
   onPointerOver,
   onPointerOut,
@@ -214,6 +216,8 @@ function HubNodeMesh({
   nodeId: string;
   paletteIndex: number;
   isActive: boolean;
+  /** True when another protocol is selected and this hub is not the active one */
+  isDimmed: boolean;
   isHovered: boolean;
   onPointerOver: () => void;
   onPointerOut: () => void;
@@ -223,15 +227,21 @@ function HubNodeMesh({
   const meshRef = useRef<THREE.Mesh>(null!);
   const materialRef = useRef<THREE.MeshStandardMaterial>(null!);
   const targetColor = useRef(new THREE.Color(PROTOCOL_COLORS.default));
+  const targetOpacity = useRef(1);
   const radiusRef = useRef(HUB_BASE_RADIUS);
 
   useEffect(() => {
-    targetColor.current.set(
-      isActive
-        ? COLOR_PALETTE[paletteIndex % COLOR_PALETTE.length]
-        : PROTOCOL_COLORS.default,
-    );
-  }, [isActive, paletteIndex]);
+    if (isActive) {
+      targetColor.current.set(COLOR_PALETTE[paletteIndex % COLOR_PALETTE.length]);
+      targetOpacity.current = 1;
+    } else if (isDimmed) {
+      targetColor.current.set(PROTOCOL_COLORS.default);
+      targetOpacity.current = 0.15;
+    } else {
+      targetColor.current.set(PROTOCOL_COLORS.default);
+      targetOpacity.current = 1;
+    }
+  }, [isActive, isDimmed, paletteIndex]);
 
   useFrame((_, delta) => {
     const node = sim.nodeMap.get(nodeId);
@@ -239,8 +249,9 @@ function HubNodeMesh({
     groupRef.current.position.set(node.x ?? 0, 0, node.y ?? 0);
     meshRef.current.scale.setScalar(node.radius);
     radiusRef.current = node.radius;
-    // Smooth ~300 ms color lerp (framerate-independent exponential approach)
-    materialRef.current.color.lerp(targetColor.current, 1 - Math.exp(-10 * delta));
+    const lerpFactor = 1 - Math.exp(-10 * delta);
+    materialRef.current.color.lerp(targetColor.current, lerpFactor);
+    materialRef.current.opacity += (targetOpacity.current - materialRef.current.opacity) * lerpFactor;
   });
 
   return (
@@ -261,6 +272,8 @@ function HubNodeMesh({
         <meshStandardMaterial
           ref={materialRef}
           color={PROTOCOL_COLORS.default}
+          transparent
+          opacity={1}
           roughness={0.4}
           metalness={0.1}
         />
@@ -276,15 +289,16 @@ function HubNodeMesh({
   );
 }
 
-/** InstancedMesh for agent nodes with active-protocol tinting */
-const AgentNodes = memo<{ sim: ForceGraphSimulation; activeProtocol: string | null }>(
-  ({ sim, activeProtocol }) => {
+/** InstancedMesh for agent nodes with active-protocol tinting + dimming */
+const AgentNodes = memo<{ sim: ForceGraphSimulation; activeProtocol: string | null; colorOverride?: string }>(
+  ({ sim, activeProtocol, colorOverride }) => {
     const meshRef = useRef<THREE.InstancedMesh>(null);
     const tempObj = useMemo(() => new THREE.Object3D(), []);
     const tempColor = useMemo(() => new THREE.Color(), []);
+    const dimColor = useMemo(() => new THREE.Color('#cccccc'), []);
     const geometry = useMemo(() => new THREE.SphereGeometry(1, 8, 8), []);
     const material = useMemo(
-      () => new THREE.MeshStandardMaterial({ roughness: 0.8, metalness: 0 }),
+      () => new THREE.MeshStandardMaterial({ roughness: 0.8, metalness: 0, transparent: true }),
       [],
     );
 
@@ -310,6 +324,10 @@ const AgentNodes = memo<{ sim: ForceGraphSimulation; activeProtocol: string | nu
       mesh.count = count;
 
       const ac = activeColorRef.current;
+      const hasFilter = activeProtocol !== null;
+
+      // Set material opacity based on whether any filter is active
+      material.opacity = hasFilter ? 1 : 1;
 
       for (let i = 0; i < count; i++) {
         const node = agents[i];
@@ -318,9 +336,14 @@ const AgentNodes = memo<{ sim: ForceGraphSimulation; activeProtocol: string | nu
         tempObj.updateMatrix();
         mesh.setMatrixAt(i, tempObj.matrix);
 
-        // Tint agents connected to the active protocol hub
-        if (ac && node.hubMint === activeProtocol) {
-          tempColor.set(ac).multiplyScalar(0.7);
+        if (hasFilter) {
+          if (ac && node.hubMint === activeProtocol) {
+            // Active agents: tinted with protocol brand color
+            tempColor.set(ac).multiplyScalar(0.7);
+          } else {
+            // Non-active agents: dimmed
+            tempColor.copy(dimColor).multiplyScalar(0.15);
+          }
         } else {
           tempColor.set(node.color);
         }
@@ -342,7 +365,7 @@ const AgentNodes = memo<{ sim: ForceGraphSimulation; activeProtocol: string | nu
 AgentNodes.displayName = 'AgentNodes';
 
 /** Batch-rendered edges via LineSegments */
-const Edges = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
+const Edges = memo<{ sim: ForceGraphSimulation; activeProtocol?: string | null }>(({ sim, activeProtocol }) => {
   const lineRef = useRef<THREE.LineSegments>(null);
   const posAttr = useRef<THREE.Float32BufferAttribute | null>(null);
   const colorAttr = useRef<THREE.Float32BufferAttribute | null>(null);
@@ -389,9 +412,18 @@ const Edges = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
       pA.array[idx + 4] = 0;
       pA.array[idx + 5] = tgt.y ?? 0;
 
-      // Hub-to-hub edges slightly darker
+      // Determine edge brightness based on active protocol filter
       const isHubEdge = src.type === 'hub' && tgt.type === 'hub';
-      const gray = isHubEdge ? 0.45 : 0.75;
+      let gray: number;
+
+      if (activeProtocol) {
+        // Check if this edge is related to the active protocol
+        const srcRelated = src.id === activeProtocol || src.hubMint === activeProtocol;
+        const tgtRelated = tgt.id === activeProtocol || tgt.hubMint === activeProtocol;
+        gray = (srcRelated || tgtRelated) ? (isHubEdge ? 0.45 : 0.65) : 0.92;
+      } else {
+        gray = isHubEdge ? 0.45 : 0.75;
+      }
       cA.array[idx] = gray;
       cA.array[idx + 1] = gray;
       cA.array[idx + 2] = gray;
@@ -414,6 +446,16 @@ const Edges = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
 });
 Edges.displayName = 'Edges';
 
+/** Scene background color controller */
+const SceneBackground = memo<{ color: string }>(({ color }) => {
+  const { scene } = useThree();
+  useEffect(() => {
+    scene.background = new THREE.Color(color);
+  }, [color, scene]);
+  return null;
+});
+SceneBackground.displayName = 'SceneBackground';
+
 /** Ground plane for visual grounding */
 const Ground = memo(() => (
   <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]} receiveShadow>
@@ -432,7 +474,8 @@ const NetworkScene = memo<{
   topTokens: TopToken[];
   activeProtocol: string | null;
   onSelectProtocol: (mint: string | null) => void;
-}>(({ sim, topTokens, activeProtocol, onSelectProtocol }) => {
+  shareColors?: ShareColors;
+}>(({ sim, topTokens, activeProtocol, onSelectProtocol, shareColors }) => {
   const [hoveredHub, setHoveredHub] = useState<string | null>(null);
 
   const hubIds = useMemo(
@@ -447,12 +490,15 @@ const NetworkScene = memo<{
 
   return (
     <>
+      {/* Scene background override */}
+      {shareColors && <SceneBackground color={shareColors.background} />}
+
       {/* Lighting */}
       <ambientLight intensity={0.7} />
       <directionalLight position={[20, 40, 20]} intensity={0.6} />
 
       {/* Graph elements */}
-      <Edges sim={sim} />
+      <Edges sim={sim} activeProtocol={activeProtocol} />
       {hubIds.map((hub, i) => (
         <HubNodeMesh
           key={hub.id}
@@ -460,15 +506,17 @@ const NetworkScene = memo<{
           nodeId={hub.id}
           paletteIndex={i}
           isActive={activeProtocol === hub.id}
+          isDimmed={activeProtocol !== null && activeProtocol !== hub.id}
           isHovered={hoveredHub === hub.id}
           onPointerOver={() => setHoveredHub(hub.id)}
           onPointerOut={() => setHoveredHub(null)}
           onClick={() =>
             onSelectProtocol(activeProtocol === hub.id ? null : hub.id)
           }
+          colorOverride={shareColors?.protocol}
         />
       ))}
-      <AgentNodes sim={sim} activeProtocol={activeProtocol} />
+      <AgentNodes sim={sim} activeProtocol={activeProtocol} colorOverride={shareColors?.user} />
       <Ground />
     </>
   );
@@ -584,6 +632,7 @@ export interface ForceGraphProps {
   activeProtocol?: string | null;
   onSelectProtocol?: (mint: string | null) => void;
   height?: string | number;
+  shareColors?: ShareColors;
 }
 
 export interface ForceGraphHandle {
@@ -596,7 +645,7 @@ export interface ForceGraphHandle {
 }
 
 const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function ForceGraph(
-  { topTokens, traderEdges, activeProtocol = null, onSelectProtocol, height = '100%' },
+  { topTokens, traderEdges, activeProtocol = null, onSelectProtocol, height = '100%', shareColors },
   ref,
 ) {
   const simRef = useRef<ForceGraphSimulation | null>(null);
@@ -661,7 +710,7 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
     <div ref={containerRef} style={{ width: '100%', height, position: 'relative' }}>
       <Canvas
         camera={{ fov: 45, near: 0.1, far: 500, position: [0, 55, 12] }}
-        style={{ background: '#ffffff' }}
+        style={{ background: shareColors?.background ?? '#ffffff' }}
         gl={{ antialias: true, alpha: false, preserveDrawingBuffer: true }}
         dpr={[1, 1.5]}
       >
@@ -671,6 +720,7 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
           topTokens={topTokens}
           activeProtocol={activeProtocol ?? null}
           onSelectProtocol={onSelectProtocol ?? (() => {})}
+          shareColors={shareColors}
         />
       </Canvas>
     </div>

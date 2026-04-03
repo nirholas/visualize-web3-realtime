@@ -52,10 +52,28 @@ button:hover {
   cursor: pointer;
 }
 
+/* ─── Cursor States ─── */
+canvas {
+  cursor: grab;
+}
+
+canvas:active {
+  cursor: grabbing;
+}
+
 /* ─── Responsive ─── */
 @media (max-width: 1200px) {
   .sidebar-label { display: none; }
   .stats-bar { flex-wrap: wrap; }
+  .share-panel {
+    width: 100% !important;
+    bottom: 0 !important;
+    top: auto !important;
+    height: auto !important;
+    max-height: 60vh !important;
+    border-left: none !important;
+    border-top: 1px solid #e0e0e0 !important;
+  }
 }
 
 @media (max-width: 768px) {

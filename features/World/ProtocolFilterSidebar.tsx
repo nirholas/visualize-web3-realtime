@@ -1,21 +1,20 @@
 'use client';
 
-import { memo, useCallback } from 'react';
-import type { CategoryConfig, PumpFunCategory } from '@/hooks/useDataProvider';
+import { memo } from 'react';
+import type { TopToken } from '@/hooks/usePumpFun';
+import { COLOR_PALETTE } from './constants';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 export interface ProtocolFilterSidebarProps {
-  /** Category configs to render as buttons */
-  categories: CategoryConfig[];
-  /** Currently highlighted protocol (null = none) */
-  activeProtocol: PumpFunCategory | null;
+  /** Top tokens to render as buttons */
+  tokens: TopToken[];
+  /** Currently highlighted hub mint (null = none) */
+  activeMint: string | null;
   /** Called when a protocol button is clicked */
-  onToggle: (id: PumpFunCategory) => void;
-  /** Optional per-category counts to show as badge */
-  counts?: Record<PumpFunCategory, number>;
+  onToggle: (mint: string) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -23,36 +22,33 @@ export interface ProtocolFilterSidebarProps {
 // ---------------------------------------------------------------------------
 
 interface ProtocolButtonProps {
-  category: CategoryConfig;
+  token: TopToken;
+  color: string;
   isActive: boolean;
-  count?: number;
   onClick: () => void;
 }
 
-const ProtocolButton = memo<ProtocolButtonProps>(({ category, isActive, count, onClick }) => {
-  // Use first 2 characters of the label as the text icon
-  const iconText = category.icon;
+const ProtocolButton = memo<ProtocolButtonProps>(({ token, color, isActive, onClick }) => {
+  const iconText = (token.symbol || token.name || '??').slice(0, 2).toUpperCase();
 
   return (
     <button
-      aria-label={category.label}
+      aria-label={token.symbol || token.name}
       aria-pressed={isActive}
-      data-group={category.id}
+      data-group={token.mint}
       onClick={onClick}
-      title={`${category.label}${count != null ? ` (${count})` : ''}`}
+      title={`${token.symbol || token.name} — ${token.trades} trades`}
       style={{
         alignItems: 'center',
-        background: isActive ? category.color : '#e8e8e8',
-        border: isActive ? `2px solid ${category.color}` : '2px solid transparent',
+        background: isActive ? color : '#e8e8e8',
+        border: isActive ? `2px solid ${color}` : '2px solid transparent',
         borderRadius: '50%',
-        boxShadow: isActive
-          ? `0 2px 12px ${category.color}60`
-          : 'none',
+        boxShadow: isActive ? `0 2px 12px ${color}60` : 'none',
         color: isActive ? '#fff' : '#333',
         cursor: 'pointer',
         display: 'flex',
         fontFamily: "'IBM Plex Mono', monospace",
-        fontSize: 14,
+        fontSize: 11,
         fontWeight: 700,
         height: 40,
         justifyContent: 'center',
@@ -75,8 +71,8 @@ ProtocolButton.displayName = 'ProtocolButton';
 // ---------------------------------------------------------------------------
 
 const ProtocolFilterSidebar = memo<ProtocolFilterSidebarProps>(
-  ({ categories, activeProtocol, onToggle, counts }) => {
-    if (categories.length === 0) return null;
+  ({ tokens, activeMint, onToggle }) => {
+    if (tokens.length === 0) return null;
 
     return (
       <nav
@@ -92,13 +88,13 @@ const ProtocolFilterSidebar = memo<ProtocolFilterSidebarProps>(
           zIndex: 20,
         }}
       >
-        {categories.map((cfg) => (
+        {tokens.map((token, i) => (
           <ProtocolButton
-            key={cfg.id}
-            category={cfg}
-            count={counts?.[cfg.id]}
-            isActive={activeProtocol === cfg.id}
-            onClick={() => onToggle(cfg.id)}
+            key={token.mint}
+            token={token}
+            color={COLOR_PALETTE[i % COLOR_PALETTE.length]}
+            isActive={activeMint === token.mint}
+            onClick={() => onToggle(token.mint)}
           />
         ))}
       </nav>
