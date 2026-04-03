@@ -15,7 +15,17 @@
     "jsx": "preserve",
     "incremental": true,
     "plugins": [{ "name": "next" }],
-    "paths": { "@/*": ["./*"] }
+    "paths": {
+      "@/*": ["./*"],
+      "@web3viz/core": ["./packages/core/src/index.ts"],
+      "@web3viz/core/*": ["./packages/core/src/*/index.ts"],
+      "@web3viz/providers": ["./packages/providers/src/index.ts"],
+      "@web3viz/providers/*": ["./packages/providers/src/*/index.ts"],
+      "@web3viz/react-graph": ["./packages/react-graph/src/index.ts"],
+      "@web3viz/ui": ["./packages/ui/src/index.ts"],
+      "@web3viz/ui/*": ["./packages/ui/src/*/index.ts"],
+      "@web3viz/utils": ["./packages/utils/src/index.ts"]
+    }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]

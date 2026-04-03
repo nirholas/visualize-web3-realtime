@@ -9,7 +9,7 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@web3viz/tsconfig": "workspace:*",
+    "@web3viz/tsconfig": "*",
     "typescript": "^5.5.0"
   }
 }

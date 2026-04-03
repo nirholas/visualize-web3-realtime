@@ -16,14 +16,14 @@
     "lint": "echo 'lint not configured'"
   },
   "dependencies": {
-    "@web3viz/core": "workspace:*"
+    "@web3viz/core": "*"
   },
   "peerDependencies": {
     "react": "^18.0.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.0",
-    "@web3viz/tsconfig": "workspace:*",
+    "@web3viz/tsconfig": "*",
     "typescript": "^5.5.0"
   }
 }

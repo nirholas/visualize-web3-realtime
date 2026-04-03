@@ -257,7 +257,17 @@ export default function WorldPage() {
   const handleAddressSearch = useCallback((address: string) => {
     setUserAddress(address);
 
-    // Find the address in recent unified events
+    // First try finding the agent in the graph simulation
+    const agentHub = graphRef.current?.findAgentHub(address);
+    if (agentHub) {
+      setSearchToast(null);
+      setHighlightedAddress(address);
+      setHighlightedHubIndex(agentHub.hubIndex);
+      graphRef.current?.focusHub(agentHub.hubIndex, 500);
+      return;
+    }
+
+    // Fallback: search in recent events
     const match = stats.recentEvents.find(
       (evt) => evt.address.toLowerCase() === address.toLowerCase(),
     );
@@ -272,16 +282,21 @@ export default function WorldPage() {
     setSearchToast(null);
     setHighlightedAddress(address);
 
-    // Map category → hub index. Hub 0 is central origin; hubs 1..N are enabled categories
+    // Map category → hub index (best-effort fallback)
     const enabledConfigs = CATEGORY_CONFIGS.filter((c) => enabledCategories.has(c.id));
     const categoryIdx = enabledConfigs.findIndex((c) => c.id === match.category);
-    const hubIndex = categoryIdx >= 0 ? categoryIdx + 1 : 0;
+    const hubIndex = categoryIdx >= 0 ? categoryIdx : 0;
     setHighlightedHubIndex(hubIndex);
+    graphRef.current?.focusHub(hubIndex, 500);
   }, [stats.recentEvents, enabledCategories]);
 
   const handleDismissHighlight = useCallback(() => {
     setHighlightedAddress(null);
     setHighlightedHubIndex(null);
+    // Clear address from URL
+    const url = new URL(window.location.href);
+    url.searchParams.delete('address');
+    window.history.replaceState({}, '', url.toString());
   }, []);
 
   // Clear toast after 3 seconds
@@ -389,7 +404,9 @@ export default function WorldPage() {
           topTokens={displayTopTokens}
           traderEdges={displayTraderEdges}
           activeProtocol={activeHubMint}
+          highlightedHubIndex={effectiveHighlightedHubIndex}
           onSelectProtocol={setActiveHubMint}
+          onDismissHighlight={handleDismissHighlight}
           height="100%"
           shareColors={shareOpen ? shareColors : undefined}
         />

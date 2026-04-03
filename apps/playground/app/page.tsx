@@ -28,7 +28,7 @@ export default function PlaygroundPage() {
     const provider = new MockProvider(400);
     providerRef.current = provider;
 
-    const unsub = provider.onEvent((event) => {
+    const unsub = provider.onRawEvent!((event) => {
       setEvents((prev) => [event, ...prev].slice(0, 100));
       setStats((prev) => ({
         tokens: prev.tokens + (event.type === 'tokenCreate' ? 1 : 0),

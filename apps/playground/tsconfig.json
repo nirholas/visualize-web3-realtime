@@ -1,5 +1,5 @@
 {
-  "extends": "@web3viz/tsconfig/nextjs.json",
+  "extends": "../../packages/tsconfig/nextjs.json",
   "compilerOptions": {
     "paths": {
       "@/*": ["./*"]

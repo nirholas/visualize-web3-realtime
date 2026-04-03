@@ -22,7 +22,7 @@
   },
   "devDependencies": {
     "@types/d3-force": "^3.0.10",
-    "@web3viz/tsconfig": "workspace:*",
+    "@web3viz/tsconfig": "*",
     "typescript": "^5.5.0"
   }
 }

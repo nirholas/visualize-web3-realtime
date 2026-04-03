@@ -1,4 +1,13 @@
-import type { DataProvider, DataProviderEvent, DataProviderStats } from '@web3viz/core';
+import type {
+  DataProvider,
+  DataProviderEvent,
+  DataProviderStats,
+  ConnectionState,
+  CategoryConfig,
+  SourceConfig,
+  RawEvent,
+} from '@web3viz/core';
+import { getCategoriesForSource } from '@web3viz/core';
 
 // ============================================================================
 // Mock Data Provider — generates fake data for development / testing
@@ -24,10 +33,25 @@ function randomEl<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+let idCounter = 0;
+
 export class MockProvider implements DataProvider {
-  private listeners: Array<(event: DataProviderEvent) => void> = [];
+  readonly id = 'mock';
+  readonly name = 'Mock Provider';
+  readonly sourceConfig: SourceConfig = {
+    id: 'mock',
+    label: 'Mock',
+    color: '#a78bfa',
+    icon: '\u2699',
+    description: 'Simulated data for development',
+  };
+  readonly categories: CategoryConfig[] = getCategoriesForSource('pumpfun');
+
+  private eventListeners: Array<(event: DataProviderEvent) => void> = [];
+  private rawListeners: Array<(event: RawEvent) => void> = [];
   private intervalId: ReturnType<typeof setInterval> | null = null;
-  private paused = false;
+  private _paused = false;
+  private _enabled = true;
   private totalTokens = 0;
   private totalTrades = 0;
   private totalClaims = 0;
@@ -48,7 +72,19 @@ export class MockProvider implements DataProvider {
   }
 
   setPaused(paused: boolean): void {
-    this.paused = paused;
+    this._paused = paused;
+  }
+
+  isPaused(): boolean {
+    return this._paused;
+  }
+
+  isEnabled(): boolean {
+    return this._enabled;
+  }
+
+  setEnabled(enabled: boolean): void {
+    this._enabled = enabled;
   }
 
   getStats(): DataProviderStats {
@@ -62,55 +98,94 @@ export class MockProvider implements DataProvider {
     };
   }
 
+  getConnections(): ConnectionState[] {
+    return [{ name: 'Mock WebSocket', connected: this.intervalId !== null }];
+  }
+
   onEvent(listener: (event: DataProviderEvent) => void): () => void {
-    this.listeners.push(listener);
+    this.eventListeners.push(listener);
     return () => {
-      this.listeners = this.listeners.filter((l) => l !== listener);
+      this.eventListeners = this.eventListeners.filter((l) => l !== listener);
     };
   }
 
-  private emit(event: DataProviderEvent): void {
-    for (const listener of this.listeners) {
-      listener(event);
-    }
+  onRawEvent(listener: (event: RawEvent) => void): () => void {
+    this.rawListeners.push(listener);
+    return () => {
+      this.rawListeners = this.rawListeners.filter((l) => l !== listener);
+    };
+  }
+
+  private emitEvent(event: DataProviderEvent): void {
+    for (const listener of this.eventListeners) listener(event);
+  }
+
+  private emitRaw(event: RawEvent): void {
+    for (const listener of this.rawListeners) listener(event);
   }
 
   private tick(): void {
-    if (this.paused) return;
+    if (this._paused || !this._enabled) return;
 
     const rand = Math.random();
 
     if (rand < 0.2) {
-      // Create new token
       const token = randomEl(MOCK_TOKENS);
+      const isAgent = token.symbol === 'AGENT' || token.symbol === 'SBOT';
+      const wallet = randomEl(MOCK_WALLETS);
+      const mint = `${token.mint}-${Date.now()}`;
       this.totalTokens++;
-      this.emit({
+
+      this.emitEvent({
+        id: `mock-${++idCounter}`,
+        category: isAgent ? 'agentLaunches' : 'launches',
+        source: 'mock',
+        timestamp: Date.now(),
+        label: token.symbol,
+        address: wallet,
+        mint,
+      });
+
+      this.emitRaw({
         type: 'tokenCreate',
         data: {
-          mint: `${token.mint}-${Date.now()}`,
+          mint,
           name: token.name,
           symbol: token.symbol,
           uri: '',
-          traderPublicKey: randomEl(MOCK_WALLETS),
+          traderPublicKey: wallet,
           initialBuy: Math.random() * 1000000,
           marketCapSol: Math.random() * 100,
           signature: `sig-${Date.now()}`,
           timestamp: Date.now(),
-          isAgent: token.symbol === 'AGENT' || token.symbol === 'SBOT',
+          isAgent,
         },
       });
     } else if (rand < 0.8) {
-      // Trade
       const token = randomEl(MOCK_TOKENS);
       const solAmount = Math.random() * 10;
+      const wallet = randomEl(MOCK_WALLETS);
       this.totalTrades++;
       this.totalVolumeSol += solAmount;
-      this.emit({
+
+      this.emitEvent({
+        id: `mock-${++idCounter}`,
+        category: 'trades',
+        source: 'mock',
+        timestamp: Date.now(),
+        label: token.symbol,
+        amount: solAmount,
+        address: wallet,
+        mint: token.mint,
+        meta: { txType: Math.random() > 0.5 ? 'buy' : 'sell' },
+      });
+
+      this.emitRaw({
         type: 'trade',
         data: {
           mint: token.mint,
           signature: `sig-${Date.now()}`,
-          traderPublicKey: randomEl(MOCK_WALLETS),
+          traderPublicKey: wallet,
           txType: Math.random() > 0.5 ? 'buy' : 'sell',
           tokenAmount: Math.random() * 100000,
           solAmount: solAmount * 1e9,
@@ -125,15 +200,26 @@ export class MockProvider implements DataProvider {
         },
       });
     } else {
-      // Claim
       const token = randomEl(MOCK_TOKENS);
       const solAmount = Math.random() * 5;
+      const wallet = randomEl(MOCK_WALLETS);
       this.totalClaims++;
       this.totalVolumeSol += solAmount;
-      this.emit({
+
+      this.emitEvent({
+        id: `mock-${++idCounter}`,
+        category: 'claimsWallet',
+        source: 'mock',
+        timestamp: Date.now(),
+        label: 'Wallet Claim',
+        address: wallet,
+        meta: { solAmount },
+      });
+
+      this.emitRaw({
         type: 'claim',
         data: {
-          wallet: randomEl(MOCK_WALLETS),
+          wallet,
           mint: token.mint,
           solAmount,
           tokenAmount: Math.random() * 100000,
