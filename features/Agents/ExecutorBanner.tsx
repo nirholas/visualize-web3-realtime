@@ -2,11 +2,15 @@
 
 import { memo, useMemo } from 'react';
 import type { ExecutorState } from '@web3viz/core';
+import { agentThemeTokens } from '@/packages/ui/src/tokens/agent-colors';
 
 interface ExecutorBannerProps {
   executorState: ExecutorState | null;
   connected: boolean;
   lastHeartbeat?: number;
+  sidebarWidth?: number;
+  feedWidth?: number;
+  colorScheme?: 'dark' | 'light';
 }
 
 type Health = 'healthy' | 'degraded' | 'offline';
@@ -28,7 +32,8 @@ const HEALTH_COLORS: Record<Health, { bg: string; border: string; text: string }
   offline: { bg: 'rgba(248,113,113,0.08)', border: 'rgba(248,113,113,0.2)', text: '#f87171' },
 };
 
-const ExecutorBanner = memo<ExecutorBannerProps>(({ executorState, connected, lastHeartbeat }) => {
+const ExecutorBanner = memo<ExecutorBannerProps>(({ executorState, connected, lastHeartbeat, sidebarWidth = 200, feedWidth = 260, colorScheme = 'dark' }) => {
+  const themeTokens = agentThemeTokens[colorScheme];
   const health = useMemo<Health>(() => {
     if (!connected && !executorState) return 'offline';
     if (executorState?.status === 'error') return 'degraded';
@@ -61,11 +66,13 @@ const ExecutorBanner = memo<ExecutorBannerProps>(({ executorState, connected, la
 
   return (
     <div
+      role="status"
+      aria-live="polite"
       style={{
         position: 'absolute',
         top: 0,
-        left: 200,
-        right: 260,
+        left: sidebarWidth,
+        right: feedWidth,
         zIndex: 15,
         background: colors.bg,
         borderBottom: `1px solid ${colors.border}`,

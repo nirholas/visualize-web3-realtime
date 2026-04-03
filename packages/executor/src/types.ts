@@ -1,3 +1,10 @@
+import type {
+  AgentIdentity,
+  AgentTask,
+  AgentEvent,
+  ExecutorState,
+} from '@web3viz/core';
+
 // Re-export core agent types for use within the executor package
 export type {
   AgentIdentity,
@@ -66,5 +73,3 @@ export interface HeartbeatMessage {
 }
 
 export type BroadcastMessage = SnapshotMessage | EventMessage | HeartbeatMessage;
-
-import type { AgentIdentity, AgentTask, AgentEvent, ExecutorState } from '@web3viz/core';

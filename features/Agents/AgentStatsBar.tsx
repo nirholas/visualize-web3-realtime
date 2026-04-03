@@ -1,6 +1,7 @@
 'use client';
 
 import { memo, useEffect, useRef, useState } from 'react';
+import { agentThemeTokens } from '@/packages/ui/src/tokens/agent-colors';
 
 // ---------------------------------------------------------------------------
 // Animated Value Hook
@@ -59,8 +60,10 @@ const StatPill = memo<{
   label: string;
   value: number;
   accentColor?: string;
-}>(({ label, value, accentColor = '#a78bfa' }) => {
+  colorScheme?: 'dark' | 'light';
+}>(({ label, value, accentColor = '#a78bfa', colorScheme = 'dark' }) => {
   const animated = useAnimatedValue(value);
+  const tokens = agentThemeTokens[colorScheme];
 
   return (
     <div
@@ -69,7 +72,7 @@ const StatPill = memo<{
         flexDirection: 'column',
         alignItems: 'flex-start',
         padding: '6px 12px',
-        background: 'rgba(10,10,20,0.5)',
+        background: `${tokens.agentHub}50`,
         border: `1px solid ${accentColor}20`,
         borderRadius: 8,
         minWidth: 90,
@@ -79,7 +82,7 @@ const StatPill = memo<{
         style={{
           fontSize: 9,
           fontWeight: 400,
-          color: '#666',
+          color: tokens.muted,
           textTransform: 'uppercase',
           letterSpacing: '0.08em',
           lineHeight: 1,
@@ -114,16 +117,21 @@ export interface AgentStatsBarProps {
   toolCallsPerMinute: number;
   totalCompleted: number;
   totalErrors: number;
+  colorScheme?: 'dark' | 'light';
+  sidebarWidth?: number;
 }
 
 const AgentStatsBar = memo<AgentStatsBarProps>(
-  ({ totalAgents, activeTasks, toolCallsPerMinute, totalCompleted, totalErrors }) => {
+  ({ totalAgents, activeTasks, toolCallsPerMinute, totalCompleted, totalErrors, colorScheme = 'dark', sidebarWidth = 200 }) => {
+    const tokens = agentThemeTokens[colorScheme];
     return (
       <div
+        role="status"
+        aria-label="Agent system statistics"
         style={{
           position: 'absolute',
           bottom: 16,
-          left: '50%',
+          left: `calc(50% + ${sidebarWidth / 2}px)`,
           transform: 'translateX(-50%)',
           zIndex: 20,
           display: 'flex',
@@ -132,19 +140,19 @@ const AgentStatsBar = memo<AgentStatsBarProps>(
           padding: '8px 16px',
           fontFamily: "'IBM Plex Mono', monospace",
           borderRadius: 12,
-          background: 'rgba(10,10,20,0.85)',
+          background: `${tokens.sidebar}`,
           backdropFilter: 'blur(12px)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          border: `1px solid ${tokens.edge}`,
           boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
           flexWrap: 'wrap',
           justifyContent: 'center',
         }}
       >
-        <StatPill label="Agents" value={totalAgents} accentColor="#c084fc" />
-        <StatPill label="Tasks" value={activeTasks} accentColor="#60a5fa" />
-        <StatPill label="Tools/Min" value={toolCallsPerMinute} accentColor="#34d399" />
-        <StatPill label="Completed" value={totalCompleted} accentColor="#fbbf24" />
-        <StatPill label="Errors" value={totalErrors} accentColor="#f87171" />
+        <StatPill label="Agents" value={totalAgents} accentColor={tokens.agentHubActive} colorScheme={colorScheme} />
+        <StatPill label="Tasks" value={activeTasks} accentColor={tokens.taskActive} colorScheme={colorScheme} />
+        <StatPill label="Tools/Min" value={toolCallsPerMinute} accentColor={tokens.taskComplete} colorScheme={colorScheme} />
+        <StatPill label="Completed" value={totalCompleted} accentColor={tokens.taskPlanning} colorScheme={colorScheme} />
+        <StatPill label="Errors" value={totalErrors} accentColor={tokens.taskFailed} colorScheme={colorScheme} />
       </div>
     );
   },

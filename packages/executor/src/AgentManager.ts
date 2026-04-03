@@ -14,6 +14,7 @@ interface AgentState {
   identity: AgentIdentity;
   status: 'idle' | 'busy';
   currentTaskId: string | null;
+  idleSince: number | null;
 }
 
 export class AgentManager {
@@ -33,7 +34,7 @@ export class AgentManager {
 
   async spawnAgent(config: AgentSpawnConfig): Promise<AgentIdentity> {
     const identity = await this.client.spawnAgent(config);
-    this.agents.set(identity.agentId, { identity, status: 'idle', currentTaskId: null });
+    this.agents.set(identity.agentId, { identity, status: 'idle', currentTaskId: null, idleSince: Date.now() });
 
     this.emit({
       eventId: `evt_spawn_${identity.agentId}`,
@@ -56,6 +57,7 @@ export class AgentManager {
 
     agent.status = 'busy';
     agent.currentTaskId = task.taskId;
+    agent.idleSince = null;
 
     this.emit({
       eventId: `evt_task_start_${task.taskId}`,
@@ -133,6 +135,7 @@ export class AgentManager {
 
     agent.status = 'idle';
     agent.currentTaskId = null;
+    agent.idleSince = Date.now();
   }
 
   getAvailableAgent(role?: string): AgentIdentity | null {
@@ -164,4 +167,38 @@ export class AgentManager {
 
   getAgentCount(): number { return this.agents.size; }
   getBusyCount(): number { return Array.from(this.agents.values()).filter((a) => a.status === 'busy').length; }
+
+  async autoScale(queueDepth: number, maxAgents: number, roleSequence: string[] = DEFAULT_AGENT_ROLES): Promise<void> {
+    // Spawn new agents if queue is growing and all agents are busy
+    if (queueDepth > 0) {
+      const busyCount = this.getBusyCount();
+      const totalCount = this.agents.size;
+
+      if (busyCount === totalCount && totalCount < maxAgents) {
+        // All agents busy and we can spawn more
+        const nextRole = roleSequence[totalCount % roleSequence.length];
+        await this.spawnAgent({
+          role: nextRole,
+          name: `${nextRole.charAt(0).toUpperCase()}${nextRole.slice(1)}Agent${totalCount + 1}`,
+        });
+      }
+    }
+
+    // Retire agents that have been idle for too long (but keep at least 1)
+    const now = Date.now();
+    const idleThreshold = 5 * 60_000; // 5 minutes
+    const agentsToRetire: string[] = [];
+
+    for (const [agentId, state] of this.agents) {
+      if (state.status === 'idle' && state.idleSince && now - state.idleSince > idleThreshold) {
+        if (this.agents.size > 1) {
+          agentsToRetire.push(agentId);
+        }
+      }
+    }
+
+    for (const agentId of agentsToRetire) {
+      await this.shutdownAgent(agentId);
+    }
+  }
 }

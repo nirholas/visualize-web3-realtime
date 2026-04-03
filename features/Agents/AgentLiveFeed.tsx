@@ -2,6 +2,7 @@
 
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import type { AgentEvent, AgentIdentity } from '@web3viz/core';
+import { agentThemeTokens } from '@/packages/ui/src/tokens/agent-colors';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -125,9 +126,11 @@ interface AgentLiveFeedProps {
   events: AgentEvent[];
   agents: Map<string, AgentIdentity>;
   onSelectAgent?: (agentId: string) => void;
+  colorScheme?: 'dark' | 'light';
 }
 
-const AgentLiveFeed = memo<AgentLiveFeedProps>(({ events, agents, onSelectAgent }) => {
+const AgentLiveFeed = memo<AgentLiveFeedProps>(({ events, agents, onSelectAgent, colorScheme = 'dark' }) => {
+  const tokens = agentThemeTokens[colorScheme];
   const containerRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
@@ -165,8 +168,6 @@ const AgentLiveFeed = memo<AgentLiveFeedProps>(({ events, agents, onSelectAgent 
     setAutoScroll(el.scrollTop < 20);
   }, []);
 
-  if (visible.length === 0) return null;
-
   return (
     <div
       style={{
@@ -175,9 +176,9 @@ const AgentLiveFeed = memo<AgentLiveFeedProps>(({ events, agents, onSelectAgent 
         top: 0,
         bottom: 60,
         width: 260,
-        background: 'rgba(10,10,15,0.9)',
+        background: `${tokens.sidebar}`,
         backdropFilter: 'blur(12px)',
-        borderLeft: '1px solid rgba(255,255,255,0.06)',
+        borderLeft: `1px solid ${tokens.edge}`,
         display: 'flex',
         flexDirection: 'column',
         zIndex: 10,
@@ -189,22 +190,25 @@ const AgentLiveFeed = memo<AgentLiveFeedProps>(({ events, agents, onSelectAgent 
           padding: '12px 12px 8px',
           fontSize: 9,
           fontWeight: 600,
-          color: '#6b7280',
+          color: tokens.muted,
           textTransform: 'uppercase',
           letterSpacing: '0.12em',
           fontFamily: "'IBM Plex Mono', monospace",
           display: 'flex',
           alignItems: 'center',
           gap: 8,
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          borderBottom: `1px solid ${tokens.edge}`,
         }}
+        role="log"
+        aria-live="polite"
+        aria-label="Agent activity feed"
       >
         <div
           style={{
             width: 6,
             height: 6,
             borderRadius: '50%',
-            background: '#34d399',
+            background: tokens.taskComplete,
             animation: 'livePulse 2s ease-in-out infinite',
           }}
         />
@@ -215,14 +219,22 @@ const AgentLiveFeed = memo<AgentLiveFeedProps>(({ events, agents, onSelectAgent 
               setAutoScroll(true);
               if (containerRef.current) containerRef.current.scrollTop = 0;
             }}
+            aria-label="Scroll to latest"
             style={{
               marginLeft: 'auto',
               fontSize: 8,
-              color: '#c084fc',
+              color: tokens.agentHubActive,
               background: 'none',
               border: 'none',
               cursor: 'pointer',
               fontFamily: 'inherit',
+              outline: 'none',
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.outline = `2px solid ${tokens.agentHubActive}`;
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.outline = 'none';
             }}
           >
             ↑ LIVE
@@ -230,7 +242,7 @@ const AgentLiveFeed = memo<AgentLiveFeedProps>(({ events, agents, onSelectAgent 
         )}
       </div>
 
-      {/* Event list */}
+      {/* Event list or empty state */}
       <div
         ref={containerRef}
         onScroll={handleScroll}
@@ -238,20 +250,39 @@ const AgentLiveFeed = memo<AgentLiveFeedProps>(({ events, agents, onSelectAgent 
           flex: 1,
           overflowY: 'auto',
           overflowX: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
-        {visible.map((evt) => {
-          const agent = agents.get(evt.agentId);
-          return (
-            <EventRow
-              key={evt.eventId}
-              event={evt}
-              agentName={agent?.name ?? evt.agentId.slice(0, 8)}
-              isNew={newIds.has(evt.eventId)}
-              onClick={() => onSelectAgent?.(evt.agentId)}
-            />
-          );
-        })}
+        {visible.length === 0 ? (
+          <div
+            style={{
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: tokens.muted,
+              fontSize: 9,
+              textAlign: 'center',
+              padding: 12,
+            }}
+          >
+            Waiting for agent activity...
+          </div>
+        ) : (
+          visible.map((evt) => {
+            const agent = agents.get(evt.agentId);
+            return (
+              <EventRow
+                key={evt.eventId}
+                event={evt}
+                agentName={agent?.name ?? evt.agentId.slice(0, 8)}
+                isNew={newIds.has(evt.eventId)}
+                onClick={() => onSelectAgent?.(evt.agentId)}
+              />
+            );
+          })
+        )}
       </div>
 
       <style>{`@keyframes livePulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>

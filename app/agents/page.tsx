@@ -2,8 +2,10 @@
 
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AgentTask, AgentIdentity } from '@web3viz/core';
+import type { AgentForceGraphHandle } from '@/features/Agents/AgentForceGraph';
 import { useAgentProvider } from '@/hooks/useAgentProvider';
 import { useAgentKeyboardShortcuts } from '@/hooks/useAgentKeyboardShortcuts';
 import AgentSidebar from '@/features/Agents/AgentSidebar';
@@ -13,6 +15,8 @@ import AgentTimeline from '@/features/Agents/AgentTimeline';
 import ExecutorBanner from '@/features/Agents/ExecutorBanner';
 import AgentLoadingScreen from '@/features/Agents/AgentLoadingScreen';
 import { TaskInspectorPanel } from '@/features/Agents/TaskInspector';
+import { agentThemeTokens } from '@/packages/ui/src/tokens/agent-colors';
+import { captureCanvas, downloadBlob, timestampedFilename } from '@/features/World/utils/screenshot';
 
 // Lazy-load the 3D force graph (Three.js not SSR-safe)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -49,6 +53,8 @@ const ALL_TOOL_CATEGORIES = new Set(['filesystem', 'search', 'terminal', 'networ
 // ---------------------------------------------------------------------------
 
 export default function AgentsPage() {
+  const searchParams = useSearchParams();
+  const agentGraphRef = useRef<AgentForceGraphHandle>(null);
   const [activeAgentId, setActiveAgentId] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [pageReady, setPageReady] = useState(false);
@@ -56,6 +62,11 @@ export default function AgentsPage() {
   const [isPlaying, setIsPlaying] = useState(true);
   const [scrubOffset, setScrubOffset] = useState(0);
   const [feedVisible, setFeedVisible] = useState(true);
+  const [colorScheme, setColorScheme] = useState<'dark' | 'light'>('dark');
+  const [windowWidth, setWindowWidth] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth : 1440
+  );
+  const [downloading, setDownloading] = useState<boolean>(false);
 
   const { stats, agents, flows, executorState, agentStats, connected, events } = useAgentProvider({
     mock: process.env.NEXT_PUBLIC_AGENT_MOCK !== 'false',
@@ -90,19 +101,62 @@ export default function AgentsPage() {
   }, []);
   const handleToggleFeed = useCallback(() => setFeedVisible((v) => !v), []);
 
+  const handleDownloadAgent = useCallback(async () => {
+    if (!agentGraphRef.current || downloading) return;
+    setDownloading(true);
+    try {
+      const canvas = agentGraphRef.current.getCanvasElement();
+      if (!canvas) return;
+      const blob = await captureCanvas(canvas);
+      downloadBlob(blob, timestampedFilename('agent-world'));
+    } catch (err) {
+      console.error('Failed to download screenshot:', err);
+    } finally {
+      setDownloading(false);
+    }
+  }, [downloading]);
+
   // Mark page ready once first agent data arrives
   useEffect(() => {
     if (!pageReady && agents.size > 0) setPageReady(true);
   }, [agents.size, pageReady]);
 
-  // Get recent raw agent events for the live feed + timeline
-  const recentAgentEvents = useMemo(() => {
-    return stats.rawEvents
+  // Track window width for responsive layout
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Deep link support: ?agentId=X
+  useEffect(() => {
+    const agentId = searchParams.get('agentId');
+    if (agentId && agents.has(agentId)) {
+      setActiveAgentId(agentId);
+    }
+  }, [searchParams, agents]);
+
+  // Event batching: collect events over 100ms window to prevent UI jank
+  const pendingEventsRef = useRef<any[]>([]);
+  const [batchedEvents, setBatchedEvents] = useState<any[]>([]);
+
+  useEffect(() => {
+    const allEvents = stats.rawEvents
       .filter((e) => e.type === 'agentEvent')
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .map((e) => (e as any).data)
       .slice(0, 500);
+
+    pendingEventsRef.current = allEvents;
+
+    const timer = setTimeout(() => {
+      setBatchedEvents(pendingEventsRef.current);
+    }, 100);
+
+    return () => clearTimeout(timer);
   }, [stats.rawEvents]);
+
+  const recentAgentEvents = batchedEvents;
 
   // Extract selected task and related agent
   const selectedTask = useMemo<AgentTask | null>(() => {
@@ -168,6 +222,19 @@ export default function AgentsPage() {
   const TIMELINE_H = 40;
   const STATS_H = 60;
 
+  // Responsive layout breakpoints
+  const isMobile = windowWidth < 768;
+  const isTablet = windowWidth >= 768 && windowWidth < 1024;
+  const isDesktop = windowWidth >= 1024;
+
+  // Calculate layout dimensions based on breakpoint
+  const sidebarWidth = isMobile ? 0 : isTablet ? 48 : 200;
+  const feedWidth = isMobile ? 0 : isTablet ? 200 : 260;
+  const themeTokens = agentThemeTokens[colorScheme];
+
+  // Check if all agents are idle
+  const allAgentsIdle = pageReady && agents.size > 0 && agentStats.activeTasks === 0;
+
   return (
     <div
       style={{
@@ -175,51 +242,62 @@ export default function AgentsPage() {
         width: '100vw',
         height: '100vh',
         overflow: 'hidden',
-        background: '#0a0a0f',
+        background: themeTokens.background,
       }}
     >
       {/* Loading screen — shown until first agent data arrives */}
       <AgentLoadingScreen ready={pageReady} />
+
       {/* Agent sidebar — left (full height) */}
-      <AgentSidebar
-        agents={agents}
-        flows={flows}
-        executorState={executorState}
-        activeAgentId={activeAgentId}
-        activeToolCategories={activeToolCategories}
-        onSelectAgent={handleSelectAgent}
-        onToggleToolCategory={handleToggleToolCategory}
-      />
+      {!isMobile && (
+        <AgentSidebar
+          agents={agents}
+          executorState={executorState}
+          activeAgentId={activeAgentId}
+          enabledToolCategories={activeToolCategories}
+          onSelectAgent={handleSelectAgent}
+          onToolCategoryToggle={handleToggleToolCategory}
+          collapsed={isTablet}
+          colorScheme={colorScheme}
+        />
+      )}
 
       {/* Executor health banner — top of graph area */}
       <ExecutorBanner
         executorState={executorState}
         connected={connected}
         lastHeartbeat={executorState?.lastHeartbeat}
+        sidebarWidth={sidebarWidth}
+        feedWidth={feedVisible ? feedWidth : 0}
+        colorScheme={colorScheme}
       />
 
       {/* Timeline scrubber */}
-      <AgentTimeline
-        events={recentAgentEvents}
-        agents={agents}
-        isPlaying={isPlaying}
-        onTogglePlay={handleTogglePlay}
-        scrubOffset={scrubOffset}
-        onScrubChange={setScrubOffset}
-      />
+      {!isMobile && (
+        <AgentTimeline
+          events={recentAgentEvents}
+          agents={agents}
+          isPlaying={isPlaying}
+          onTogglePlay={handleTogglePlay}
+          scrubOffset={scrubOffset}
+          onScrubChange={setScrubOffset}
+          colorScheme={colorScheme}
+        />
+      )}
 
       {/* 3D Force graph */}
       <div
         style={{
           position: 'absolute',
-          top: BANNER_H + TIMELINE_H,
-          left: 200,
-          right: feedVisible ? 260 : 0,
+          top: BANNER_H + (isMobile ? 0 : TIMELINE_H),
+          left: sidebarWidth,
+          right: feedVisible ? feedWidth : 0,
           bottom: STATS_H,
         }}
       >
         <Suspense fallback={null}>
           <AgentForceGraph
+            ref={agentGraphRef}
             agents={stats.topTokens}
             toolEdges={stats.traderEdges}
             flows={flows}
@@ -227,7 +305,8 @@ export default function AgentsPage() {
             recentEvents={recentAgentEvents}
             activeAgentId={activeAgentId}
             onAgentSelect={handleSelectAgent}
-            backgroundColor="#0a0a0f"
+            backgroundColor={themeTokens.background}
+            colorScheme={colorScheme}
             height="100%"
           />
         </Suspense>
@@ -239,13 +318,19 @@ export default function AgentsPage() {
           events={recentAgentEvents}
           agents={agents}
           onSelectAgent={handleSelectAgent}
+          colorScheme={colorScheme}
         />
       )}
 
       {/* Stats bar — bottom */}
       <AgentStatsBar
-        stats={agentStats}
-        uptime={executorState?.uptime}
+        totalAgents={agentStats.totalAgents}
+        activeTasks={agentStats.activeTasks}
+        toolCallsPerMinute={agentStats.toolCallsPerMinute}
+        totalCompleted={agentStats.totalTasksCompleted}
+        totalErrors={agentStats.totalTasksFailed}
+        colorScheme={colorScheme}
+        sidebarWidth={sidebarWidth}
       />
 
       {/* Navigation — top center (above executor banner) */}
@@ -282,6 +367,64 @@ export default function AgentsPage() {
         </span>
       </div>
 
+      {/* Share/Download button — top right, left of theme toggle */}
+      <button
+        onClick={handleDownloadAgent}
+        disabled={downloading}
+        aria-label="Download agent world screenshot"
+        title="Download agent world screenshot"
+        style={{
+          position: 'absolute',
+          top: 4,
+          right: 44,
+          zIndex: 30,
+          background: 'transparent',
+          border: 'none',
+          color: themeTokens.text,
+          cursor: downloading ? 'not-allowed' : 'pointer',
+          fontSize: 14,
+          padding: 8,
+          outline: 'none',
+          opacity: downloading ? 0.5 : 1,
+        }}
+        onFocus={(e) => {
+          e.currentTarget.style.outline = '2px solid #c084fc';
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.outline = 'none';
+        }}
+      >
+        {downloading ? '⟳' : '📷'}
+      </button>
+
+      {/* Theme toggle button — top right */}
+      <button
+        onClick={() => setColorScheme((s) => (s === 'dark' ? 'light' : 'dark'))}
+        aria-label="Toggle theme"
+        title={`Switch to ${colorScheme === 'dark' ? 'light' : 'dark'} mode`}
+        style={{
+          position: 'absolute',
+          top: 4,
+          right: 8,
+          zIndex: 30,
+          background: 'transparent',
+          border: 'none',
+          color: themeTokens.text,
+          cursor: 'pointer',
+          fontSize: 14,
+          padding: 8,
+          outline: 'none',
+        }}
+        onFocus={(e) => {
+          e.currentTarget.style.outline = '2px solid #c084fc';
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.outline = 'none';
+        }}
+      >
+        {colorScheme === 'dark' ? '☀' : '☽'}
+      </button>
+
       {/* Connection indicator — top left of graph area */}
       <div
         style={{
@@ -311,26 +454,68 @@ export default function AgentsPage() {
       </div>
 
       {/* Feed toggle button */}
-      <button
-        onClick={handleToggleFeed}
-        style={{
-          position: 'absolute',
-          top: BANNER_H + TIMELINE_H + 8,
-          right: feedVisible ? 268 : 8,
-          zIndex: 20,
-          background: 'rgba(10,10,15,0.8)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 4,
-          color: feedVisible ? '#c084fc' : '#4b5563',
-          cursor: 'pointer',
-          fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: 9,
-          padding: '3px 8px',
-          letterSpacing: '0.06em',
-        }}
-      >
-        {feedVisible ? '▸ Hide Feed' : '◂ Feed'}
-      </button>
+      {!isMobile && (
+        <button
+          onClick={handleToggleFeed}
+          aria-label={feedVisible ? 'Hide feed' : 'Show feed'}
+          style={{
+            position: 'absolute',
+            top: BANNER_H + TIMELINE_H + 8,
+            right: feedVisible ? feedWidth + 8 : 8,
+            zIndex: 20,
+            background: 'rgba(10,10,15,0.8)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 4,
+            color: feedVisible ? themeTokens.agentHubActive : themeTokens.muted,
+            cursor: 'pointer',
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 9,
+            padding: '3px 8px',
+            letterSpacing: '0.06em',
+            outline: 'none',
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.outline = '2px solid #c084fc';
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.outline = 'none';
+          }}
+        >
+          {feedVisible ? '▸ Hide Feed' : '◂ Feed'}
+        </button>
+      )}
+
+      {/* All agents idle overlay */}
+      {allAgentsIdle && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerEvents: 'none',
+            zIndex: 5,
+          }}
+        >
+          <div
+            style={{
+              background: `${themeTokens.agentHub}cc`,
+              backdropFilter: 'blur(4px)',
+              border: `1px solid ${themeTokens.edge}`,
+              borderRadius: 8,
+              padding: '12px 24px',
+              color: themeTokens.muted,
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 10,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+            }}
+          >
+            All agents idle. No active tasks.
+          </div>
+        </div>
+      )}
 
       {/* Task Inspector Panel */}
       {selectedTask && selectedTaskAgent && (

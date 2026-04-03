@@ -8,5 +8,6 @@ export { useProviders } from './useProviders';
 
 export type { PumpFunStats } from './pump-fun/usePumpFun';
 export type { PumpFunClaimsStats } from './pump-fun/usePumpFunClaims';
+export type { PumpFunProviderOptions } from './pump-fun/PumpFunProvider';
 export type { UnifiedEvent, AggregateStats } from './useDataProvider';
 export type { UseProvidersOptions, UseProvidersReturn } from './useProviders';

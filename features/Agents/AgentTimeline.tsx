@@ -3,6 +3,7 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import type { AgentEvent, AgentIdentity } from '@web3viz/core';
 import { AGENT_COLOR_PALETTE } from './constants';
+import { agentThemeTokens } from '@/packages/ui/src/tokens/agent-colors';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -18,6 +19,7 @@ interface AgentTimelineProps {
   onScrubChange: (offsetMs: number) => void;
   /** Visible time window in ms (default: 2 min) */
   windowMs?: number;
+  colorScheme?: 'dark' | 'light';
 }
 
 // ---------------------------------------------------------------------------
@@ -45,7 +47,9 @@ const AgentTimeline = memo<AgentTimelineProps>(({
   scrubOffset,
   onScrubChange,
   windowMs = WINDOW_MS,
+  colorScheme = 'dark',
 }) => {
+  const tokens = agentThemeTokens[colorScheme];
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);

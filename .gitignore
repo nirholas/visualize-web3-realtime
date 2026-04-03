@@ -2,12 +2,4 @@ node_modules
 .next
 .env
 .env.local
-.turbo/cache/9b2e3bb3d506ae04-manifest.json
-.turbo/cache/63f9d826108a196f-manifest.json
-.turbo/cache/9b2e3bb3d506ae04-meta.json
-.turbo/cache/9b2e3bb3d506ae04.tar.zst
-.turbo/cache/63f9d826108a196f-meta.json
-.turbo/cache/63f9d826108a196f.tar.zst
-.turbo/cache/567c32a79cd33e23-manifest.json
-.turbo/cache/567c32a79cd33e23-meta.json
-.turbo/cache/567c32a79cd33e23.tar.zst
+.turbo
