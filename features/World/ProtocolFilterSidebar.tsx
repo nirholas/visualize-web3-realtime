@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useState } from 'react';
-import type { TopToken } from '@/hooks/usePumpFun';
+import type { CategoryConfig, SourceConfig } from '@web3viz/core';
 import { COLOR_PALETTE } from './constants';
 
 // ---------------------------------------------------------------------------
@@ -9,49 +9,48 @@ import { COLOR_PALETTE } from './constants';
 // ---------------------------------------------------------------------------
 
 export interface ProtocolFilterSidebarProps {
-  /** Top tokens to render as buttons */
-  tokens: TopToken[];
-  /** Currently highlighted hub mint (null = none) */
-  activeMint: string | null;
-  /** Called when a protocol button is clicked */
-  onToggle: (mint: string) => void;
-  /** Whether AI agent overlay is enabled */
-  showAgents?: boolean;
-  /** Called when the AI agent toggle is clicked */
-  onToggleAgents?: () => void;
+  /** All available categories */
+  categories: CategoryConfig[];
+  /** All available sources/providers */
+  sources?: SourceConfig[];
+  /** Set of enabled category IDs */
+  enabledCategories: Set<string>;
+  /** Called when a category is toggled */
+  onToggleCategory: (categoryId: string) => void;
+  /** Set of enabled provider IDs */
+  enabledProviders?: Set<string>;
+  /** Called when a provider is toggled */
+  onToggleProvider?: (providerId: string) => void;
 }
 
 // ---------------------------------------------------------------------------
-// Single Protocol Button
+// Single Category Button
 // ---------------------------------------------------------------------------
 
-interface ProtocolButtonProps {
-  token: TopToken;
-  color: string;
+interface CategoryButtonProps {
+  category: CategoryConfig;
   isActive: boolean;
   onClick: () => void;
 }
 
-const ProtocolButton = memo<ProtocolButtonProps>(({ token, color, isActive, onClick }) => {
+const CategoryButton = memo<CategoryButtonProps>(({ category, isActive, onClick }) => {
   const [hovered, setHovered] = useState(false);
-  const iconText = (token.symbol || token.name || '??').slice(0, 2).toUpperCase();
 
   return (
     <button
-      aria-label={token.symbol || token.name}
+      aria-label={category.label}
       aria-pressed={isActive}
-      data-group={token.mint}
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      title={`${token.symbol || token.name} — ${token.trades} trades`}
+      title={category.label}
       style={{
         alignItems: 'center',
-        background: isActive ? color : '#e8e8e8',
-        border: isActive ? `2px solid ${color}` : '2px solid transparent',
+        background: isActive ? category.color : '#e8e8e8',
+        border: isActive ? `2px solid ${category.color}` : '2px solid transparent',
         borderRadius: '50%',
         boxShadow: isActive
-          ? `0 2px 12px ${color}60`
+          ? `0 2px 12px ${category.color}60`
           : hovered
           ? '0 2px 8px rgba(0,0,0,0.18)'
           : 'none',
@@ -59,7 +58,7 @@ const ProtocolButton = memo<ProtocolButtonProps>(({ token, color, isActive, onCl
         cursor: 'pointer',
         display: 'flex',
         fontFamily: "'IBM Plex Mono', monospace",
-        fontSize: 11,
+        fontSize: 14,
         fontWeight: 700,
         height: 40,
         justifyContent: 'center',
@@ -71,42 +70,48 @@ const ProtocolButton = memo<ProtocolButtonProps>(({ token, color, isActive, onCl
         width: 40,
       }}
     >
-      {iconText}
+      {category.icon}
     </button>
   );
 });
 
-ProtocolButton.displayName = 'ProtocolButton';
+CategoryButton.displayName = 'CategoryButton';
 
 // ---------------------------------------------------------------------------
-// Agent Toggle Button
+// Provider Toggle Button
 // ---------------------------------------------------------------------------
 
-const AgentToggle = memo<{ active: boolean; onClick: () => void }>(({ active, onClick }) => {
+interface ProviderToggleProps {
+  source: SourceConfig;
+  active: boolean;
+  onClick: () => void;
+}
+
+const ProviderToggle = memo<ProviderToggleProps>(({ source, active, onClick }) => {
   const [hovered, setHovered] = useState(false);
 
   return (
     <button
-      aria-label="Toggle AI Agents overlay"
+      aria-label={`Toggle ${source.label}`}
       aria-pressed={active}
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      title={active ? 'Hide AI Agents' : 'Show AI Agents'}
+      title={active ? `Hide ${source.label}` : `Show ${source.label}`}
       style={{
         alignItems: 'center',
-        background: active ? '#c084fc' : '#e8e8e8',
-        border: active ? '2px solid #c084fc' : '2px solid transparent',
+        background: active ? source.color : '#e8e8e8',
+        border: active ? `2px solid ${source.color}` : '2px solid transparent',
         borderRadius: '50%',
         boxShadow: active
-          ? '0 2px 12px #c084fc60'
+          ? `0 2px 12px ${source.color}60`
           : hovered
           ? '0 2px 8px rgba(0,0,0,0.18)'
           : 'none',
         color: active ? '#fff' : '#333',
         cursor: 'pointer',
         display: 'flex',
-        fontSize: 16,
+        fontSize: 14,
         height: 40,
         justifyContent: 'center',
         lineHeight: 1,
@@ -117,23 +122,35 @@ const AgentToggle = memo<{ active: boolean; onClick: () => void }>(({ active, on
         width: 40,
       }}
     >
-      🤖
+      {source.icon}
     </button>
   );
 });
-AgentToggle.displayName = 'AgentToggle';
+ProviderToggle.displayName = 'ProviderToggle';
 
 // ---------------------------------------------------------------------------
 // Sidebar
 // ---------------------------------------------------------------------------
 
 const ProtocolFilterSidebar = memo<ProtocolFilterSidebarProps>(
-  ({ tokens, activeMint, onToggle, showAgents, onToggleAgents }) => {
-    if (tokens.length === 0 && !onToggleAgents) return null;
+  ({ categories, sources, enabledCategories, onToggleCategory, enabledProviders, onToggleProvider }) => {
+    if (categories.length === 0) return null;
+
+    // Group categories by source if multiple sources exist
+    const hasMultipleSources = sources && sources.length > 1;
+    const categoryBySource = new Map<string | undefined, CategoryConfig[]>();
+
+    for (const cat of categories) {
+      const sourceId = cat.sourceId;
+      if (!categoryBySource.has(sourceId)) {
+        categoryBySource.set(sourceId, []);
+      }
+      categoryBySource.get(sourceId)!.push(cat);
+    }
 
     return (
       <nav
-        aria-label="Protocol filters"
+        aria-label="Filter categories and providers"
         style={{
           display: 'flex',
           flexDirection: 'column',
@@ -145,17 +162,49 @@ const ProtocolFilterSidebar = memo<ProtocolFilterSidebarProps>(
           zIndex: 20,
         }}
       >
-        {tokens.map((token, i) => (
-          <ProtocolButton
-            key={token.mint}
-            token={token}
-            color={COLOR_PALETTE[i % COLOR_PALETTE.length]}
-            isActive={activeMint === token.mint}
-            onClick={() => onToggle(token.mint)}
-          />
-        ))}
-        {onToggleAgents && (
-          <AgentToggle active={!!showAgents} onClick={onToggleAgents} />
+        {/* Render provider toggles if multiple sources */}
+        {sources && sources.length > 0 && onToggleProvider && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {sources.map((source) => (
+              <ProviderToggle
+                key={source.id}
+                source={source}
+                active={enabledProviders?.has(source.id) ?? true}
+                onClick={() => onToggleProvider(source.id)}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Render categories grouped by source or flat */}
+        {hasMultipleSources && sources ? (
+          // Grouped view
+          sources.map((source) => {
+            const sourceCats = categoryBySource.get(source.id) || [];
+            if (sourceCats.length === 0) return null;
+            return (
+              <div key={source.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {sourceCats.map((cat) => (
+                  <CategoryButton
+                    key={cat.id}
+                    category={cat}
+                    isActive={enabledCategories.has(cat.id)}
+                    onClick={() => onToggleCategory(cat.id)}
+                  />
+                ))}
+              </div>
+            );
+          })
+        ) : (
+          // Flat view for single source
+          categories.map((cat) => (
+            <CategoryButton
+              key={cat.id}
+              category={cat}
+              isActive={enabledCategories.has(cat.id)}
+              onClick={() => onToggleCategory(cat.id)}
+            />
+          ))
         )}
       </nav>
     );

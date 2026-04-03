@@ -1,5 +1,10 @@
 'use client';
 
+/**
+ * @deprecated Use useProviders() with DataProvider instances instead.
+ * This hook is PumpFun-specific and will be removed in a future version.
+ */
+
 import { useCallback, useMemo, useState } from 'react';
 import type {
   Token,

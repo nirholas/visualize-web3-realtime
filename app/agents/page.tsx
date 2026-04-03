@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { Suspense, useCallback, useMemo, useState } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import type { AgentTask, AgentIdentity } from '@web3viz/core';
 import { useAgentProvider } from '@/hooks/useAgentProvider';
 import { useAgentKeyboardShortcuts } from '@/hooks/useAgentKeyboardShortcuts';
 import AgentSidebar from '@/features/Agents/AgentSidebar';
@@ -10,6 +11,8 @@ import AgentStatsBar from '@/features/Agents/AgentStatsBar';
 import AgentLiveFeed from '@/features/Agents/AgentLiveFeed';
 import AgentTimeline from '@/features/Agents/AgentTimeline';
 import ExecutorBanner from '@/features/Agents/ExecutorBanner';
+import AgentLoadingScreen from '@/features/Agents/AgentLoadingScreen';
+import { TaskInspectorPanel } from '@/features/Agents/TaskInspector';
 
 // Lazy-load the 3D force graph (Three.js not SSR-safe)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -47,12 +50,14 @@ const ALL_TOOL_CATEGORIES = new Set(['filesystem', 'search', 'terminal', 'networ
 
 export default function AgentsPage() {
   const [activeAgentId, setActiveAgentId] = useState<string | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [pageReady, setPageReady] = useState(false);
   const [activeToolCategories, setActiveToolCategories] = useState<Set<string>>(ALL_TOOL_CATEGORIES);
   const [isPlaying, setIsPlaying] = useState(true);
   const [scrubOffset, setScrubOffset] = useState(0);
   const [feedVisible, setFeedVisible] = useState(true);
 
-  const { stats, agents, flows, executorState, agentStats, connected } = useAgentProvider({
+  const { stats, agents, flows, executorState, agentStats, connected, events } = useAgentProvider({
     mock: process.env.NEXT_PUBLIC_AGENT_MOCK !== 'false',
     url: process.env.NEXT_PUBLIC_SPERAXOS_WS_URL,
     apiKey: process.env.NEXT_PUBLIC_SPERAXOS_API_KEY,
@@ -61,6 +66,10 @@ export default function AgentsPage() {
 
   const handleSelectAgent = useCallback((agentId: string | null) => {
     setActiveAgentId(agentId);
+  }, []);
+
+  const handleSelectTask = useCallback((taskId: string | null) => {
+    setSelectedTaskId(taskId);
   }, []);
 
   const handleToggleToolCategory = useCallback((category: string) => {
@@ -81,6 +90,11 @@ export default function AgentsPage() {
   }, []);
   const handleToggleFeed = useCallback(() => setFeedVisible((v) => !v), []);
 
+  // Mark page ready once first agent data arrives
+  useEffect(() => {
+    if (!pageReady && agents.size > 0) setPageReady(true);
+  }, [agents.size, pageReady]);
+
   // Get recent raw agent events for the live feed + timeline
   const recentAgentEvents = useMemo(() => {
     return stats.rawEvents
@@ -90,6 +104,56 @@ export default function AgentsPage() {
       .slice(0, 500);
   }, [stats.rawEvents]);
 
+  // Extract selected task and related agent
+  const selectedTask = useMemo<AgentTask | null>(() => {
+    if (!selectedTaskId) return null;
+
+    // Search through all flows to find the task
+    for (const flow of flows.values()) {
+      for (const task of flow.tasks) {
+        if (task.taskId === selectedTaskId) {
+          return task;
+        }
+      }
+    }
+    return null;
+  }, [selectedTaskId, flows]);
+
+  const selectedTaskAgent = useMemo(() => {
+    if (!selectedTask) return null;
+    return agents.get(selectedTask.agentId) ?? null;
+  }, [selectedTask, agents]);
+
+  // Get tool calls for the selected task
+  const selectedTaskToolCalls = useMemo(() => {
+    if (!selectedTask) return [];
+
+    for (const flow of flows.values()) {
+      if (flow.agent.agentId === selectedTask.agentId) {
+        return flow.toolCalls.filter((tc) => tc.taskId === selectedTask.taskId);
+      }
+    }
+    return [];
+  }, [selectedTask, flows]);
+
+  // Get sub-agents spawned by the selected task
+  const selectedTaskSubAgents = useMemo(() => {
+    if (!selectedTask) return [];
+
+    // Find sub-agents created during this task's execution
+    const subAgents = [];
+    for (const agent of agents.values()) {
+      if (
+        agent.parentAgentId === selectedTask.agentId &&
+        agent.createdAt >= (selectedTask.startedAt || 0) &&
+        (!selectedTask.endedAt || agent.createdAt <= selectedTask.endedAt)
+      ) {
+        subAgents.push(agent);
+      }
+    }
+    return subAgents;
+  }, [selectedTask, agents]);
+
   // Keyboard shortcuts
   useAgentKeyboardShortcuts({
     agents,
@@ -97,7 +161,7 @@ export default function AgentsPage() {
     onTogglePlay: handleTogglePlay,
     onFitCamera: handleFitCamera,
     onToggleFeed: handleToggleFeed,
-    onCloseInspector: () => handleSelectAgent(null),
+    onCloseInspector: () => setSelectedTaskId(null),
   });
 
   const BANNER_H = 24;
@@ -114,6 +178,8 @@ export default function AgentsPage() {
         background: '#0a0a0f',
       }}
     >
+      {/* Loading screen — shown until first agent data arrives */}
+      <AgentLoadingScreen ready={pageReady} />
       {/* Agent sidebar — left (full height) */}
       <AgentSidebar
         agents={agents}
@@ -265,6 +331,18 @@ export default function AgentsPage() {
       >
         {feedVisible ? '▸ Hide Feed' : '◂ Feed'}
       </button>
+
+      {/* Task Inspector Panel */}
+      {selectedTask && selectedTaskAgent && (
+        <TaskInspectorPanel
+          task={selectedTask}
+          agent={selectedTaskAgent}
+          toolCalls={selectedTaskToolCalls}
+          subAgents={selectedTaskSubAgents}
+          recentEvents={recentAgentEvents}
+          onClose={() => setSelectedTaskId(null)}
+        />
+      )}
     </div>
   );
 }

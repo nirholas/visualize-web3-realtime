@@ -11,7 +11,6 @@ import type {
   SourceConfig,
   TopToken,
   TraderEdge,
-  RawEvent,
 } from '@web3viz/core';
 
 // ============================================================================
@@ -58,77 +57,6 @@ const FLUSH_INTERVAL_MS = 100;
 const DEFAULT_MAX_EVENTS = 300;
 
 // ============================================================================
-// Stats merging helper
-// ============================================================================
-
-function mergeProviderStats(
-  providers: DataProvider[],
-  maxEvents: number,
-): MergedStats {
-  const bySource: Record<string, DataProviderStats> = {};
-  const mergedCounts: Record<string, number> = {};
-  const mergedVolume: Record<string, number> = {};
-  let totalTransactions = 0;
-  let totalAgents = 0;
-  const allTopTokens: TopToken[] = [];
-  const allTraderEdges: TraderEdge[] = [];
-  const allRecentEvents: DataProviderEvent[] = [];
-  const allRawEvents: RawEvent[] = [];
-
-  for (const provider of providers) {
-    if (!provider.isEnabled()) continue;
-    const stats = provider.getStats();
-    bySource[provider.id] = stats;
-
-    for (const [key, value] of Object.entries(stats.counts)) {
-      mergedCounts[key] = (mergedCounts[key] || 0) + value;
-    }
-
-    for (const [chain, vol] of Object.entries(stats.totalVolume ?? {})) {
-      mergedVolume[chain] = (mergedVolume[chain] || 0) + vol;
-    }
-
-    totalTransactions += stats.totalTransactions;
-    totalAgents += stats.totalAgents;
-    allTopTokens.push(...stats.topTokens);
-    allTraderEdges.push(...stats.traderEdges);
-    allRecentEvents.push(...stats.recentEvents);
-    allRawEvents.push(...stats.rawEvents);
-  }
-
-  allTopTokens.sort((a, b) => (b.volume ?? b.volumeSol ?? 0) - (a.volume ?? a.volumeSol ?? 0));
-  allRecentEvents.sort((a, b) => b.timestamp - a.timestamp);
-
-  return {
-    counts: mergedCounts,
-    totalVolume: mergedVolume,
-    totalTransactions,
-    totalAgents,
-    recentEvents: allRecentEvents.slice(0, maxEvents),
-    topTokens: allTopTokens.slice(0, 8),
-    traderEdges: allTraderEdges,
-    rawEvents: allRawEvents,
-    bySource,
-  };
-}
-
-// ============================================================================
-// Empty stats constant
-// ============================================================================
-
-const EMPTY_STATS: MergedStats = {
-  counts: {},
-  totalVolume: {},
-  totalTransactions: 0,
-  totalAgents: 0,
-  recentEvents: [],
-  topTokens: [],
-  traderEdges: [],
-  rawEvents: [],
-  bySource: {},
-};
-
-// ============================================================================
 // Hook
 // ============================================================================
 
@@ -145,8 +73,7 @@ export function useProviders(options: UseProvidersOptions): UseProvidersReturn {
 
   // State
   const [allEvents, setAllEvents] = useState<DataProviderEvent[]>([]);
-  const [stats, setStats] = useState<MergedStats>(EMPTY_STATS);
-  const [connections, setConnections] = useState<Record<string, ConnectionState[]>>({});
+  const [eventFlushCount, setEventFlushCount] = useState(0);
 
   const [enabledCategories, setEnabledCategories] = useState<Set<string>>(() => {
     const all = new Set<string>();
@@ -160,7 +87,7 @@ export function useProviders(options: UseProvidersOptions): UseProvidersReturn {
     () => new Set(providers.map((p) => p.id)),
   );
 
-  // Flush buffered events into state and refresh stats/connections
+  // Flush buffered events into state
   const flush = useCallback(() => {
     const buffer = eventBufferRef.current;
     if (buffer.length === 0) return;
@@ -172,13 +99,8 @@ export function useProviders(options: UseProvidersOptions): UseProvidersReturn {
       return merged.slice(0, maxEventsRef.current);
     });
 
-    setStats(mergeProviderStats(providersRef.current, maxEventsRef.current));
-
-    const conns: Record<string, ConnectionState[]> = {};
-    for (const p of providersRef.current) {
-      conns[p.id] = p.getConnections();
-    }
-    setConnections(conns);
+    // Trigger stats re-derivation
+    setEventFlushCount((c) => c + 1);
   }, []);
 
   // Schedule a debounced flush (100ms batching)
@@ -202,14 +124,6 @@ export function useProviders(options: UseProvidersOptions): UseProvidersReturn {
       });
       unsubscribes.push(unsub);
     }
-
-    // Seed initial stats & connections
-    setStats(mergeProviderStats(providers, maxEventsRef.current));
-    const conns: Record<string, ConnectionState[]> = {};
-    for (const p of providers) {
-      conns[p.id] = p.getConnections();
-    }
-    setConnections(conns);
 
     return () => {
       for (const unsub of unsubscribes) unsub();
@@ -253,37 +167,95 @@ export function useProviders(options: UseProvidersOptions): UseProvidersReturn {
     });
   }, []);
 
-  // Collect categories from all providers (deduplicated)
+  // Collect categories from all enabled providers (deduplicated)
   const categories = useMemo(() => {
     const seen = new Set<string>();
     const result: CategoryConfig[] = [];
     for (const p of providers) {
-      for (const cat of p.categories) {
-        const key = `${cat.id}:${cat.sourceId ?? ''}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          result.push(cat);
+      if (enabledProviders.has(p.id)) {
+        for (const cat of p.categories) {
+          const key = `${cat.id}:${cat.sourceId ?? ''}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            result.push(cat);
+          }
         }
       }
     }
     return result;
-  }, [providers]);
+  }, [providers, enabledProviders]);
 
-  // Collect source configs from all providers
+  // Collect source configs from enabled providers
   const sources = useMemo(
-    () => providers.map((p) => p.sourceConfig),
-    [providers],
+    () => providers.filter((p) => enabledProviders.has(p.id)).map((p) => p.sourceConfig),
+    [providers, enabledProviders],
   );
+
+  // Derive merged stats from enabled providers
+  const stats = useMemo<MergedStats>(() => {
+    const bySource: Record<string, DataProviderStats> = {};
+    const mergedCounts: Record<string, number> = {};
+    let totalVolumeSol = 0;
+    let totalTransactions = 0;
+    let totalAgents = 0;
+    const allTopTokens: TopToken[] = [];
+    const allTraderEdges: TraderEdge[] = [];
+    const allRawEvents = [];
+
+    for (const provider of providers) {
+      if (!enabledProviders.has(provider.id)) continue;
+      const providerStats = provider.getStats();
+      bySource[provider.id] = providerStats;
+
+      for (const [key, value] of Object.entries(providerStats.counts || {})) {
+        mergedCounts[key] = (mergedCounts[key] || 0) + value;
+      }
+
+      totalVolumeSol += providerStats.totalVolumeSol ?? 0;
+      totalTransactions += providerStats.totalTransactions;
+      totalAgents += providerStats.totalAgents;
+      allTopTokens.push(...(providerStats.topTokens || []));
+      allTraderEdges.push(...(providerStats.traderEdges || []));
+      allRawEvents.push(...(providerStats.rawEvents || []));
+    }
+
+    // Sort and trim top tokens
+    allTopTokens.sort((a, b) => b.volumeSol - a.volumeSol);
+
+    return {
+      counts: mergedCounts,
+      totalVolumeSol,
+      totalTransactions,
+      totalAgents,
+      recentEvents: allEvents,
+      topTokens: allTopTokens.slice(0, 8),
+      traderEdges: allTraderEdges,
+      rawEvents: allRawEvents,
+      bySource,
+    };
+  }, [providers, enabledProviders, allEvents, eventFlushCount]);
 
   // Filter events by enabled categories and providers
   const filteredEvents = useMemo(
     () =>
       allEvents.filter(
         (e) =>
-          enabledCategories.has(e.category) && enabledProviders.has(e.providerId ?? ''),
+          enabledCategories.has(e.category) &&
+          enabledProviders.has(e.providerId ?? e.source ?? ''),
       ),
     [allEvents, enabledCategories, enabledProviders],
   );
+
+  // Derive connections from enabled providers
+  const connections = useMemo(() => {
+    const conns: Record<string, ConnectionState[]> = {};
+    for (const p of providers) {
+      if (enabledProviders.has(p.id)) {
+        conns[p.id] = p.getConnections();
+      }
+    }
+    return conns;
+  }, [providers, enabledProviders, eventFlushCount]);
 
   return {
     stats,

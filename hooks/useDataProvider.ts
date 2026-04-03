@@ -1,243 +1,221 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+/**
+ * @deprecated Use useProviders() from @web3viz/providers with DataProvider instances instead.
+ */
 
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  usePumpFunProvider,
-  PUMPFUN_SOURCE,
-  PUMPFUN_CATEGORIES,
-  useEthereumProvider,
-  ETHEREUM_SOURCE,
-  ETHEREUM_CATEGORIES,
-  useBaseProvider,
-  BASE_SOURCE,
-  BASE_CATEGORIES,
-  useAgentsProvider,
-  AGENTS_SOURCE,
-  AGENTS_CATEGORIES,
-  useERC8004Provider,
-  ERC8004_SOURCE,
-  ERC8004_CATEGORIES,
-  useCEXProvider,
-  CEX_SOURCE,
-  CEX_CATEGORIES,
-  ALL_SOURCES,
-} from './providers';
-import type { PumpFunEvent } from './usePumpFun';
-import type { DataProviderEvent, DataProviderStats, TopToken, TraderEdge, MergedStats } from '@web3viz/core';
-import type { CategoryConfig, SourceConfig } from '@web3viz/core';
+  getAllProviders,
+  type DataProvider,
+  type DataProviderEvent,
+  type DataProviderStats,
+  type TopToken,
+  type TraderEdge,
+  type CategoryConfig,
+  type RawEvent,
+} from '@web3viz/core';
 
 // ---------------------------------------------------------------------------
-// Source system — re-export for backward compat
+// Merge helpers
 // ---------------------------------------------------------------------------
 
-export { ALL_SOURCES };
+const MAX_UNIFIED_EVENTS = 500;
 
-/** All registered source configs */
-export const SOURCE_CONFIGS: SourceConfig[] = ALL_SOURCES;
+function mergeStats(providers: DataProvider[]): DataProviderStats {
+  const counts: Record<string, number> = {};
+  const totalVolume: Record<string, number> = {};
+  let totalTransactions = 0;
+  let totalAgents = 0;
+  const allEvents: DataProviderEvent[] = [];
+  const allTopTokens: TopToken[] = [];
+  const allTraderEdges: TraderEdge[] = [];
+  const allRawEvents: RawEvent[] = [];
 
-export const SOURCE_CONFIG_MAP = Object.fromEntries(
-  SOURCE_CONFIGS.map((s) => [s.id, s]),
-) as Record<string, SourceConfig>;
+  for (const provider of providers) {
+    const stats = provider.getStats();
 
-// ---------------------------------------------------------------------------
-// Category system — flatten all provider categories
-// ---------------------------------------------------------------------------
+    // Merge counts
+    for (const [key, val] of Object.entries(stats.counts)) {
+      counts[key] = (counts[key] || 0) + val;
+    }
 
-export const ALL_CATEGORIES: CategoryConfig[] = [
-  ...PUMPFUN_CATEGORIES,
-  ...ETHEREUM_CATEGORIES,
-  ...BASE_CATEGORIES,
-  ...AGENTS_CATEGORIES,
-  ...ERC8004_CATEGORIES,
-  ...CEX_CATEGORIES,
-];
+    // Merge volumes per chain
+    for (const [chain, vol] of Object.entries(stats.totalVolume)) {
+      totalVolume[chain] = (totalVolume[chain] || 0) + vol;
+    }
 
-// Backward compat: the old PumpFun-specific category IDs
-export const CATEGORIES = [
-  'launches',
-  'agentLaunches',
-  'trades',
-  'claimsWallet',
-  'claimsGithub',
-  'claimsFirst',
-] as const;
+    totalTransactions += stats.totalTransactions;
+    totalAgents += stats.totalAgents;
+    allEvents.push(...stats.recentEvents);
+    allTopTokens.push(...stats.topTokens);
+    allTraderEdges.push(...stats.traderEdges);
+    allRawEvents.push(...stats.rawEvents);
+  }
 
-export type PumpFunCategory = (typeof CATEGORIES)[number];
+  // Sort events newest first, cap
+  allEvents.sort((a, b) => b.timestamp - a.timestamp);
+  allEvents.length = Math.min(allEvents.length, MAX_UNIFIED_EVENTS);
 
-// Re-export the PumpFun categories as CATEGORY_CONFIGS for backward compat
-export const CATEGORY_CONFIGS = PUMPFUN_CATEGORIES;
+  // Sort top tokens by volume descending, take top 12
+  allTopTokens.sort((a, b) => b.volume - a.volume);
+  allTopTokens.length = Math.min(allTopTokens.length, 12);
 
-export const CATEGORY_CONFIG_MAP = Object.fromEntries(
-  PUMPFUN_CATEGORIES.map((c) => [c.id, c]),
-) as Record<PumpFunCategory, CategoryConfig>;
-
-// ---------------------------------------------------------------------------
-// Unified event type — re-export from core
-// ---------------------------------------------------------------------------
-
-export type { DataProviderEvent, MergedStats };
-
-// ---------------------------------------------------------------------------
-// Aggregate stats — backward compatible + multi-source
-// ---------------------------------------------------------------------------
-
-export interface MultiSourceStats extends DataProviderStats {
-  /** Per-source breakdown */
-  bySource: Record<string, DataProviderStats>;
-  /** Raw PumpFun events for LiveFeed backward compat */
-  rawPumpFunEvents: PumpFunEvent[];
-  /** Flat SOL volume total for backward compat with pre-multi-chain code */
-  totalVolumeSol: number;
+  return {
+    counts,
+    totalVolume,
+    totalTransactions,
+    totalAgents,
+    recentEvents: allEvents,
+    topTokens: allTopTokens,
+    traderEdges: allTraderEdges,
+    rawEvents: allRawEvents,
+  };
 }
 
 // ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
 
-const MAX_UNIFIED_EVENTS = 500;
-
 export function useDataProvider({ paused = false }: { paused?: boolean } = {}) {
-  // --- All data source hooks ---
-  const pumpfun = usePumpFunProvider({ paused });
-  const ethereum = useEthereumProvider({ paused });
-  const base = useBaseProvider({ paused });
-  const agents = useAgentsProvider({ paused });
-  const erc8004 = useERC8004Provider({ paused });
-  const cex = useCEXProvider({ paused });
+  const [stats, setStats] = useState<DataProviderStats>({
+    counts: {},
+    totalVolume: {},
+    totalTransactions: 0,
+    totalAgents: 0,
+    recentEvents: [],
+    topTokens: [],
+    traderEdges: [],
+    rawEvents: [],
+  });
 
-  // --- Source visibility (agents OFF by default for pure crypto view) ---
-  const [enabledSources, setEnabledSources] = useState<Set<string>>(
-    () => new Set(ALL_SOURCES.map((s) => s.id).filter((id) => id !== 'agents')),
-  );
+  // Track registered providers
+  const [providers, setProviders] = useState<DataProvider[]>([]);
+  const providersRef = useRef<DataProvider[]>([]);
 
-  const toggleSource = useCallback((sourceId: string) => {
-    setEnabledSources((prev) => {
-      const next = new Set(prev);
-      if (next.has(sourceId)) {
-        next.delete(sourceId);
-      } else {
-        next.add(sourceId);
+  // Collect all categories from registered providers
+  const allCategories = useMemo<CategoryConfig[]>(() => {
+    const seen = new Set<string>();
+    const result: CategoryConfig[] = [];
+    for (const p of providers) {
+      for (const cat of p.categories) {
+        if (!seen.has(cat.id)) {
+          seen.add(cat.id);
+          result.push(cat);
+        }
       }
-      return next;
-    });
-  }, []);
+    }
+    return result;
+  }, [providers]);
 
-  // --- Category visibility (backward compat) ---
-  const [enabledCategories, setEnabledCategories] = useState<Set<PumpFunCategory>>(
-    () => new Set(CATEGORIES),
-  );
+  // Category visibility (all enabled by default)
+  const [enabledCategories, setEnabledCategories] = useState<Set<string>>(() => new Set());
 
-  const toggleCategory = useCallback((cat: PumpFunCategory) => {
+  // When categories change, enable new ones by default
+  useEffect(() => {
     setEnabledCategories((prev) => {
       const next = new Set(prev);
-      if (next.has(cat)) {
-        next.delete(cat);
-      } else {
-        next.add(cat);
+      for (const cat of allCategories) {
+        // Only add if we haven't seen it before (don't re-enable user-disabled ones)
+        if (!next.has(cat.id) && !prev.has(cat.id)) {
+          next.add(cat.id);
+        }
       }
+      // On first load, enable all
+      if (prev.size === 0 && allCategories.length > 0) {
+        return new Set(allCategories.map((c) => c.id));
+      }
+      return next;
+    });
+  }, [allCategories]);
+
+  const toggleCategory = useCallback((catId: string) => {
+    setEnabledCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(catId)) next.delete(catId);
+      else next.add(catId);
       return next;
     });
   }, []);
 
-  // --- Merge all provider stats ---
-  const stats = useMemo<MultiSourceStats>(() => {
-    const allProviderStats: { id: string; stats: DataProviderStats }[] = [
-      { id: 'pumpfun', stats: pumpfun.stats },
-      { id: 'ethereum', stats: ethereum.stats },
-      { id: 'base', stats: base.stats },
-      { id: 'agents', stats: agents.stats },
-      { id: 'erc8004', stats: erc8004.stats },
-      { id: 'cex', stats: cex.stats },
-    ];
+  // Poll for providers and connect/disconnect
+  useEffect(() => {
+    const check = () => {
+      const current = getAllProviders();
+      if (current.length !== providersRef.current.length) {
+        providersRef.current = current;
+        setProviders(current);
+      }
+    };
+    check();
+    // Poll every 2s for newly registered providers
+    const interval = setInterval(check, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
-    // Only include enabled sources
-    const enabledProviders = allProviderStats.filter((p) => enabledSources.has(p.id));
+  // Connect all providers, set paused state
+  useEffect(() => {
+    for (const p of providers) {
+      p.setPaused(paused);
+      p.connect();
+    }
+    return () => {
+      for (const p of providers) {
+        p.disconnect();
+      }
+    };
+  }, [providers, paused]);
 
-    // Merge events from all enabled sources
-    const allEvents: DataProviderEvent[] = enabledProviders
-      .flatMap((p) => p.stats.recentEvents)
-      .sort((a, b) => b.timestamp - a.timestamp)
-      .slice(0, MAX_UNIFIED_EVENTS);
+  // Subscribe to events and rebuild stats
+  useEffect(() => {
+    const unsubs: (() => void)[] = [];
 
-    // Merge counts
-    const counts: Record<string, number> = {};
-    for (const p of enabledProviders) {
-      for (const [cat, count] of Object.entries(p.stats.counts)) {
-        const key = `${p.id}:${cat}`;
-        counts[key] = (counts[key] || 0) + count;
-        // Also keep bare category for backward compat
-        counts[cat] = (counts[cat] || 0) + count;
+    for (const p of providers) {
+      const unsub = p.onEvent(() => {
+        // Rebuild merged stats on any event
+        setStats(mergeStats(providersRef.current));
+      });
+      unsubs.push(unsub);
+    }
+
+    // Initial stats
+    if (providers.length > 0) {
+      setStats(mergeStats(providers));
+    }
+
+    return () => unsubs.forEach((u) => u());
+  }, [providers]);
+
+  // Connection states
+  const connections = useMemo(() => {
+    const result: Record<string, boolean> = {};
+    for (const p of providers) {
+      for (const conn of p.getConnections()) {
+        result[conn.name] = conn.connected;
       }
     }
+    return result;
+  }, [providers, stats]); // re-derive when stats change (proxy for connection changes)
 
-    // Merge topTokens & traderEdges from all enabled sources
-    const topTokens: TopToken[] = enabledProviders
-      .flatMap((p) => p.stats.topTokens)
-      .sort((a, b) => b.volumeSol - a.volumeSol)
-      .slice(0, 20); // Allow more hubs with multiple sources
-
-    const traderEdges: TraderEdge[] = enabledProviders
-      .flatMap((p) => p.stats.traderEdges)
-      .slice(0, 8000);
-
-    const totalVolumeSol = enabledProviders.reduce((sum, p) => sum + (p.stats.totalVolumeSol ?? 0), 0);
-    const totalTransactions = enabledProviders.reduce((sum, p) => sum + p.stats.totalTransactions, 0);
-    const totalAgents = enabledProviders.reduce((sum, p) => sum + p.stats.totalAgents, 0);
-
-    // Per-source breakdown
-    const bySource: Record<string, DataProviderStats> = {};
-    for (const p of allProviderStats) {
-      bySource[p.id] = p.stats;
-    }
-
-    return {
-      counts,
-      totalVolumeSol,
-      totalTransactions,
-      totalAgents,
-      recentEvents: allEvents,
-      topTokens,
-      traderEdges,
-      rawEvents: [],
-      bySource,
-      rawPumpFunEvents: pumpfun.rawPumpFunEvents,
-    };
-  }, [pumpfun, ethereum, base, agents, erc8004, cex, enabledSources]);
-
-  // --- Filtered events ---
+  // Filtered events
   const filteredEvents = useMemo(
-    () => stats.recentEvents.filter((e) => enabledSources.has(e.source ?? '')),
-    [stats.recentEvents, enabledSources],
+    () => stats.recentEvents.filter((e) => enabledCategories.has(e.category)),
+    [stats.recentEvents, enabledCategories],
   );
 
-  // --- Connection status ---
-  const connected = useMemo(() => ({
-    pumpFun: pumpfun.connected.pumpFun,
-    claims: pumpfun.connected.claims,
-    ethereum: ethereum.connected,
-    base: base.connected,
-    agents: agents.connected,
-    erc8004: erc8004.connected,
-    cex: cex.connected,
-  }), [pumpfun.connected, ethereum.connected, base.connected, agents.connected, erc8004.connected, cex.connected]);
-
-  // --- Agent toggle convenience API ---
-  const showAgents = enabledSources.has('agents');
-
-  const toggleAgents = useCallback(() => {
-    toggleSource('agents');
-  }, [toggleSource]);
+  // Build category config map for consumers
+  const categoryConfigMap = useMemo(() => {
+    return Object.fromEntries(allCategories.map((c) => [c.id, c])) as Record<string, CategoryConfig>;
+  }, [allCategories]);
 
   return {
     stats,
     filteredEvents,
-    enabledSources,
-    toggleSource,
     enabledCategories,
     toggleCategory,
-    connected,
-    showAgents,
-    toggleAgents,
+    connections,
+    allCategories,
+    categoryConfigMap,
+    providers,
   };
 }

@@ -1,275 +1,292 @@
 'use client';
 
-import { memo, useCallback } from 'react';
-import type { AgentIdentity, AgentFlowTrace, ExecutorState } from '@web3viz/core';
+import { memo, useState } from 'react';
+import type { AgentIdentity, ExecutorState } from '@web3viz/core';
 import { TOOL_CLUSTER_ICONS } from './constants';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-interface AgentSidebarProps {
+export interface AgentSidebarProps {
   agents: Map<string, AgentIdentity>;
-  flows: Map<string, AgentFlowTrace>;
   executorState: ExecutorState | null;
   activeAgentId: string | null;
-  activeToolCategories: Set<string>;
-  onSelectAgent: (agentId: string | null) => void;
-  onToggleToolCategory: (category: string) => void;
+  onSelectAgent: (id: string | null) => void;
+  enabledToolCategories: Set<string>;
+  onToolCategoryToggle: (category: string) => void;
 }
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function formatUptime(ms: number): string {
+function getAgentStatus(agent: AgentIdentity): 'active' | 'idle' | 'error' {
+  // Simple heuristic: if agent has error state, red; if active tasks, green; else blue
+  if (agent.status === 'error') return 'error';
+  if (agent.activeTasks && agent.activeTasks > 0) return 'active';
+  return 'idle';
+}
+
+function getStatusColor(status: 'active' | 'idle' | 'error'): string {
+  switch (status) {
+    case 'active':
+      return '#34d399'; // green
+    case 'idle':
+      return '#60a5fa'; // blue
+    case 'error':
+      return '#f87171'; // red
+  }
+}
+
+function formatUptime(ms: number | undefined): string {
+  if (!ms) return '0s';
   const secs = Math.floor(ms / 1000);
+  if (secs < 60) return `${secs}s`;
   const mins = Math.floor(secs / 60);
+  if (mins < 60) return `${mins}m`;
   const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h`;
   const days = Math.floor(hours / 24);
-  if (days > 0) return `${days}d ${hours % 24}h`;
-  if (hours > 0) return `${hours}h ${mins % 60}m`;
-  if (mins > 0) return `${mins}m ${secs % 60}s`;
-  return `${secs}s`;
+  return `${days}d ${hours % 24}h`;
 }
 
-function getAgentStatus(flow?: AgentFlowTrace): 'active' | 'idle' | 'error' | 'shutdown' {
-  if (!flow) return 'idle';
-  if (flow.status === 'completed') return 'shutdown';
-  if (flow.status === 'failed') return 'error';
-  const activeTasks = flow.tasks.filter((t) => t.status === 'in-progress').length;
-  return activeTasks > 0 ? 'active' : 'idle';
-}
-
-const STATUS_COLORS: Record<string, string> = {
-  active: '#34d399',
-  idle: '#60a5fa',
-  error: '#f87171',
-  shutdown: '#6b7280',
-};
-
-const TOOL_CATEGORIES = Object.keys(TOOL_CLUSTER_ICONS);
-
 // ---------------------------------------------------------------------------
-// Components
+// Agent Item
 // ---------------------------------------------------------------------------
 
-const StatusDot = memo<{ status: string; pulse?: boolean }>(({ status, pulse }) => (
-  <div
-    style={{
-      width: 8,
-      height: 8,
-      borderRadius: '50%',
-      background: STATUS_COLORS[status] ?? '#6b7280',
-      flexShrink: 0,
-      animation: pulse && status === 'active' ? 'agentPulse 2s ease-in-out infinite' : 'none',
-    }}
-  />
-));
-StatusDot.displayName = 'StatusDot';
+const AgentItem = memo<{
+  agent: AgentIdentity;
+  isActive: boolean;
+  onClick: () => void;
+}>(({ agent, isActive, onClick }) => {
+  const status = getAgentStatus(agent);
+  const color = getStatusColor(status);
+
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '6px 8px',
+        background: isActive ? 'rgba(192,132,252,0.1)' : 'transparent',
+        border: isActive ? '1px solid rgba(192,132,252,0.3)' : '1px solid transparent',
+        borderRadius: 6,
+        cursor: 'pointer',
+        width: '100%',
+        color: '#ccc',
+        fontFamily: "'IBM Plex Mono', monospace",
+        fontSize: 10,
+        transition: 'all 150ms ease',
+      }}
+      title={`${agent.name} (${agent.role})`}
+    >
+      <div
+        style={{
+          width: 6,
+          height: 6,
+          borderRadius: '50%',
+          background: color,
+          flexShrink: 0,
+        }}
+      />
+      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+        {agent.name}
+      </span>
+      <span style={{ flexShrink: 0, fontSize: 9, color: '#666' }}>
+        {agent.metadata?.toolCalls ?? 0}
+      </span>
+    </button>
+  );
+});
+
+AgentItem.displayName = 'AgentItem';
 
 // ---------------------------------------------------------------------------
-// Main sidebar
+// Tool Category Toggle
+// ---------------------------------------------------------------------------
+
+const ToolCategoryToggle = memo<{
+  category: string;
+  enabled: boolean;
+  count: number;
+  onClick: () => void;
+}>(({ category, enabled, count, onClick }) => {
+  const icon = TOOL_CLUSTER_ICONS[category as keyof typeof TOOL_CLUSTER_ICONS] || '◇';
+
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: '4px 8px',
+        background: enabled ? 'rgba(96,165,250,0.1)' : 'rgba(255,255,255,0.02)',
+        border: enabled ? '1px solid rgba(96,165,250,0.3)' : '1px solid rgba(255,255,255,0.06)',
+        borderRadius: 4,
+        cursor: 'pointer',
+        color: enabled ? '#60a5fa' : '#666',
+        fontFamily: "'IBM Plex Mono', monospace",
+        fontSize: 9,
+        textTransform: 'capitalize',
+        transition: 'all 150ms ease',
+      }}
+      title={`Toggle ${category} tools`}
+    >
+      <span>{icon}</span>
+      <span>{category}</span>
+      <span style={{ fontSize: 8, color: '#555' }}>({count})</span>
+    </button>
+  );
+});
+
+ToolCategoryToggle.displayName = 'ToolCategoryToggle';
+
+// ---------------------------------------------------------------------------
+// Executor Status
+// ---------------------------------------------------------------------------
+
+const ExecutorStatus = memo<{ executorState: ExecutorState | null }>(({ executorState }) => {
+  if (!executorState) {
+    return (
+      <div style={{ fontSize: 9, color: '#555', padding: '4px 0' }}>
+        (No executor)
+      </div>
+    );
+  }
+
+  const uptime = formatUptime(executorState.uptimeMs);
+  const isHealthy = executorState.heartbeatReceivedAt && Date.now() - executorState.heartbeatReceivedAt < 60000;
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0' }}>
+      <div
+        style={{
+          width: 6,
+          height: 6,
+          borderRadius: '50%',
+          background: isHealthy ? '#34d399' : '#f87171',
+          flexShrink: 0,
+        }}
+      />
+      <div style={{ flex: 1 }}>
+        <div style={{ fontSize: 9, color: '#9ca3af' }}>Uptime: {uptime}</div>
+        <div style={{ fontSize: 9, color: '#666' }}>Tasks: {executorState.tasksProcessed ?? 0}</div>
+      </div>
+    </div>
+  );
+});
+
+ExecutorStatus.displayName = 'ExecutorStatus';
+
+// ---------------------------------------------------------------------------
+// Sidebar
 // ---------------------------------------------------------------------------
 
 const AgentSidebar = memo<AgentSidebarProps>(
-  ({ agents, flows, executorState, activeAgentId, activeToolCategories, onSelectAgent, onToggleToolCategory }) => {
-    const handleAgentClick = useCallback(
-      (agentId: string) => {
-        onSelectAgent(activeAgentId === agentId ? null : agentId);
-      },
-      [activeAgentId, onSelectAgent],
-    );
+  ({ agents, executorState, activeAgentId, onSelectAgent, enabledToolCategories, onToolCategoryToggle }) => {
+    if (agents.size === 0) return null;
 
-    const agentList = Array.from(agents.values());
+    const toolCategories = Object.keys(TOOL_CLUSTER_ICONS);
 
     return (
-      <div
+      <nav
+        aria-label="Agent filters"
         style={{
           position: 'absolute',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: 200,
-          background: 'rgba(10,10,15,0.9)',
-          backdropFilter: 'blur(12px)',
-          borderRight: '1px solid rgba(255,255,255,0.06)',
+          left: 16,
+          top: '50%',
+          transform: 'translateY(-50%)',
+          zIndex: 20,
           display: 'flex',
           flexDirection: 'column',
-          zIndex: 10,
+          gap: 12,
+          padding: '12px',
+          maxWidth: 200,
+          maxHeight: '80vh',
+          overflow: 'auto',
           fontFamily: "'IBM Plex Mono', monospace",
-          overflowY: 'auto',
+          background: 'rgba(10,10,20,0.85)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(255,255,255,0.06)',
+          borderRadius: 12,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
         }}
       >
-        {/* Agents section */}
-        <div style={{ padding: '16px 12px 8px' }}>
+        {/* AGENTS Section */}
+        <div>
           <div
             style={{
               fontSize: 9,
-              fontWeight: 600,
-              color: '#6b7280',
+              color: '#666',
               textTransform: 'uppercase',
-              letterSpacing: '0.12em',
-              marginBottom: 10,
+              letterSpacing: '0.08em',
+              marginBottom: 6,
             }}
           >
             Agents
           </div>
-          {agentList.length === 0 && (
-            <div style={{ fontSize: 10, color: '#4b5563', padding: '4px 0' }}>
-              Connecting...
-            </div>
-          )}
-          {agentList.map((agent) => {
-            const flow = flows.get(agent.agentId);
-            const status = getAgentStatus(flow);
-            const activeTasks = flow?.tasks.filter((t) => t.status === 'in-progress').length ?? 0;
-            const toolCalls = flow?.totalToolCalls ?? 0;
-            const isActive = activeAgentId === agent.agentId;
-
-            return (
-              <button
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {Array.from(agents.values()).map((agent) => (
+              <AgentItem
                 key={agent.agentId}
-                onClick={() => handleAgentClick(agent.agentId)}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  width: '100%',
-                  textAlign: 'left',
-                  padding: '8px 10px',
-                  marginBottom: 4,
-                  borderRadius: 6,
-                  border: isActive
-                    ? '1px solid rgba(192,132,252,0.4)'
-                    : '1px solid transparent',
-                  background: isActive
-                    ? 'rgba(192,132,252,0.08)'
-                    : 'rgba(255,255,255,0.03)',
-                  cursor: 'pointer',
-                  color: '#e5e7eb',
-                  fontFamily: 'inherit',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                  <StatusDot status={status} pulse />
-                  <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    {agent.name}
-                  </span>
-                </div>
-                <div style={{ fontSize: 9, color: '#9ca3af', paddingLeft: 16 }}>
-                  {agent.role} · {activeTasks}t · {toolCalls}⚡
-                </div>
-              </button>
-            );
-          })}
+                agent={agent}
+                isActive={activeAgentId === agent.agentId}
+                onClick={() => onSelectAgent(activeAgentId === agent.agentId ? null : agent.agentId)}
+              />
+            ))}
+          </div>
         </div>
 
-        {/* Divider */}
-        <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
-
-        {/* Tools section */}
-        <div style={{ padding: '10px 12px' }}>
+        {/* Tools Section */}
+        <div>
           <div
             style={{
               fontSize: 9,
-              fontWeight: 600,
-              color: '#6b7280',
+              color: '#666',
               textTransform: 'uppercase',
-              letterSpacing: '0.12em',
-              marginBottom: 10,
+              letterSpacing: '0.08em',
+              marginBottom: 6,
             }}
           >
             Tools
           </div>
-          {TOOL_CATEGORIES.map((cat) => {
-            const icon = TOOL_CLUSTER_ICONS[cat];
-            const active = activeToolCategories.has(cat);
-            return (
-              <button
-                key={cat}
-                onClick={() => onToggleToolCategory(cat)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  width: '100%',
-                  padding: '5px 10px',
-                  marginBottom: 2,
-                  borderRadius: 4,
-                  border: 'none',
-                  background: 'transparent',
-                  cursor: 'pointer',
-                  color: active ? '#e5e7eb' : '#4b5563',
-                  fontFamily: 'inherit',
-                  fontSize: 10,
-                  textAlign: 'left',
-                }}
-              >
-                <span style={{ opacity: active ? 1 : 0.4, fontSize: 12 }}>{active ? '▣' : '□'}</span>
-                <span>{icon}</span>
-                <span style={{ textTransform: 'capitalize' }}>{cat}</span>
-              </button>
-            );
-          })}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {toolCategories.map((category) => (
+              <ToolCategoryToggle
+                key={category}
+                category={category}
+                enabled={enabledToolCategories.has(category)}
+                count={0}
+                onClick={() => onToolCategoryToggle(category)}
+              />
+            ))}
+          </div>
         </div>
 
-        {/* Divider */}
-        <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
-
-        {/* Executor section */}
-        <div style={{ padding: '10px 12px' }}>
+        {/* Executor Section */}
+        <div>
           <div
             style={{
               fontSize: 9,
-              fontWeight: 600,
-              color: '#6b7280',
+              color: '#666',
               textTransform: 'uppercase',
-              letterSpacing: '0.12em',
-              marginBottom: 8,
+              letterSpacing: '0.08em',
+              marginBottom: 6,
             }}
           >
             Executor
           </div>
-          {executorState ? (
-            <>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                <StatusDot status={executorState.status === 'running' ? 'active' : 'error'} pulse />
-                <span
-                  style={{
-                    fontSize: 10,
-                    color: executorState.status === 'running' ? '#34d399' : '#f87171',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                  }}
-                >
-                  {executorState.status}
-                </span>
-              </div>
-              <div style={{ fontSize: 9, color: '#9ca3af' }}>
-                Uptime: {formatUptime(executorState.uptime)}
-              </div>
-              <div style={{ fontSize: 9, color: '#9ca3af' }}>
-                Tasks: {executorState.totalTasksProcessed}
-              </div>
-            </>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <StatusDot status="idle" />
-              <span style={{ fontSize: 10, color: '#6b7280' }}>Mock mode</span>
-            </div>
-          )}
+          <ExecutorStatus executorState={executorState} />
         </div>
-
-        <style>{`
-          @keyframes agentPulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-          }
-        `}</style>
-      </div>
+      </nav>
     );
   },
 );
 
 AgentSidebar.displayName = 'AgentSidebar';
+
 export default AgentSidebar;

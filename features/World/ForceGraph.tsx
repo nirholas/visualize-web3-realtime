@@ -238,45 +238,69 @@ function HubNodeMesh({
   const groupRef = useRef<THREE.Group>(null!);
   const meshRef = useRef<THREE.Mesh>(null!);
   const materialRef = useRef<THREE.MeshStandardMaterial>(null!);
+  const ringRef = useRef<THREE.Mesh>(null!);
+  const ringMaterialRef = useRef<THREE.MeshStandardMaterial>(null!);
   const targetColor = useRef(new THREE.Color(PROTOCOL_COLORS.default));
   const targetOpacity = useRef(1);
+  const targetRingOpacity = useRef(0);
   const radiusRef = useRef(HUB_BASE_RADIUS);
+
+  const node = useMemo(() => sim.nodeMap.get(nodeId), [sim, nodeId]);
+  const isAgentHub = node?.source === 'agents';
+  const AGENT_COLOR_PALETTE = ['#c084fc', '#60a5fa', '#f472b6', '#34d399', '#fbbf24', '#fb923c', '#a78bfa', '#22d3ee'];
 
   useEffect(() => {
     if (isHighlighted) {
       targetColor.current.set('#3d63ff');
       targetOpacity.current = 1;
+      targetRingOpacity.current = isAgentHub ? 0.8 : 0;
     } else if (isActive) {
-      // Each token hub gets its unique palette color when selected
-      targetColor.current.set(colorOverride || COLOR_PALETTE[paletteIndex % COLOR_PALETTE.length]);
+      // Each hub gets its unique palette color when selected
+      const color = colorOverride || (isAgentHub
+        ? AGENT_COLOR_PALETTE[paletteIndex % AGENT_COLOR_PALETTE.length]
+        : COLOR_PALETTE[paletteIndex % COLOR_PALETTE.length]);
+      targetColor.current.set(color);
       targetOpacity.current = 1;
+      targetRingOpacity.current = isAgentHub ? 0.5 : 0;
     } else if (isDimmed) {
       targetColor.current.set(PROTOCOL_COLORS.default);
       targetOpacity.current = 0.15;
+      targetRingOpacity.current = 0;
     } else {
-      // Default: solid dark/black sphere
-      targetColor.current.set(PROTOCOL_COLORS.default);
+      // Default: solid sphere, with subtle ring for agent hubs
+      if (isAgentHub) {
+        targetColor.current.set(AGENT_COLOR_PALETTE[paletteIndex % AGENT_COLOR_PALETTE.length]);
+        targetRingOpacity.current = 0.3;
+      } else {
+        targetColor.current.set(PROTOCOL_COLORS.default);
+        targetRingOpacity.current = 0;
+      }
       targetOpacity.current = 1;
     }
-  }, [isActive, isDimmed, isHighlighted, paletteIndex, colorOverride]);
+  }, [isActive, isDimmed, isHighlighted, paletteIndex, colorOverride, isAgentHub]);
 
   useFrame((state, delta) => {
-    const node = sim.nodeMap.get(nodeId);
-    if (!node || !groupRef.current || !meshRef.current || !materialRef.current) return;
-    groupRef.current.position.set(node.x ?? 0, 0, node.y ?? 0);
+    const nodeData = sim.nodeMap.get(nodeId);
+    if (!nodeData || !groupRef.current || !meshRef.current || !materialRef.current) return;
+    groupRef.current.position.set(nodeData.x ?? 0, 0, nodeData.y ?? 0);
 
-    const baseScale = node.radius;
+    const baseScale = nodeData.radius;
     if (isHighlighted) {
       const pulse = 1 + Math.sin(state.clock.getElapsedTime() * Math.PI) * 0.05;
       meshRef.current.scale.setScalar(baseScale * 2 * pulse);
     } else {
       meshRef.current.scale.setScalar(baseScale);
     }
-    radiusRef.current = node.radius;
+    radiusRef.current = nodeData.radius;
 
     const lerpFactor = 1 - Math.exp(-10 * delta);
     materialRef.current.color.lerp(targetColor.current, lerpFactor);
     materialRef.current.opacity += (targetOpacity.current - materialRef.current.opacity) * lerpFactor;
+
+    // Animate ring opacity for agent hubs
+    if (ringMaterialRef.current) {
+      ringMaterialRef.current.opacity += (targetRingOpacity.current - ringMaterialRef.current.opacity) * lerpFactor;
+    }
   });
 
   return (
@@ -303,9 +327,28 @@ function HubNodeMesh({
           metalness={0.1}
         />
       </mesh>
+      {isAgentHub && (
+        <mesh
+          ref={ringRef}
+          rotation={[Math.PI * 0.15, 0, Math.PI * 0.3]}
+          scale={1.4}
+        >
+          <torusGeometry args={[1, 0.12, 8, 32]} />
+          <meshStandardMaterial
+            ref={ringMaterialRef}
+            color={AGENT_COLOR_PALETTE[paletteIndex % AGENT_COLOR_PALETTE.length]}
+            transparent
+            opacity={0}
+            roughness={0.3}
+            metalness={0.2}
+            emissive={AGENT_COLOR_PALETTE[paletteIndex % AGENT_COLOR_PALETTE.length]}
+            emissiveIntensity={0.3}
+          />
+        </mesh>
+      )}
       {isHovered && (
         <ProtocolLabel
-          name={sim.nodeMap.get(nodeId)?.label ?? 'UNKNOWN'}
+          name={`🤖 ${sim.nodeMap.get(nodeId)?.label ?? 'UNKNOWN'}`}
           position={[0, radiusRef.current + 1, 0]}
           visible
         />

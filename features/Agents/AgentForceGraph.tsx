@@ -31,7 +31,7 @@ import type {
 import type { ShareColors } from '../World/SharePanel';
 
 import { AgentLabel } from './AgentLabel';
-import { TaskInspector } from './TaskInspector';
+import { TaskInspectorPanel } from './TaskInspector';
 import {
   AGENT_COLOR_PALETTE,
   AGENT_COLORS,
