@@ -25,3 +25,8 @@ export const ALL_SOURCES: SourceConfig[] = [
   ERC8004_SOURCE,
   CEX_SOURCE,
 ];
+
+/** Map from source ID to source config — for O(1) lookup by provider ID */
+export const SOURCE_CONFIG_MAP: Record<string, SourceConfig> = Object.fromEntries(
+  ALL_SOURCES.map((s) => [s.id, s]),
+);

@@ -89,12 +89,18 @@ export class MockProvider implements DataProvider {
 
   getStats(): DataProviderStats {
     return {
-      totalTokens: this.totalTokens,
-      totalTrades: this.totalTrades,
-      totalClaims: this.totalClaims,
+      counts: {
+        tokens: this.totalTokens,
+        trades: this.totalTrades,
+        claims: this.totalClaims,
+      },
+      totalTransactions: this.totalTrades + this.totalClaims,
+      totalAgents: 0,
       totalVolumeSol: this.totalVolumeSol,
-      pumpFunConnected: true,
-      claimsConnected: true,
+      recentEvents: [],
+      topTokens: [],
+      traderEdges: [],
+      rawEvents: [],
     };
   }
 

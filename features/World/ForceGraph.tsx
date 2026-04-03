@@ -319,8 +319,10 @@ const AgentNodes = memo<{
   sim: ForceGraphSimulation;
   activeProtocol: string | null;
   highlightedHubId?: string | null;
+  /** Address of the specifically searched agent — gets its own highlighted treatment */
+  highlightedAddress?: string | null;
   colorOverride?: string;
-}>(({ sim, activeProtocol, highlightedHubId, colorOverride }) => {
+}>(({ sim, activeProtocol, highlightedHubId, highlightedAddress, colorOverride }) => {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const tempObj = useMemo(() => new THREE.Object3D(), []);
   const tempColor = useMemo(() => new THREE.Color(), []);
@@ -343,7 +345,7 @@ const AgentNodes = memo<{
     activeColorRef.current = idx >= 0 ? COLOR_PALETTE[idx % COLOR_PALETTE.length] : null;
   }, [activeProtocol, sim]);
 
-  useFrame(() => {
+  useFrame((state) => {
     const mesh = meshRef.current;
     if (!mesh) return;
 
@@ -353,26 +355,45 @@ const AgentNodes = memo<{
 
     const ac = activeColorRef.current;
     const hasFilter = activeProtocol !== null;
+    const searchLower = highlightedAddress?.toLowerCase() ?? null;
 
     for (let i = 0; i < count; i++) {
       const node = agents[i];
-      tempObj.position.set(node.x ?? 0, 0, node.y ?? 0);
-      tempObj.scale.setScalar(node.radius);
-      tempObj.updateMatrix();
-      mesh.setMatrixAt(i, tempObj.matrix);
 
-      if (highlightedHubId && node.hubMint === highlightedHubId) {
-        tempColor.set('#3d63ff').multiplyScalar(0.8);
-      } else if (hasFilter) {
-        if (ac && node.hubMint === activeProtocol) {
-          // Agents near active protocol get a tint of its palette color
-          tempColor.set(ac).multiplyScalar(0.7);
-        } else {
-          tempColor.copy(dimColor).multiplyScalar(0.15);
-        }
+      // Check if this is the specifically searched agent
+      let isSearchedAgent = false;
+      if (searchLower) {
+        const parts = node.id.split(':');
+        isSearchedAgent = parts.length >= 2 && parts[1].toLowerCase() === searchLower;
+      }
+
+      if (isSearchedAgent) {
+        // Searched agent: 3x size with gentle pulse, bright blue
+        const pulse = 1 + Math.sin(state.clock.getElapsedTime() * Math.PI) * 0.05;
+        tempObj.position.set(node.x ?? 0, 0, node.y ?? 0);
+        tempObj.scale.setScalar(node.radius * 3 * pulse);
+        tempObj.updateMatrix();
+        mesh.setMatrixAt(i, tempObj.matrix);
+        tempColor.set('#3d63ff');
       } else {
-        // Default: dark gray agent spheres
-        tempColor.set(PROTOCOL_COLORS.agentDefault);
+        tempObj.position.set(node.x ?? 0, 0, node.y ?? 0);
+        tempObj.scale.setScalar(node.radius);
+        tempObj.updateMatrix();
+        mesh.setMatrixAt(i, tempObj.matrix);
+
+        if (highlightedHubId && node.hubMint === highlightedHubId) {
+          tempColor.set('#3d63ff').multiplyScalar(0.8);
+        } else if (hasFilter) {
+          if (ac && node.hubMint === activeProtocol) {
+            // Agents near active protocol get a tint of its palette color
+            tempColor.set(ac).multiplyScalar(0.7);
+          } else {
+            tempColor.copy(dimColor).multiplyScalar(0.15);
+          }
+        } else {
+          // Default: dark gray agent spheres
+          tempColor.set(PROTOCOL_COLORS.agentDefault);
+        }
       }
       mesh.setColorAt(i, tempColor);
     }
@@ -395,7 +416,9 @@ const Edges = memo<{
   sim: ForceGraphSimulation;
   activeProtocol?: string | null;
   highlightedHubId?: string | null;
-}>(({ sim, activeProtocol, highlightedHubId }) => {
+  /** When set, only the edge from this agent address is highlighted (not all hub edges) */
+  highlightedAddress?: string | null;
+}>(({ sim, activeProtocol, highlightedHubId, highlightedAddress }) => {
   const lineRef = useRef<THREE.LineSegments>(null);
   const posAttr = useRef<THREE.Float32BufferAttribute | null>(null);
   const colorAttr = useRef<THREE.Float32BufferAttribute | null>(null);
@@ -443,10 +466,22 @@ const Edges = memo<{
       pA.array[idx + 5] = tgt.y ?? 0;
 
       const isHubEdge = src.type === 'hub' && tgt.type === 'hub';
-      const isHighlightEdge = highlightedHubId && (
-        src.id === highlightedHubId || tgt.id === highlightedHubId ||
-        src.hubMint === highlightedHubId || tgt.hubMint === highlightedHubId
-      );
+
+      // When a specific address is searched, only highlight that agent's edge
+      let isHighlightEdge: boolean;
+      if (highlightedAddress) {
+        const searchLower = highlightedAddress.toLowerCase();
+        const srcParts = src.id.split(':');
+        const tgtParts = tgt.id.split(':');
+        isHighlightEdge =
+          (srcParts.length >= 2 && srcParts[1].toLowerCase() === searchLower) ||
+          (tgtParts.length >= 2 && tgtParts[1].toLowerCase() === searchLower);
+      } else {
+        isHighlightEdge = !!(highlightedHubId && (
+          src.id === highlightedHubId || tgt.id === highlightedHubId ||
+          src.hubMint === highlightedHubId || tgt.hubMint === highlightedHubId
+        ));
+      }
 
       if (isHighlightEdge) {
         cA.array[idx] = 0.24; cA.array[idx + 1] = 0.39; cA.array[idx + 2] = 1.0;
@@ -507,10 +542,12 @@ const NetworkScene = memo<{
   topTokens: TopToken[];
   activeProtocol: string | null;
   highlightedHubIndex: number | null;
+  /** Address of the searched agent — overrides hub-level highlighting */
+  highlightedAddress?: string | null;
   onSelectProtocol: (mint: string | null) => void;
   onDismissHighlight?: () => void;
   shareColors?: ShareColors;
-}>(({ sim, topTokens, activeProtocol, highlightedHubIndex, onSelectProtocol, onDismissHighlight, shareColors }) => {
+}>(({ sim, topTokens, activeProtocol, highlightedHubIndex, highlightedAddress, onSelectProtocol, onDismissHighlight, shareColors }) => {
   const [hoveredHub, setHoveredHub] = useState<string | null>(null);
 
   const hubIds = useMemo(
@@ -518,20 +555,45 @@ const NetworkScene = memo<{
     [topTokens],
   );
 
-  const highlightedHubId = highlightedHubIndex != null ? hubIds[highlightedHubIndex]?.id ?? null : null;
+  // Hub-level highlight only used when there's no address search active
+  const highlightedHubId = (!highlightedAddress && highlightedHubIndex != null)
+    ? hubIds[highlightedHubIndex]?.id ?? null
+    : null;
 
-  // Track hub positions for the YouAreHere marker
+  // Track hub positions (for potential future hub marker use)
   const hubPositionsRef = useRef<THREE.Vector3[]>([]);
+  // Track the highlighted agent's 3D position for the YouAreHereMarker
+  const agentPositionRef = useRef<THREE.Vector3 | null>(null);
 
-  // Tick the d3-force simulation each frame and update hub positions
+  // Tick simulation and update tracked positions each frame
   useFrame(() => {
     sim.tick();
+
     const hubs = sim.nodes.filter((n) => n.type === 'hub');
     while (hubPositionsRef.current.length < hubs.length) {
       hubPositionsRef.current.push(new THREE.Vector3());
     }
     for (let i = 0; i < hubs.length; i++) {
       hubPositionsRef.current[i].set(hubs[i].x ?? 0, 0, hubs[i].y ?? 0);
+    }
+
+    // Track highlighted agent position
+    if (highlightedAddress) {
+      const searchLower = highlightedAddress.toLowerCase();
+      let found = false;
+      for (const node of sim.nodes) {
+        if (node.type !== 'agent') continue;
+        const parts = node.id.split(':');
+        if (parts.length >= 2 && parts[1].toLowerCase() === searchLower) {
+          if (!agentPositionRef.current) agentPositionRef.current = new THREE.Vector3();
+          agentPositionRef.current.set(node.x ?? 0, 0, node.y ?? 0);
+          found = true;
+          break;
+        }
+      }
+      if (!found) agentPositionRef.current = null;
+    } else {
+      agentPositionRef.current = null;
     }
   });
 
@@ -542,7 +604,12 @@ const NetworkScene = memo<{
       <ambientLight intensity={0.7} />
       <directionalLight position={[20, 40, 20]} intensity={0.6} />
 
-      <Edges sim={sim} activeProtocol={activeProtocol} highlightedHubId={highlightedHubId} />
+      <Edges
+        sim={sim}
+        activeProtocol={activeProtocol}
+        highlightedHubId={highlightedHubId}
+        highlightedAddress={highlightedAddress}
+      />
       {hubIds.map((hub, i) => (
         <HubNodeMesh
           key={hub.id}
@@ -565,13 +632,14 @@ const NetworkScene = memo<{
         sim={sim}
         activeProtocol={activeProtocol}
         highlightedHubId={highlightedHubId}
+        highlightedAddress={highlightedAddress}
         colorOverride={shareColors?.user}
       />
       <Ground />
-      {highlightedHubIndex != null && onDismissHighlight && (
+      {/* Show YouAreHereMarker above the searched agent node */}
+      {highlightedAddress && onDismissHighlight && (
         <YouAreHereMarker
-          hubIndex={highlightedHubIndex}
-          positionsRef={hubPositionsRef}
+          positionRef={agentPositionRef}
           onDismiss={onDismissHighlight}
         />
       )}
@@ -684,6 +752,8 @@ export interface ForceGraphProps {
   traderEdges: TraderEdge[];
   activeProtocol?: string | null;
   highlightedHubIndex?: number | null;
+  /** Address of the specifically searched agent — agent gets its own marker + highlight */
+  highlightedAddress?: string | null;
   onSelectProtocol?: (mint: string | null) => void;
   onDismissHighlight?: () => void;
   height?: string | number;
@@ -693,6 +763,8 @@ export interface ForceGraphProps {
 export interface ForceGraphHandle {
   animateCameraTo: (request: { position: [number, number, number]; lookAt?: [number, number, number]; durationMs?: number }) => Promise<void>;
   focusHub: (index: number, durationMs?: number) => Promise<void>;
+  /** Zoom camera to a specific agent node by trader address */
+  focusAgent: (address: string, durationMs?: number) => Promise<void>;
   getCanvasElement: () => HTMLCanvasElement | null;
   getHubCount: () => number;
   getHubPosition: (index: number) => [number, number, number] | null;
@@ -701,7 +773,7 @@ export interface ForceGraphHandle {
 }
 
 const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function ForceGraph(
-  { topTokens, traderEdges, activeProtocol = null, highlightedHubIndex = null, onSelectProtocol, onDismissHighlight, height = '100%', shareColors },
+  { topTokens, traderEdges, activeProtocol = null, highlightedHubIndex = null, highlightedAddress = null, onSelectProtocol, onDismissHighlight, height = '100%', shareColors },
   ref,
 ) {
   const simRef = useRef<ForceGraphSimulation | null>(null);
@@ -754,6 +826,25 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
       const x = hub.x ?? 0;
       const z = hub.y ?? 0;
       await api.animateTo([x, 25, z + 12], [x, 0, z], durationMs);
+    },
+    focusAgent: async (address, durationMs = 800) => {
+      const api = cameraApiRef.current;
+      if (!api) return;
+      const lower = address.toLowerCase();
+      let agentNode: ForceNode | undefined;
+      for (const node of sim.nodes) {
+        if (node.type !== 'agent') continue;
+        const parts = node.id.split(':');
+        if (parts.length >= 2 && parts[1].toLowerCase() === lower) {
+          agentNode = node;
+          break;
+        }
+      }
+      if (!agentNode) return;
+      const x = agentNode.x ?? 0;
+      const z = agentNode.y ?? 0;
+      // Zoom in closer than hub view to show the agent in its local cluster
+      await api.animateTo([x, 18, z + 10], [x, 0, z], durationMs);
     },
     setOrbitEnabled: (enabled) => {
       cameraApiRef.current?.setOrbitEnabled(enabled);
@@ -838,6 +929,7 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
           topTokens={topTokens}
           activeProtocol={activeProtocol ?? null}
           highlightedHubIndex={highlightedHubIndex}
+          highlightedAddress={highlightedAddress}
           onSelectProtocol={onSelectProtocol ?? (() => {})}
           onDismissHighlight={onDismissHighlight}
           shareColors={shareColors}

@@ -38,7 +38,7 @@ interface UnifiedCardProps {
 }
 
 const UnifiedCard = memo<UnifiedCardProps>(({ event, isNew }) => {
-  const cfg = CATEGORY_CONFIG_MAP[event.category];
+  const cfg = CATEGORY_CONFIG_MAP[event.category as keyof typeof CATEGORY_CONFIG_MAP];
   const color = cfg?.color || '#9090b8';
   const typeLabel = cfg?.label || event.category;
   const amount = event.amount != null ? `${event.amount.toFixed(3)} SOL` : '';

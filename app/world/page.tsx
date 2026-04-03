@@ -263,8 +263,8 @@ export default function WorldPage() {
     if (agentHub) {
       setSearchToast(null);
       setHighlightedAddress(address);
-      setHighlightedHubIndex(agentHub.hubIndex);
-      graphRef.current?.focusHub(agentHub.hubIndex, 500);
+      // Don't set hub index — the agent gets its own marker + highlighting
+      graphRef.current?.focusAgent(address, 800);
       return;
     }
 
@@ -286,7 +286,7 @@ export default function WorldPage() {
     setHighlightedAddress(address);
 
     // Map category → hub index (best-effort fallback)
-    const enabledConfigs = CATEGORY_CONFIGS.filter((c) => enabledCategories.has(c.id));
+    const enabledConfigs = CATEGORY_CONFIGS.filter((c) => (enabledCategories as Set<string>).has(c.id));
     const categoryIdx = enabledConfigs.findIndex((c) => c.id === match.category);
     const hubIndex = categoryIdx >= 0 ? categoryIdx : 0;
     setHighlightedHubIndex(hubIndex);
@@ -408,6 +408,7 @@ export default function WorldPage() {
           traderEdges={displayTraderEdges}
           activeProtocol={activeHubMint}
           highlightedHubIndex={highlightedHubIndex}
+          highlightedAddress={highlightedAddress}
           onSelectProtocol={setActiveHubMint}
           onDismissHighlight={handleDismissHighlight}
           height="100%"

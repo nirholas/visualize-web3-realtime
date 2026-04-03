@@ -86,7 +86,7 @@ export function usePumpFun({ paused = false }: { paused?: boolean } = {}) {
             timestamp: Date.now(),
             isAgent: isAgentLaunch(tokenName, tokenSymbol),
           };
-          tokenCache.current.set(token.mint, { name: token.name, symbol: token.symbol });
+          tokenCache.current.set(token.mint!, { name: token.name, symbol: token.symbol });
 
           setStats((prev) => ({
             ...prev,
@@ -115,8 +115,9 @@ export function usePumpFun({ paused = false }: { paused?: boolean } = {}) {
             symbol: cached?.symbol,
           };
 
-          const solAmount = trade.solAmount / 1e9;
-          const existing = tokenAcc.current.get(trade.mint);
+          const solAmount = (trade.solAmount ?? 0) / 1e9;
+          const tradeMint = trade.mint!;
+          const existing = tokenAcc.current.get(tradeMint);
           if (existing) {
             existing.trades++;
             existing.volumeSol += solAmount;
@@ -125,9 +126,9 @@ export function usePumpFun({ paused = false }: { paused?: boolean } = {}) {
               existing.symbol = cached.symbol;
             }
           } else {
-            tokenAcc.current.set(trade.mint, {
-              mint: trade.mint,
-              name: cached?.name || trade.mint.slice(0, 8),
+            tokenAcc.current.set(tradeMint, {
+              mint: tradeMint,
+              name: cached?.name || tradeMint.slice(0, 8),
               symbol: cached?.symbol || '???',
               trades: 1,
               volumeSol: solAmount,
@@ -139,15 +140,16 @@ export function usePumpFun({ paused = false }: { paused?: boolean } = {}) {
             .slice(0, MAX_TOP_TOKENS);
 
           const topMints = new Set(sorted.map((t) => t.mint));
-          const traderKey = `${trade.traderPublicKey}:${trade.mint}`;
+          const traderPubkey = trade.traderPublicKey!;
+          const traderKey = `${traderPubkey}:${tradeMint}`;
           const existingEdge = traderAcc.current.get(traderKey);
           if (existingEdge) {
             existingEdge.trades++;
             existingEdge.volumeSol += solAmount;
           } else {
             traderAcc.current.set(traderKey, {
-              trader: trade.traderPublicKey,
-              mint: trade.mint,
+              trader: traderPubkey,
+              mint: tradeMint,
               trades: 1,
               volumeSol: solAmount,
             });

@@ -181,7 +181,7 @@ export function useDataProvider({ paused = false }: { paused?: boolean } = {}) {
       .flatMap((p) => p.stats.traderEdges)
       .slice(0, 8000);
 
-    const totalVolumeSol = enabledProviders.reduce((sum, p) => sum + p.stats.totalVolumeSol, 0);
+    const totalVolumeSol = enabledProviders.reduce((sum, p) => sum + (p.stats.totalVolumeSol ?? 0), 0);
     const totalTransactions = enabledProviders.reduce((sum, p) => sum + p.stats.totalTransactions, 0);
     const totalAgents = enabledProviders.reduce((sum, p) => sum + p.stats.totalAgents, 0);
 
@@ -207,7 +207,7 @@ export function useDataProvider({ paused = false }: { paused?: boolean } = {}) {
 
   // --- Filtered events ---
   const filteredEvents = useMemo(
-    () => stats.recentEvents.filter((e) => enabledSources.has(e.source)),
+    () => stats.recentEvents.filter((e) => enabledSources.has(e.source ?? '')),
     [stats.recentEvents, enabledSources],
   );
 

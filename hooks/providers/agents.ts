@@ -1,65 +1,54 @@
 'use client';
 
 /**
- * AI Agents Data Provider (stub)
+ * AI Agents Data Provider
  *
- * Scaffolded provider for visualizing autonomous AI agent activity on-chain.
- * This could aggregate agent activity from multiple chains (Solana, ETH, Base)
- * or connect to agent-specific platforms (Virtuals, ai16z, etc.).
- *
- * To implement:
- * 1. Connect to agent monitoring APIs or on-chain data
- * 2. Parse agent transactions into DataProviderEvent format
- * 3. Each agent wallet becomes a hub; their trades become edges
+ * Connects to SperaxOS's agent API (or uses mock data) and feeds real-time
+ * agent events into the visualization pipeline. Implements the DataProvider
+ * hook interface expected by useDataProvider.
  */
 
-import { useState } from 'react';
 import type { DataProviderEvent, DataProviderStats } from '@web3viz/core';
 import type { CategoryConfig, SourceConfig } from '@web3viz/core';
+import { useAgentProvider } from '../useAgentProvider';
 
 export const AGENTS_SOURCE: SourceConfig = {
   id: 'agents',
   label: 'AI Agents',
   color: '#f472b6',
   icon: '\u2B23',
-  description: 'Autonomous AI agent on-chain activity',
+  description: 'Autonomous AI agent activity (SperaxOS)',
 };
 
 export const AGENTS_CATEGORIES: CategoryConfig[] = [
-  { id: 'trades', label: 'Agent Trades', icon: '\u2B23', color: '#f472b6', sourceId: 'agents' },
+  { id: 'agentSpawn', label: 'Agent Spawns', icon: '\u2B21', color: '#c084fc', sourceId: 'agents' },
+  { id: 'agentTask', label: 'Tasks', icon: '\u25B6', color: '#a78bfa', sourceId: 'agents' },
+  { id: 'toolCall', label: 'Tool Calls', icon: '\u26A1', color: '#60a5fa', sourceId: 'agents' },
+  { id: 'subagentSpawn', label: 'Sub-agents', icon: '\u25C6', color: '#f472b6', sourceId: 'agents' },
+  { id: 'reasoning', label: 'Reasoning', icon: '\u25CE', color: '#fbbf24', sourceId: 'agents' },
+  { id: 'taskComplete', label: 'Completions', icon: '\u2713', color: '#34d399', sourceId: 'agents' },
+  { id: 'taskFailed', label: 'Failures', icon: '\u2717', color: '#f87171', sourceId: 'agents' },
+  { id: 'agentInteractions', label: 'Agent Activity', icon: '\u2B22', color: '#f472b6', sourceId: 'agents' },
 ];
-
-const EMPTY_STATS: DataProviderStats = {
-  counts: { trades: 0 },
-  totalVolumeSol: 0,
-  totalTransactions: 0,
-  totalAgents: 0,
-  recentEvents: [],
-  topTokens: [],
-  traderEdges: [],
-  rawEvents: [],
-};
 
 export interface AgentsProviderResult {
   stats: DataProviderStats;
   events: DataProviderEvent[];
   connected: boolean;
+  rawPumpFunEvents?: never[];
 }
 
-/**
- * Hook for AI Agent activity data.
- *
- * Ideas for data sources:
- * - Virtuals Protocol API
- * - ai16z agent registry
- * - Custom agent wallet tracker (list of known agent wallets)
- * - ElizaOS activity feed
- */
 export function useAgentsProvider({ paused = false }: { paused?: boolean } = {}): AgentsProviderResult {
-  const [connected, setConnected] = useState(false);
-  const [stats, setStats] = useState<DataProviderStats>(EMPTY_STATS);
+  const { stats, connected } = useAgentProvider({
+    mock: process.env.NEXT_PUBLIC_AGENT_MOCK !== 'false',
+    url: process.env.NEXT_PUBLIC_SPERAXOS_WS_URL,
+    apiKey: process.env.NEXT_PUBLIC_SPERAXOS_API_KEY,
+    enabled: true,
+  });
 
-  // TODO: Replace with real agent monitoring connection
-
-  return { stats, events: stats.recentEvents, connected };
+  return {
+    stats,
+    events: stats.recentEvents,
+    connected,
+  };
 }

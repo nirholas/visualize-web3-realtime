@@ -1,0 +1,31 @@
+
+> @web3viz/playground@0.1.0 build
+> next build
+
+  ▲ Next.js 14.2.35
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Linting and checking validity of types ...
+Failed to compile.
+
+../../packages/providers/src/mock/MockProvider.ts:225:20
+Type error: Argument of type '{ type: "claim"; data: { wallet: string; mint: string; solAmount: number; tokenAmount: number; signature: string; slot: number; timestamp: number; }; }' is not assignable to parameter of type 'RawEvent'.
+  Types of property 'data' are incompatible.
+    Type '{ wallet: string; mint: string; solAmount: number; tokenAmount: number; signature: string; slot: number; timestamp: number; }' is missing the following properties from type 'Claim': claimType, programId, isFirstClaim
+
+[0m [90m 223 |[39m       })[33m;[39m[0m
+[0m [90m 224 |[39m[0m
+[0m[31m[1m>[22m[39m[90m 225 |[39m       [36mthis[39m[33m.[39memitRaw({[0m
+[0m [90m     |[39m                    [31m[1m^[22m[39m[0m
+[0m [90m 226 |[39m         type[33m:[39m [32m'claim'[39m[33m,[39m[0m
+[0m [90m 227 |[39m         data[33m:[39m {[0m
+[0m [90m 228 |[39m           wallet[33m,[39m[0m
+Next.js build worker exited with code: 1 and signal: null
+npm error Lifecycle script `build` failed with error:
+npm error code 1
+npm error path /workspaces/visualize-web3-realtime/apps/playground
+npm error workspace @web3viz/playground@0.1.0
+npm error location /workspaces/visualize-web3-realtime/apps/playground
+npm error command failed
+npm error command sh -c next build
