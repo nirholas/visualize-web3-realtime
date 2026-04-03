@@ -28,7 +28,7 @@ function formatVolume(v: number): string {
 const barStyle: React.CSSProperties = {
   alignItems: 'center',
   backdropFilter: 'blur(8px)',
-  background: 'rgba(0, 0, 0, 0.55)',
+  background: 'rgba(255, 255, 255, 0.85)',
   display: 'flex',
   fontFamily: "'IBM Plex Mono', monospace",
   justifyContent: 'space-between',
@@ -61,20 +61,20 @@ const ShareOverlay = memo(forwardRef<HTMLDivElement, ShareOverlayProps>(
     >
       {/* Top bar */}
       <div style={{ ...barStyle, top: 0 }}>
-        <span style={{ color: '#fff', fontSize: 11, letterSpacing: '0.06em' }}>
+        <span style={{ color: '#161616', fontSize: 11, letterSpacing: '0.06em' }}>
           Address {truncateAddress(address)}
         </span>
-        <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10 }}>
+        <span style={{ color: '#999', fontSize: 10 }}>
           Active since {activeSince}
         </span>
       </div>
 
       {/* Bottom bar */}
       <div style={{ ...barStyle, bottom: 0 }}>
-        <span style={{ color: '#fff', fontSize: 11, letterSpacing: '0.06em' }}>
+        <span style={{ color: '#161616', fontSize: 11, letterSpacing: '0.06em' }}>
           {transactionCount.toLocaleString()} Transactions
         </span>
-        <span style={{ color: '#fff', fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+        <span style={{ color: '#161616', fontSize: 11, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
           {formatVolume(volume)} Volume
         </span>
       </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { forwardRef, memo, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
+import React, { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html, MapControls } from '@react-three/drei';
 import type { MapControls as MapControlsImpl } from 'three-stdlib';
@@ -16,6 +16,9 @@ import {
 } from 'd3-force';
 
 import type { TopToken, TraderEdge } from '@/hooks/usePumpFun';
+
+import { ProtocolLabel } from './ProtocolLabel';
+import { COLOR_PALETTE, PROTOCOL_COLORS } from './constants';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -45,11 +48,6 @@ const HUB_BASE_RADIUS = 0.8;
 const HUB_MAX_RADIUS = 3.0;
 const AGENT_RADIUS = 0.06;
 
-const HUB_COLORS = [
-  '#1a1a2e', '#16213e', '#0f3460', '#2c2c54', '#1b1b2f',
-  '#3d3d6b', '#2a2d3e', '#1e3163',
-];
-
 // ---------------------------------------------------------------------------
 // Force simulation manager (runs outside React render cycle)
 // ---------------------------------------------------------------------------
@@ -58,7 +56,7 @@ class ForceGraphSimulation {
   nodes: ForceNode[] = [];
   edges: ForceEdge[] = [];
   private simulation: ReturnType<typeof forceSimulation<ForceNode>>;
-  private nodeMap = new Map<string, ForceNode>();
+  nodeMap = new Map<string, ForceNode>();
 
   constructor() {
     this.simulation = forceSimulation<ForceNode>([])
@@ -108,7 +106,7 @@ class ForceGraphSimulation {
           type: 'hub',
           label: t.symbol || t.name,
           radius: scaledRadius,
-          color: HUB_COLORS[i % HUB_COLORS.length],
+          color: PROTOCOL_COLORS.default,
           x: Math.cos(angle) * dist,
           y: Math.sin(angle) * dist,
         };

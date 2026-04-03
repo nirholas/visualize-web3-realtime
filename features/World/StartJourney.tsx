@@ -15,8 +15,8 @@ export default function StartJourney({ disabled = false, isRunning, onClick, res
       onClick={onClick}
       style={{
         alignItems: 'center',
-        background: disabled ? 'rgba(0,0,0,0.35)' : '#111111',
-        border: '1px solid rgba(255,255,255,0.35)',
+        background: disabled ? '#e8e8e8' : '#1a1a1a',
+        border: '1px solid #e0e0e0',
         borderRadius: '50%',
         bottom: 18,
         color: '#ffffff',

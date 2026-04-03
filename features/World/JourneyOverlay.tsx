@@ -26,7 +26,7 @@ export default function JourneyOverlay({
           initial={{ opacity: 0 }}
           style={{
             alignItems: 'center',
-            background: 'rgba(0, 0, 0, 0.3)',
+            background: 'rgba(255, 255, 255, 0.7)',
             display: 'flex',
             inset: 0,
             justifyContent: 'center',
@@ -50,7 +50,7 @@ export default function JourneyOverlay({
             {label ? (
               <div
                 style={{
-                  color: 'rgba(255,255,255,0.7)',
+                  color: '#999',
                   fontFamily: 'IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace',
                   fontSize: 12,
                   letterSpacing: '0.08em',
@@ -65,7 +65,7 @@ export default function JourneyOverlay({
             {title ? (
               <div
                 style={{
-                  color: '#ffffff',
+                  color: '#161616',
                   fontFamily: 'IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace',
                   fontSize: 'clamp(28px, 4vw, 52px)',
                   fontWeight: 600,
@@ -80,7 +80,7 @@ export default function JourneyOverlay({
             {description ? (
               <div
                 style={{
-                  color: 'rgba(255,255,255,0.9)',
+                  color: '#333',
                   fontFamily: 'IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace',
                   fontSize: 'clamp(13px, 1.2vw, 16px)',
                   lineHeight: 1.45,
@@ -94,10 +94,10 @@ export default function JourneyOverlay({
           <button
             onClick={onSkip}
             style={{
-              background: 'rgba(0,0,0,0.45)',
-              border: '1px solid rgba(255,255,255,0.4)',
+              background: 'rgba(255,255,255,0.85)',
+              border: '1px solid #e8e8e8',
               borderRadius: 8,
-              color: '#ffffff',
+              color: '#161616',
               cursor: 'pointer',
               fontFamily: 'IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace',
               fontSize: 12,

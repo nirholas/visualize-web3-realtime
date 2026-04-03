@@ -51,7 +51,7 @@ const ProtocolButton = memo<ProtocolButtonProps>(({ category, isActive, count, o
         color: isActive ? '#fff' : '#333',
         cursor: 'pointer',
         display: 'flex',
-        fontFamily: 'monospace',
+        fontFamily: "'IBM Plex Mono', monospace",
         fontSize: 14,
         fontWeight: 700,
         height: 40,

@@ -66,17 +66,18 @@ const BottomStatPill = memo<{ label: string; value: number; prefix?: string }>(
           flexDirection: 'column',
           alignItems: 'flex-start',
           padding: '6px 16px',
-          background: 'rgba(255,255,255,0.06)',
-          border: '1px solid rgba(255,255,255,0.08)',
+          background: '#ffffff',
+          border: '1px solid #e8e8e8',
           borderRadius: 8,
           minWidth: 100,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
         }}
       >
         <span
           style={{
-            fontSize: 9,
-            fontWeight: 500,
-            color: 'rgba(176,176,200,0.4)',
+            fontSize: 10,
+            fontWeight: 400,
+            color: '#666',
             textTransform: 'uppercase',
             letterSpacing: '0.08em',
             lineHeight: 1,
@@ -87,8 +88,8 @@ const BottomStatPill = memo<{ label: string; value: number; prefix?: string }>(
         <span
           style={{
             fontSize: 14,
-            fontWeight: 600,
-            color: 'rgba(255,255,255,0.85)',
+            fontWeight: 500,
+            color: '#161616',
             lineHeight: 1.4,
             fontVariantNumeric: 'tabular-nums',
           }}
@@ -158,9 +159,9 @@ const AddressSearch = memo<{
     >
       <span
         style={{
-          fontSize: 9,
-          fontWeight: 500,
-          color: 'rgba(176,176,200,0.4)',
+          fontSize: 10,
+          fontWeight: 400,
+          color: '#666',
           textTransform: 'uppercase',
           letterSpacing: '0.08em',
           marginRight: 2,
@@ -179,14 +180,15 @@ const AddressSearch = memo<{
           padding: '5px 10px',
           fontSize: 11,
           fontFamily: 'inherit',
-          color: 'rgba(255,255,255,0.8)',
+          color: '#161616',
           background: highlightedAddress
-            ? 'rgba(61,99,255,0.12)'
-            : 'rgba(255,255,255,0.04)',
-          border: `1px solid ${error ? 'rgba(239,68,68,0.7)' : highlightedAddress ? 'rgba(61,99,255,0.3)' : 'rgba(255,255,255,0.08)'}`,
-          borderRadius: 6,
+            ? 'rgba(61,99,255,0.08)'
+            : '#ffffff',
+          border: `1px solid ${error ? 'rgba(239,68,68,0.7)' : highlightedAddress ? 'rgba(61,99,255,0.3)' : '#e8e8e8'}`,
+          borderRadius: 8,
           outline: 'none',
           transition: 'border-color 0.3s ease',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
         }}
       />
       {highlightedAddress ? (
@@ -198,10 +200,10 @@ const AddressSearch = memo<{
             fontSize: 10,
             fontWeight: 600,
             fontFamily: 'inherit',
-            color: '#fff',
-            background: 'rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 6,
+            color: '#666',
+            background: '#ffffff',
+            border: '1px solid #e8e8e8',
+            borderRadius: 8,
             cursor: 'pointer',
           }}
         >
@@ -218,17 +220,17 @@ const AddressSearch = memo<{
           textTransform: 'uppercase',
           letterSpacing: '0.06em',
           color: '#fff',
-          background: 'rgba(255,255,255,0.12)',
-          border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: 6,
+          background: '#1a1a1a',
+          border: 'none',
+          borderRadius: 8,
           cursor: 'pointer',
           transition: 'background 0.15s ease',
         }}
         onMouseEnter={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.2)';
+          (e.currentTarget as HTMLButtonElement).style.background = '#333';
         }}
         onMouseLeave={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background = 'rgba(255,255,255,0.12)';
+          (e.currentTarget as HTMLButtonElement).style.background = '#1a1a1a';
         }}
       >
         Go
@@ -303,9 +305,10 @@ export default memo<StatsBarProps>(function StatsBar({
         padding: '6px 12px',
         fontFamily: "'IBM Plex Mono', monospace",
         borderRadius: 12,
-        background: 'rgba(8,8,15,0.6)',
+        background: 'rgba(255,255,255,0.85)',
         backdropFilter: 'blur(12px)',
-        border: '1px solid rgba(255,255,255,0.06)',
+        border: '1px solid #e8e8e8',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
         flexWrap: 'wrap',
         justifyContent: 'center',
       }}
@@ -319,7 +322,7 @@ export default memo<StatsBarProps>(function StatsBar({
         style={{
           width: 1,
           height: 28,
-          background: 'rgba(255,255,255,0.08)',
+          background: '#e0e0e0',
           margin: '0 4px',
         }}
       />
