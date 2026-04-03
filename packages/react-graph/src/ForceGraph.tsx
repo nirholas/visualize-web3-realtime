@@ -26,8 +26,8 @@ const MAX_AGENT_NODES = 5000;
 // ============================================================================
 
 export interface ForceGraphProps {
-  topTokens: TopToken[];
-  traderEdges: TraderEdge[];
+  topTokens?: TopToken[];
+  traderEdges?: TraderEdge[];
   height?: string | number;
   /** Canvas background color */
   background?: string;
@@ -374,8 +374,8 @@ CameraSetup.displayName = 'CameraSetup';
 
 const ForceGraph = forwardRef<GraphHandle, ForceGraphProps>(function ForceGraph(
   {
-    topTokens,
-    traderEdges,
+    topTokens = [],
+    traderEdges = [],
     height = '100%',
     background = '#ffffff',
     groundColor = '#f8f8fa',

@@ -116,7 +116,8 @@ const AddressSearch = memo<{
   highlightedAddress?: string | null;
   onDismiss?: () => void;
   onSearch: (address: string) => void;
-}>(({ onSearch, highlightedAddress, onDismiss }) => {
+  externalError?: boolean;
+}>(({ onSearch, highlightedAddress, onDismiss, externalError }) => {
   const [value, setValue] = useState('');
   const [error, setError] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -144,7 +145,11 @@ const AddressSearch = memo<{
     onDismiss?.();
   }, [onDismiss]);
 
-  // Flash red border on error
+  // Flash red border on error (internal or external)
+  useEffect(() => {
+    if (externalError) setError(true);
+  }, [externalError]);
+
   useEffect(() => {
     if (error) {
       const t = setTimeout(() => setError(false), 1200);
@@ -256,6 +261,8 @@ export interface StatsBarProps {
   onAddressSearch?: (address: string) => void;
   /** Called when the user dismisses the highlight */
   onDismissHighlight?: () => void;
+  /** Set to true to flash red error on the address input (auto-clears) */
+  searchError?: boolean;
 }
 
 export default memo<StatsBarProps>(function StatsBar({
@@ -265,6 +272,7 @@ export default memo<StatsBarProps>(function StatsBar({
   highlightedAddress,
   onAddressSearch,
   onDismissHighlight,
+  searchError,
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -327,7 +335,7 @@ export default memo<StatsBarProps>(function StatsBar({
         }}
       />
 
-      <AddressSearch onSearch={handleSearch} highlightedAddress={highlightedAddress} onDismiss={onDismissHighlight} />
+      <AddressSearch onSearch={handleSearch} highlightedAddress={highlightedAddress} onDismiss={onDismissHighlight} externalError={searchError} />
     </div>
   );
 });

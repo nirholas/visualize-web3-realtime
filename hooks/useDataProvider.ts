@@ -87,6 +87,8 @@ export interface MultiSourceStats extends DataProviderStats {
   bySource: Record<string, DataProviderStats>;
   /** Raw PumpFun events for LiveFeed backward compat */
   rawPumpFunEvents: PumpFunEvent[];
+  /** Flat SOL volume total for backward compat with pre-multi-chain code */
+  totalVolumeSol: number;
 }
 
 // ---------------------------------------------------------------------------

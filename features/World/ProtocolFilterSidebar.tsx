@@ -1,6 +1,6 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import type { TopToken } from '@/hooks/usePumpFun';
 import { COLOR_PALETTE } from './constants';
 
@@ -33,6 +33,7 @@ interface ProtocolButtonProps {
 }
 
 const ProtocolButton = memo<ProtocolButtonProps>(({ token, color, isActive, onClick }) => {
+  const [hovered, setHovered] = useState(false);
   const iconText = (token.symbol || token.name || '??').slice(0, 2).toUpperCase();
 
   return (
@@ -41,13 +42,19 @@ const ProtocolButton = memo<ProtocolButtonProps>(({ token, color, isActive, onCl
       aria-pressed={isActive}
       data-group={token.mint}
       onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       title={`${token.symbol || token.name} — ${token.trades} trades`}
       style={{
         alignItems: 'center',
         background: isActive ? color : '#e8e8e8',
         border: isActive ? `2px solid ${color}` : '2px solid transparent',
         borderRadius: '50%',
-        boxShadow: isActive ? `0 2px 12px ${color}60` : 'none',
+        boxShadow: isActive
+          ? `0 2px 12px ${color}60`
+          : hovered
+          ? '0 2px 8px rgba(0,0,0,0.18)'
+          : 'none',
         color: isActive ? '#fff' : '#333',
         cursor: 'pointer',
         display: 'flex',
@@ -59,6 +66,7 @@ const ProtocolButton = memo<ProtocolButtonProps>(({ token, color, isActive, onCl
         lineHeight: 1,
         outline: 'none',
         padding: 0,
+        transform: hovered && !isActive ? 'scale(1.05)' : 'scale(1)',
         transition: 'all 150ms ease',
         width: 40,
       }}
@@ -74,34 +82,45 @@ ProtocolButton.displayName = 'ProtocolButton';
 // Agent Toggle Button
 // ---------------------------------------------------------------------------
 
-const AgentToggle = memo<{ active: boolean; onClick: () => void }>(({ active, onClick }) => (
-  <button
-    aria-label="Toggle AI Agents overlay"
-    aria-pressed={active}
-    onClick={onClick}
-    title={active ? 'Hide AI Agents' : 'Show AI Agents'}
-    style={{
-      alignItems: 'center',
-      background: active ? '#c084fc' : '#e8e8e8',
-      border: active ? '2px solid #c084fc' : '2px solid transparent',
-      borderRadius: '50%',
-      boxShadow: active ? '0 2px 12px #c084fc60' : 'none',
-      color: active ? '#fff' : '#333',
-      cursor: 'pointer',
-      display: 'flex',
-      fontSize: 16,
-      height: 40,
-      justifyContent: 'center',
-      lineHeight: 1,
-      outline: 'none',
-      padding: 0,
-      transition: 'all 150ms ease',
-      width: 40,
-    }}
-  >
-    🤖
-  </button>
-));
+const AgentToggle = memo<{ active: boolean; onClick: () => void }>(({ active, onClick }) => {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <button
+      aria-label="Toggle AI Agents overlay"
+      aria-pressed={active}
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      title={active ? 'Hide AI Agents' : 'Show AI Agents'}
+      style={{
+        alignItems: 'center',
+        background: active ? '#c084fc' : '#e8e8e8',
+        border: active ? '2px solid #c084fc' : '2px solid transparent',
+        borderRadius: '50%',
+        boxShadow: active
+          ? '0 2px 12px #c084fc60'
+          : hovered
+          ? '0 2px 8px rgba(0,0,0,0.18)'
+          : 'none',
+        color: active ? '#fff' : '#333',
+        cursor: 'pointer',
+        display: 'flex',
+        fontSize: 16,
+        height: 40,
+        justifyContent: 'center',
+        lineHeight: 1,
+        outline: 'none',
+        padding: 0,
+        transform: hovered && !active ? 'scale(1.05)' : 'scale(1)',
+        transition: 'all 150ms ease',
+        width: 40,
+      }}
+    >
+      🤖
+    </button>
+  );
+});
 AgentToggle.displayName = 'AgentToggle';
 
 // ---------------------------------------------------------------------------
@@ -135,6 +154,9 @@ const ProtocolFilterSidebar = memo<ProtocolFilterSidebarProps>(
             onClick={() => onToggle(token.mint)}
           />
         ))}
+        {onToggleAgents && (
+          <AgentToggle active={!!showAgents} onClick={onToggleAgents} />
+        )}
       </nav>
     );
   },

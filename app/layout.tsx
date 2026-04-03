@@ -9,11 +9,20 @@ export const metadata: Metadata = {
     description: "Explore a living, breathing financial network in real time.",
     type: "website",
     siteName: "PumpFun World",
+    images: [
+      {
+        url: "/og-preview.png",
+        width: 1200,
+        height: 630,
+        alt: "PumpFun World — a living financial network in real time",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Web3 Realtime Visualizer",
     description: "Explore a living, breathing financial network in real time.",
+    images: ["/og-preview.png"],
   },
 };
 

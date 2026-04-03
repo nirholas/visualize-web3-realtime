@@ -118,6 +118,7 @@ export default function WorldPage() {
   const [highlightedHubIndex, setHighlightedHubIndex] = useState<number | null>(null);
   const [activeHubMint, setActiveHubMint] = useState<string | null>(null);
   const [searchToast, setSearchToast] = useState<string | null>(null);
+  const [searchError, setSearchError] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [embedOpen, setEmbedOpen] = useState(false);
   const [shareColors, setShareColors] = useState<ShareColors>({
@@ -274,6 +275,8 @@ export default function WorldPage() {
 
     if (!match) {
       setSearchToast('Address not found in current data');
+      setSearchError(true);
+      setTimeout(() => setSearchError(false), 1200);
       setHighlightedAddress(null);
       setHighlightedHubIndex(null);
       return;
@@ -404,7 +407,7 @@ export default function WorldPage() {
           topTokens={displayTopTokens}
           traderEdges={displayTraderEdges}
           activeProtocol={activeHubMint}
-          highlightedHubIndex={effectiveHighlightedHubIndex}
+          highlightedHubIndex={highlightedHubIndex}
           onSelectProtocol={setActiveHubMint}
           onDismissHighlight={handleDismissHighlight}
           height="100%"
@@ -532,6 +535,7 @@ export default function WorldPage() {
           highlightedAddress={highlightedAddress}
           onAddressSearch={handleAddressSearch}
           onDismissHighlight={handleDismissHighlight}
+          searchError={searchError}
         />
       </Suspense>
 

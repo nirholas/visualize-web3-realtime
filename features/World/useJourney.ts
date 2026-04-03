@@ -3,7 +3,8 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 
 import type { ForceGraphHandle } from '@/features/World/ForceGraph';
-import { CATEGORY_CONFIGS, type DataProviderStats, type PumpFunCategory } from '@/hooks/useDataProvider';
+import type { DataProviderStats } from '@web3viz/core';
+import { CATEGORY_CONFIGS, type PumpFunCategory } from '@/hooks/useDataProvider';
 
 export interface JourneyStep {
   target: 'overview' | 'protocol' | 'user' | 'cluster';
@@ -41,8 +42,8 @@ export function useJourney({ enabledCategories, graphRef, stats, userAddress }: 
 
   const topCategories = useMemo(() => {
     const sorted = CATEGORY_CONFIGS
-      .filter((cfg) => enabledCategories.has(cfg.id))
-      .sort((a, b) => stats.counts[b.id] - stats.counts[a.id]);
+      .filter((cfg) => enabledCategories.has(cfg.id as PumpFunCategory))
+      .sort((a, b) => (stats.counts[b.id] ?? 0) - (stats.counts[a.id] ?? 0));
 
     return {
       first: sorted[0] ?? CATEGORY_CONFIGS[0],
