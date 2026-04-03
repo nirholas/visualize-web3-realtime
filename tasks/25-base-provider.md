@@ -5,7 +5,7 @@ Create a Base (Coinbase L2) data provider that visualizes real-time DEX activity
 
 ## Prerequisites
 - Tasks 21-23 must be complete
-- Task 24 (Ethereum provider) should be complete — you can reuse patterns and ABI decoding utils
+- Task 24 (Ethereum provider) should be complet e — you can reuse patterns and ABI decoding utils
 
 ## Architecture
 
