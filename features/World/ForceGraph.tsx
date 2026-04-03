@@ -1,8 +1,9 @@
 'use client';
 
-import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
+import { forwardRef, memo, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html, MapControls } from '@react-three/drei';
+import type { MapControls as MapControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
 import {
   forceSimulation,
@@ -451,17 +452,94 @@ const NetworkScene = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
 });
 NetworkScene.displayName = 'NetworkScene';
 
+// ---------------------------------------------------------------------------
+// Camera animation state (shared between CameraSetup and parent)
+// ---------------------------------------------------------------------------
+
+interface CameraAnimation {
+  durationMs: number;
+  fromPos: THREE.Vector3;
+  toPos: THREE.Vector3;
+  fromLookAt: THREE.Vector3;
+  toLookAt: THREE.Vector3;
+  startedAt: number;
+  onDone?: () => void;
+}
+
+interface CameraApi {
+  animateTo: (pos: [number, number, number], lookAt: [number, number, number], durationMs: number) => Promise<void>;
+  setOrbitEnabled: (enabled: boolean) => void;
+}
+
 /** Camera controller: top-down with pan/zoom, no rotation */
-const CameraSetup = memo(() => {
+const CameraSetup = memo<{ apiRef: React.MutableRefObject<CameraApi | null> }>(({ apiRef }) => {
   const { camera } = useThree();
+  const controlsRef = useRef<MapControlsImpl>(null);
+  const animRef = useRef<CameraAnimation | null>(null);
 
   useEffect(() => {
     camera.position.set(0, 55, 12);
     camera.lookAt(0, 0, 0);
   }, [camera]);
 
+  // Expose camera API to parent via mutable ref
+  useEffect(() => {
+    apiRef.current = {
+      animateTo: (pos, lookAt, durationMs) =>
+        new Promise<void>((resolve) => {
+          const fromPos = camera.position.clone();
+          // Approximate current lookAt from camera direction
+          const dir = new THREE.Vector3();
+          camera.getWorldDirection(dir);
+          const fromLookAt = fromPos.clone().add(dir.multiplyScalar(50));
+          animRef.current = {
+            durationMs,
+            fromPos,
+            toPos: new THREE.Vector3(...pos),
+            fromLookAt,
+            toLookAt: new THREE.Vector3(...lookAt),
+            startedAt: performance.now(),
+            onDone: resolve,
+          };
+        }),
+      setOrbitEnabled: (enabled) => {
+        if (controlsRef.current) {
+          controlsRef.current.enabled = enabled;
+        }
+      },
+    };
+    return () => {
+      apiRef.current = null;
+    };
+  }, [apiRef, camera]);
+
+  // Drive camera animation
+  useFrame(() => {
+    const anim = animRef.current;
+    if (!anim) return;
+
+    const elapsed = performance.now() - anim.startedAt;
+    const t = Math.min(elapsed / anim.durationMs, 1);
+    // ease-in-out cubic
+    const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+    camera.position.lerpVectors(anim.fromPos, anim.toPos, eased);
+    const lookTarget = new THREE.Vector3().lerpVectors(anim.fromLookAt, anim.toLookAt, eased);
+    camera.lookAt(lookTarget);
+
+    if (controlsRef.current) {
+      controlsRef.current.target.copy(lookTarget);
+    }
+
+    if (t >= 1) {
+      animRef.current = null;
+      anim.onDone?.();
+    }
+  });
+
   return (
     <MapControls
+      ref={controlsRef}
       enableRotate={false}
       enableDamping
       dampingFactor={0.15}
@@ -483,14 +561,55 @@ export interface ForceGraphProps {
   height?: string | number;
 }
 
-function ForceGraph({ topTokens, traderEdges, height = '100%' }: ForceGraphProps) {
+export interface ForceGraphHandle {
+  animateCameraTo: (request: { position: [number, number, number]; lookAt?: [number, number, number]; durationMs?: number }) => Promise<void>;
+  focusHub: (index: number, durationMs?: number) => Promise<void>;
+  getCanvasElement: () => HTMLCanvasElement | null;
+  getHubCount: () => number;
+  setOrbitEnabled: (enabled: boolean) => void;
+}
+
+const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function ForceGraph(
+  { topTokens, traderEdges, height = '100%' },
+  ref,
+) {
   const simRef = useRef<ForceGraphSimulation | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const cameraApiRef = useRef<CameraApi | null>(null);
 
   // Create simulation once
   if (!simRef.current) {
     simRef.current = new ForceGraphSimulation();
   }
   const sim = simRef.current;
+
+  useImperativeHandle(ref, () => ({
+    getCanvasElement: () => containerRef.current?.querySelector('canvas') ?? null,
+    getHubCount: () => sim.nodes.filter((n) => n.type === 'hub').length,
+    animateCameraTo: async (request) => {
+      const api = cameraApiRef.current;
+      if (!api) return;
+      await api.animateTo(
+        request.position,
+        request.lookAt ?? [0, 0, 0],
+        request.durationMs ?? 1200,
+      );
+    },
+    focusHub: async (index, durationMs = 1200) => {
+      const api = cameraApiRef.current;
+      if (!api) return;
+      const hubs = sim.nodes.filter((n) => n.type === 'hub');
+      const hub = hubs[index];
+      if (!hub) return;
+      const x = hub.x ?? 0;
+      const z = hub.y ?? 0;
+      // Position camera above and slightly behind the hub
+      await api.animateTo([x, 25, z + 12], [x, 0, z], durationMs);
+    },
+    setOrbitEnabled: (enabled) => {
+      cameraApiRef.current?.setOrbitEnabled(enabled);
+    },
+  }));
 
   // Feed data into the simulation when it changes (debounced via useMemo dependency)
   const tokenKey = topTokens.map((t) => `${t.mint}:${t.trades}`).join(',');
@@ -508,18 +627,18 @@ function ForceGraph({ topTokens, traderEdges, height = '100%' }: ForceGraphProps
   }, []);
 
   return (
-    <div style={{ width: '100%', height, position: 'relative' }}>
+    <div ref={containerRef} style={{ width: '100%', height, position: 'relative' }}>
       <Canvas
         camera={{ fov: 45, near: 0.1, far: 500, position: [0, 55, 12] }}
         style={{ background: '#ffffff' }}
-        gl={{ antialias: true, alpha: false }}
+        gl={{ antialias: true, alpha: false, preserveDrawingBuffer: true }}
         dpr={[1, 1.5]}
       >
-        <CameraSetup />
+        <CameraSetup apiRef={cameraApiRef} />
         <NetworkScene sim={sim} />
       </Canvas>
     </div>
   );
-}
+});
 
-export default memo(ForceGraph);
+export default memo(ForceGraphInner);

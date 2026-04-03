@@ -17,12 +17,15 @@ import LiveFeed from '@/features/World/LiveFeed';
 import StartJourney from '@/features/World/StartJourney';
 import StatsBar from '@/features/World/StatsBar';
 import { useJourney } from '@/features/World/useJourney';
+import { captureCanvas, downloadBlob, timestampedFilename } from '@/features/World/utils/screenshot';
+import { buildShareUrl, buildShareText, parseShareParams, shareOnX, shareOnLinkedIn } from '@/features/World/utils/shareUrl';
+import type { ForceGraphHandle } from '@/features/World/ForceGraph';
 
 // Lazy-load the 3D force graph to avoid SSR issues with Three.js
 const ForceGraph = dynamic(() => import('@/features/World/ForceGraph'), {
   ssr: false,
   loading: () => <div style={{ width: '100%', height: '100%', background: '#ffffff' }} />,
-});
+}) as React.ComponentType<import('@/features/World/ForceGraph').ForceGraphProps & { ref?: React.Ref<ForceGraphHandle> }>;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -116,6 +119,9 @@ export default function WorldPage() {
     user: '#1a1a1a',
   });
   const infoButtonRef = useRef<HTMLButtonElement>(null);
+  const graphRef = useRef<ForceGraphHandle>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState<'world' | 'snapshot' | null>(null);
 
   const { stats, enabledCategories, connected } =
     useDataProvider({ paused });
@@ -209,6 +215,60 @@ export default function WorldPage() {
   const handleOpenShare = useCallback(() => setShareOpen(true), []);
   const handleCloseShare = useCallback(() => setShareOpen(false), []);
 
+  // --- Download World (raw canvas) ---
+  const handleDownloadWorld = useCallback(async () => {
+    const canvas = graphRef.current?.getCanvasElement();
+    if (!canvas) return;
+    setDownloading('world');
+    try {
+      const blob = await captureCanvas(canvas);
+      downloadBlob(blob, timestampedFilename('pumpfun-world'));
+    } finally {
+      setDownloading(null);
+    }
+  }, []);
+
+  // --- Download Snapshot (canvas + overlay) ---
+  const handleDownloadSnapshot = useCallback(async () => {
+    const canvas = graphRef.current?.getCanvasElement();
+    if (!canvas) return;
+    setDownloading('snapshot');
+    try {
+      const blob = await captureCanvas(canvas, overlayRef.current ?? undefined);
+      downloadBlob(blob, timestampedFilename('pumpfun-snapshot'));
+    } finally {
+      setDownloading(null);
+    }
+  }, []);
+
+  // --- Share on X ---
+  const handleShareX = useCallback(() => {
+    const url = buildShareUrl(shareColors, userAddress || undefined);
+    const text = buildShareText(
+      {
+        tokens: stats.counts.launches + stats.counts.agentLaunches,
+        volume: Math.round(stats.totalVolumeSol),
+        transactions: stats.totalTransactions,
+      },
+      url,
+    );
+    shareOnX(text, url);
+  }, [shareColors, userAddress, stats]);
+
+  // --- Share on LinkedIn ---
+  const handleShareLinkedIn = useCallback(() => {
+    const url = buildShareUrl(shareColors, userAddress || undefined);
+    shareOnLinkedIn(url);
+  }, [shareColors, userAddress]);
+
+  // --- Parse share URL color params on mount ---
+  useEffect(() => {
+    const { colors } = parseShareParams(window.location.search);
+    if (colors.background || colors.protocol || colors.user) {
+      setShareColors((prev) => ({ ...prev, ...colors }));
+    }
+  }, []);
+
   const { isComplete, isRunning, overlay, skipJourney, startJourney } = useJourney({
     enabledCategories,
     networkRef: { current: null },
@@ -220,6 +280,7 @@ export default function WorldPage() {
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: '#ffffff' }}>
       {/* 3D Force Graph — full screen */}
       <ForceGraph
+        ref={graphRef}
         topTokens={stats.topTokens}
         traderEdges={stats.traderEdges}
         height="100%"
@@ -387,6 +448,7 @@ export default function WorldPage() {
       {shareOpen && (
         <>
           <ShareOverlay
+            ref={overlayRef}
             address={userAddress || 'pump.fun'}
             activeSince="Jan 2025"
             transactionCount={stats.totalTransactions}
@@ -396,6 +458,11 @@ export default function WorldPage() {
             colors={shareColors}
             onChange={setShareColors}
             onClose={handleCloseShare}
+            onDownloadWorld={handleDownloadWorld}
+            onDownloadSnapshot={handleDownloadSnapshot}
+            onShareX={handleShareX}
+            onShareLinkedIn={handleShareLinkedIn}
+            downloading={downloading}
           />
         </>
       )}

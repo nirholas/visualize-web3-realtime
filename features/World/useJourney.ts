@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 
-import type { X402NetworkHandle } from '@/features/X402Flow/X402Network';
+import type { ForceGraphHandle } from '@/features/World/ForceGraph';
 import { CATEGORY_CONFIGS, type DataProviderStats, type PumpFunCategory } from '@/hooks/useDataProvider';
 
 export interface JourneyStep {
@@ -16,7 +16,7 @@ export interface JourneyStep {
 
 interface UseJourneyParams {
   enabledCategories: Set<PumpFunCategory>;
-  networkRef: React.RefObject<X402NetworkHandle | null>;
+  graphRef: React.RefObject<ForceGraphHandle | null>;
   stats: DataProviderStats;
   userAddress?: string;
 }
@@ -27,7 +27,7 @@ function wait(ms: number): Promise<void> {
   });
 }
 
-export function useJourney({ enabledCategories, networkRef, stats, userAddress }: UseJourneyParams) {
+export function useJourney({ enabledCategories, graphRef, stats, userAddress }: UseJourneyParams) {
   const [isRunning, setIsRunning] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [overlay, setOverlay] = useState<{
@@ -114,20 +114,20 @@ export function useJourney({ enabledCategories, networkRef, stats, userAddress }
 
   const skipJourney = useCallback(() => {
     runIdRef.current += 1;
-    networkRef.current?.setOrbitEnabled(true);
+    graphRef.current?.setOrbitEnabled(true);
     setOverlay({ visible: false });
     setIsRunning(false);
     setIsComplete(true);
-  }, [networkRef]);
+  }, [graphRef]);
 
   const startJourney = useCallback(async () => {
-    if (isRunning || !networkRef.current) return;
+    if (isRunning || !graphRef.current) return;
 
     const runId = runIdRef.current + 1;
     runIdRef.current = runId;
     setIsRunning(true);
     setIsComplete(false);
-    networkRef.current.setOrbitEnabled(false);
+    graphRef.current.setOrbitEnabled(false);
 
     for (let i = 0; i < steps.length; i++) {
       if (runIdRef.current !== runId) return;
@@ -150,11 +150,11 @@ export function useJourney({ enabledCategories, networkRef, stats, userAddress }
       });
 
       if (step.target === 'protocol') {
-        await networkRef.current.focusHub(i === 2 ? 1 : 2, 1200);
+        await graphRef.current.focusHub(i === 2 ? 1 : 2, 1200);
       } else if (step.target === 'user') {
-        await networkRef.current.focusHub(0, 1100);
+        await graphRef.current.focusHub(0, 1100);
       } else {
-        await networkRef.current.animateCameraTo({
+        await graphRef.current.animateCameraTo({
           position: step.camera.position,
           lookAt: [0, 0, 0],
           durationMs: 1200,
@@ -167,11 +167,11 @@ export function useJourney({ enabledCategories, networkRef, stats, userAddress }
 
     if (runIdRef.current !== runId) return;
 
-    networkRef.current.setOrbitEnabled(true);
+    graphRef.current.setOrbitEnabled(true);
     setOverlay({ visible: false });
     setIsRunning(false);
     setIsComplete(true);
-  }, [isRunning, networkRef, steps]);
+  }, [isRunning, graphRef, steps]);
 
   return {
     isComplete,
