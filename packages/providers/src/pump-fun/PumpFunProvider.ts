@@ -74,6 +74,12 @@ export class PumpFunProvider implements DataProvider {
   private tradesReconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private claimsReconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
+  // Exponential backoff state
+  private tradesReconnectAttempts = 0;
+  private claimsReconnectAttempts = 0;
+  private static readonly BASE_RECONNECT_MS = 3000;
+  private static readonly MAX_RECONNECT_MS = 60000;
+
   // Connection state
   private tradesConnected = false;
   private claimsConnected = false;
@@ -240,6 +246,7 @@ export class PumpFunProvider implements DataProvider {
     ws.onopen = () => {
       console.log('[PumpFunProvider] Trades WS connected');
       this.tradesConnected = true;
+      this.tradesReconnectAttempts = 0;
       // Subscribe to new tokens and trades
       ws.send(JSON.stringify({ method: 'subscribeNewToken' }));
       ws.send(JSON.stringify({ method: 'subscribeTokenTrade', keys: ['allTrades'] }));
@@ -265,13 +272,18 @@ export class PumpFunProvider implements DataProvider {
     };
 
     ws.onclose = () => {
-      console.log('[PumpFunProvider] Trades WS closed');
       this.tradesConnected = false;
-      this.tradesReconnectTimer = setTimeout(() => this.connectTrades(), 3000);
+      this.tradesReconnectAttempts++;
+      const delay = Math.min(
+        PumpFunProvider.BASE_RECONNECT_MS * Math.pow(2, this.tradesReconnectAttempts - 1),
+        PumpFunProvider.MAX_RECONNECT_MS,
+      );
+      console.warn(`[PumpFunProvider] Trades WS closed — reconnecting in ${(delay / 1000).toFixed(0)}s (attempt ${this.tradesReconnectAttempts})`);
+      this.tradesReconnectTimer = setTimeout(() => this.connectTrades(), delay);
     };
 
-    ws.onerror = (error) => {
-      console.error('[PumpFunProvider] Trades WS error:', error);
+    ws.onerror = () => {
+      // onclose will fire after this, which handles reconnection
       ws.close();
     };
   }
@@ -286,6 +298,7 @@ export class PumpFunProvider implements DataProvider {
       this.tradesWs = null;
     }
     this.tradesConnected = false;
+    this.tradesReconnectAttempts = 0;
   }
 
   private handleTokenCreate(raw: any): void {
@@ -429,6 +442,7 @@ export class PumpFunProvider implements DataProvider {
     ws.onopen = () => {
       console.log('[PumpFunProvider] Claims WS connected');
       this.claimsConnected = true;
+      this.claimsReconnectAttempts = 0;
       // Subscribe to logs for each PumpFun program
       const programs = [PUMP_PROGRAM_ID, PUMP_AMM_PROGRAM_ID, PUMP_FEE_PROGRAM_ID];
       for (const programId of programs) {
@@ -474,14 +488,19 @@ export class PumpFunProvider implements DataProvider {
     };
 
     ws.onclose = () => {
-      console.log('[PumpFunProvider] Claims WS closed');
       this.claimsConnected = false;
       this.solanaSubIds = [];
-      this.claimsReconnectTimer = setTimeout(() => this.connectClaims(), 5000);
+      this.claimsReconnectAttempts++;
+      const delay = Math.min(
+        PumpFunProvider.BASE_RECONNECT_MS * Math.pow(2, this.claimsReconnectAttempts - 1),
+        PumpFunProvider.MAX_RECONNECT_MS,
+      );
+      console.warn(`[PumpFunProvider] Claims WS closed — reconnecting in ${(delay / 1000).toFixed(0)}s (attempt ${this.claimsReconnectAttempts})`);
+      this.claimsReconnectTimer = setTimeout(() => this.connectClaims(), delay);
     };
 
-    ws.onerror = (error) => {
-      console.error('[PumpFunProvider] Claims WS error:', error);
+    ws.onerror = () => {
+      // onclose will fire after this, which handles reconnection
       ws.close();
     };
   }
@@ -512,6 +531,7 @@ export class PumpFunProvider implements DataProvider {
     }
 
     this.claimsConnected = false;
+    this.claimsReconnectAttempts = 0;
     this.solanaSubIds = [];
   }
 
