@@ -52,9 +52,12 @@ export class MockProvider implements DataProvider {
   private intervalId: ReturnType<typeof setInterval> | null = null;
   private _paused = false;
   private _enabled = true;
-  private totalTokens = 0;
-  private totalTrades = 0;
-  private totalClaims = 0;
+  private counts = {
+    launches: 0,
+    agentLaunches: 0,
+    trades: 0,
+    claimsWallet: 0,
+  };
   private totalVolumeSol = 0;
   private tokenAcc = new Map<string, { name: string; symbol: string; volumeSol: number; trades: number }>();
   private traderEdges: Array<{ trader: string; mint: string; trades: number; volumeSol: number }> = [];

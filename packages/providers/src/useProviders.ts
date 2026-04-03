@@ -24,6 +24,8 @@ export interface UseProvidersOptions {
   paused?: boolean;
   /** Max unified events to keep */
   maxEvents?: number;
+  /** Start with all providers enabled? Default true for backward compat. */
+  startEnabled?: boolean;
 }
 
 export interface UseProvidersReturn {
@@ -41,10 +43,14 @@ export interface UseProvidersReturn {
   enabledProviders: Set<string>;
   /** Toggle a provider on/off */
   toggleProvider: (providerId: string) => void;
-  /** All categories from all providers */
+  /** Categories from enabled providers */
   categories: CategoryConfig[];
-  /** All source configs from all providers */
+  /** Source configs from enabled providers */
   sources: SourceConfig[];
+  /** All categories from all providers (always available for UI) */
+  allCategories: CategoryConfig[];
+  /** All source configs from all providers (always available for UI) */
+  allSources: SourceConfig[];
   /** Per-provider connection state */
   connections: Record<string, ConnectionState[]>;
 }
@@ -61,7 +67,7 @@ const DEFAULT_MAX_EVENTS = 300;
 // ============================================================================
 
 export function useProviders(options: UseProvidersOptions): UseProvidersReturn {
-  const { providers, paused = false, maxEvents = DEFAULT_MAX_EVENTS } = options;
+  const { providers, paused = false, maxEvents = DEFAULT_MAX_EVENTS, startEnabled = true } = options;
 
   // Mutable refs for event buffering (avoids re-render loops)
   const eventBufferRef = useRef<DataProviderEvent[]>([]);
@@ -76,6 +82,7 @@ export function useProviders(options: UseProvidersOptions): UseProvidersReturn {
   const [eventFlushCount, setEventFlushCount] = useState(0);
 
   const [enabledCategories, setEnabledCategories] = useState<Set<string>>(() => {
+    if (!startEnabled) return new Set<string>();
     const all = new Set<string>();
     for (const p of providers) {
       for (const cat of p.categories) all.add(cat.id);
@@ -84,7 +91,7 @@ export function useProviders(options: UseProvidersOptions): UseProvidersReturn {
   });
 
   const [enabledProviders, setEnabledProviders] = useState<Set<string>>(
-    () => new Set(providers.map((p) => p.id)),
+    () => startEnabled ? new Set(providers.map((p) => p.id)) : new Set<string>(),
   );
 
   // Flush buffered events into state
@@ -112,28 +119,46 @@ export function useProviders(options: UseProvidersOptions): UseProvidersReturn {
     }, FLUSH_INTERVAL_MS);
   }, [flush]);
 
-  // Lifecycle: connect/disconnect and subscribe to events
+  // Track which providers are currently connected
+  const connectedRef = useRef<Set<string>>(new Set());
+  const unsubMapRef = useRef<Map<string, () => void>>(new Map());
+
+  // Connect/disconnect providers based on enabledProviders
   useEffect(() => {
-    const unsubscribes: (() => void)[] = [];
-
     for (const provider of providers) {
-      provider.connect();
-      const unsub = provider.onEvent((event) => {
-        eventBufferRef.current.push(event);
-        scheduleFlush();
-      });
-      unsubscribes.push(unsub);
-    }
+      const isEnabled = enabledProviders.has(provider.id);
+      const isConnected = connectedRef.current.has(provider.id);
 
+      if (isEnabled && !isConnected) {
+        provider.connect();
+        connectedRef.current.add(provider.id);
+        const unsub = provider.onEvent((event) => {
+          eventBufferRef.current.push(event);
+          scheduleFlush();
+        });
+        unsubMapRef.current.set(provider.id, unsub);
+      } else if (!isEnabled && isConnected) {
+        unsubMapRef.current.get(provider.id)?.();
+        unsubMapRef.current.delete(provider.id);
+        provider.disconnect();
+        connectedRef.current.delete(provider.id);
+      }
+    }
+  }, [providers, enabledProviders, scheduleFlush]);
+
+  // Cleanup on unmount
+  useEffect(() => {
     return () => {
-      for (const unsub of unsubscribes) unsub();
-      for (const provider of providers) provider.disconnect();
+      for (const unsub of unsubMapRef.current.values()) unsub();
+      unsubMapRef.current.clear();
+      for (const provider of providersRef.current) provider.disconnect();
+      connectedRef.current.clear();
       if (flushTimerRef.current) {
         clearTimeout(flushTimerRef.current);
         flushTimerRef.current = null;
       }
     };
-  }, [providers, scheduleFlush]);
+  }, []);
 
   // Pause/resume
   useEffect(() => {
@@ -152,7 +177,7 @@ export function useProviders(options: UseProvidersOptions): UseProvidersReturn {
     });
   }, []);
 
-  // Toggle provider
+  // Toggle provider — also enable its categories when turning on
   const toggleProvider = useCallback((providerId: string) => {
     setEnabledProviders((prev) => {
       const next = new Set(prev);
@@ -161,7 +186,16 @@ export function useProviders(options: UseProvidersOptions): UseProvidersReturn {
         providersRef.current.find((p) => p.id === providerId)?.setEnabled(false);
       } else {
         next.add(providerId);
-        providersRef.current.find((p) => p.id === providerId)?.setEnabled(true);
+        const provider = providersRef.current.find((p) => p.id === providerId);
+        provider?.setEnabled(true);
+        // Auto-enable this provider's categories
+        if (provider) {
+          setEnabledCategories((prevCats) => {
+            const nextCats = new Set(prevCats);
+            for (const cat of provider.categories) nextCats.add(cat.id);
+            return nextCats;
+          });
+        }
       }
       return next;
     });
@@ -189,6 +223,27 @@ export function useProviders(options: UseProvidersOptions): UseProvidersReturn {
   const sources = useMemo(
     () => providers.filter((p) => enabledProviders.has(p.id)).map((p) => p.sourceConfig),
     [providers, enabledProviders],
+  );
+
+  // All categories and sources (always available for UI display)
+  const allCategories = useMemo(() => {
+    const seen = new Set<string>();
+    const result: CategoryConfig[] = [];
+    for (const p of providers) {
+      for (const cat of p.categories) {
+        const key = `${cat.id}:${cat.sourceId ?? ''}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          result.push(cat);
+        }
+      }
+    }
+    return result;
+  }, [providers]);
+
+  const allSources = useMemo(
+    () => providers.map((p) => p.sourceConfig),
+    [providers],
   );
 
   // Derive merged stats from enabled providers
@@ -267,6 +322,8 @@ export function useProviders(options: UseProvidersOptions): UseProvidersReturn {
     toggleProvider,
     categories,
     sources,
+    allCategories,
+    allSources,
     connections,
   };
 }

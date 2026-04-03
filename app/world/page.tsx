@@ -112,7 +112,7 @@ ConnectionDot.displayName = 'ConnectionDot';
 // ---------------------------------------------------------------------------
 
 export default function WorldPage() {
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [timeFilter, setTimeFilter] = useState<number | null>(null);
   const isLive = timeFilter === null;
   const [infoOpen, setInfoOpen] = useState(false);
@@ -137,8 +137,18 @@ export default function WorldPage() {
 
   const {
     stats, filteredEvents, allEvents, enabledCategories, toggleCategory,
-    enabledProviders, toggleProvider, categories, sources, connections
-  } = useProviders({ providers, paused: !isPlaying });
+    enabledProviders, toggleProvider: rawToggleProvider, categories, sources, connections,
+    allCategories, allSources
+  } = useProviders({ providers, paused: !isPlaying, startEnabled: false });
+
+  // Auto-play when first provider is enabled
+  const toggleProvider = useCallback((providerId: string) => {
+    rawToggleProvider(providerId);
+    // If enabling (not currently enabled), start playing
+    if (!enabledProviders.has(providerId)) {
+      setIsPlaying(true);
+    }
+  }, [rawToggleProvider, enabledProviders]);
 
   // Mark canvas ready once first data arrives
   useEffect(() => {
@@ -403,8 +413,8 @@ export default function WorldPage() {
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: '#ffffff' }}>
-      {/* Loading screen */}
-      <LoadingScreen ready={canvasReady} />
+      {/* Loading screen — only show when a provider is enabled */}
+      {enabledProviders.size > 0 && <LoadingScreen ready={canvasReady} />}
 
       {/* Timeline scrubber — top bar */}
       <TimelineBar
@@ -559,8 +569,8 @@ export default function WorldPage() {
 
       {/* Category filter sidebar — left */}
       <ProtocolFilterSidebar
-        categories={categories}
-        sources={sources}
+        categories={allCategories}
+        sources={allSources}
         enabledCategories={enabledCategories}
         onToggleCategory={toggleCategory}
         enabledProviders={enabledProviders}
