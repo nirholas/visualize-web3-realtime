@@ -9,6 +9,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
+    "ignoreDeprecations": "6.0",
     "downlevelIteration": true
   },
   "include": ["src/**/*"],

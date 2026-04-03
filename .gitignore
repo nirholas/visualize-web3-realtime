@@ -4,3 +4,8 @@ node_modules
 .env.local
 .turbo
 temp/
+data/
+packages/*/data/
+*.db
+*.db-wal
+*.db-shm
