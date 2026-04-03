@@ -43,23 +43,7 @@ Key considerations:
 
 Add an "AI Agents" toggle to the existing `ProtocolFilterSidebar`:
 
-```
-┌──────────────────┐
-│ PROTOCOLS        │
-│                  │
-│ ▣ Launches       │
-│ ▣ Agent Launches │
-│ ▣ Trades         │
-│ ...              │
-│──────────────────│
-│ AI AGENTS ○/●    │  ← New toggle
-│                  │
-│ When enabled:    │
-│ ● CodeReviewer   │
-│ ● Researcher     │
-│ ○ Planner        │
-└──────────────────┘
-```
+![World Sidebar with Agents](../public/diagrams/world-sidebar-agents.svg)
 
 When the "AI Agents" toggle is ON:
 - Agent hubs appear in the force graph alongside crypto hubs

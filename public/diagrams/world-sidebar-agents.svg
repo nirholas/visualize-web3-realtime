@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 300" width="240" height="300">
+  <style>
+    @keyframes pulse { 0%,100%{opacity:.7} 50%{opacity:1} }
+    text { font-family: 'IBM Plex Mono', monospace; }
+    .frame { fill:#12121e; stroke:#a78bfa; stroke-width:1.2; rx:8; }
+    .label { fill:#e2e8f0; font-size:10px; }
+    .label-sm { fill:#94a3b8; font-size:9px; }
+    .section { fill:#64748b; font-size:9px; font-weight:bold; letter-spacing:1px; }
+    .divider { stroke:#2a2a40; stroke-width:1; }
+    .dot-active { fill:#34d399; animation: pulse 2s ease-in-out infinite; }
+    .dot-idle { fill:#64748b; }
+    .check { fill:#60a5fa; font-size:10px; }
+    .toggle { fill:#f472b6; font-size:10px; font-weight:bold; }
+  </style>
+
+  <rect width="240" height="300" rx="10" fill="#0f0f1a"/>
+  <rect class="frame" x="10" y="10" width="220" height="280"/>
+
+  <!-- PROTOCOLS -->
+  <text class="section" x="24" y="34">PROTOCOLS</text>
+
+  <text class="check" x="24" y="54">▣</text>
+  <text class="label" x="40" y="54">Launches</text>
+  <text class="check" x="24" y="72">▣</text>
+  <text class="label" x="40" y="72">Agent Launches</text>
+  <text class="check" x="24" y="90">▣</text>
+  <text class="label" x="40" y="90">Trades</text>
+  <text class="label-sm" x="24" y="108">...</text>
+
+  <!-- Divider -->
+  <line class="divider" x1="24" y1="120" x2="216" y2="120"/>
+
+  <!-- AI AGENTS toggle -->
+  <text class="section" x="24" y="140">AI AGENTS</text>
+  <text class="toggle" x="130" y="140">○/●</text>
+  <text class="label-sm" style="fill:#f472b6" x="160" y="140">← New toggle</text>
+
+  <text class="label-sm" x="24" y="160">When enabled:</text>
+
+  <circle class="dot-active" cx="32" cy="178" r="4"/>
+  <text class="label" x="42" y="182" style="fill:#a78bfa">CodeReviewer</text>
+
+  <circle class="dot-active" cx="32" cy="198" r="4" style="animation-delay:.4s"/>
+  <text class="label" x="42" y="202" style="fill:#60a5fa">Researcher</text>
+
+  <circle class="dot-idle" cx="32" cy="218" r="4"/>
+  <text class="label" x="42" y="222">Planner</text>
+</svg>

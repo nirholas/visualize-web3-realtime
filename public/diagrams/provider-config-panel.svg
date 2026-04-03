@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 680" width="400" height="680">
+  <style>
+    @keyframes pulse { 0%,100%{opacity:.6} 50%{opacity:1} }
+    text { font-family: 'IBM Plex Mono', monospace; }
+    .frame { fill:#12121e; stroke:#60a5fa; stroke-width:1.2; rx:10; }
+    .header { fill:#181825; stroke:#60a5fa; stroke-width:1; rx:10 10 0 0; }
+    .label { fill:#e2e8f0; font-size:10px; }
+    .label-sm { fill:#94a3b8; font-size:9px; }
+    .label-dim { fill:#64748b; font-size:9px; }
+    .title { fill:#e2e8f0; font-size:12px; font-weight:bold; }
+    .divider { stroke:#2a2a40; stroke-width:1; }
+    .dot-on { fill:#34d399; animation: pulse 2s ease-in-out infinite; }
+    .dot-off { fill:#64748b; }
+    .toggle-on { fill:#34d399; font-size:10px; font-weight:bold; }
+    .toggle-off { fill:#64748b; font-size:10px; }
+    .close { fill:#94a3b8; font-size:14px; }
+    .footer { fill:#181825; stroke:#2a2a40; stroke-width:1; rx:0 0 10 10; }
+  </style>
+
+  <rect width="400" height="680" rx="12" fill="#0f0f1a"/>
+  <rect class="frame" x="15" y="15" width="370" height="650"/>
+
+  <!-- Header bar -->
+  <rect class="header" x="15" y="15" width="370" height="35"/>
+  <text class="title" x="35" y="38">⚙ Data Sources</text>
+  <text class="close" x="360" y="38">✕</text>
+
+  <!-- Provider 1: Solana -->
+  <circle class="dot-on" cx="35" cy="75" r="4"/>
+  <text class="label" x="45" y="79" font-weight="bold" style="fill:#a78bfa">Solana (PumpFun)</text>
+  <text class="toggle-on" x="320" y="79">[ON]</text>
+  <text class="label-sm" x="45" y="95">Chains: solana</text>
+  <text class="label-sm" x="45" y="109">Connections: PumpFun ● Claims ●</text>
+  <text class="label-sm" x="45" y="123">Categories: 6 · Events: 1,234</text>
+  <line class="divider" x1="30" y1="138" x2="370" y2="138"/>
+
+  <!-- Provider 2: Ethereum -->
+  <circle class="dot-on" cx="35" cy="158" r="4" style="animation-delay:.3s"/>
+  <text class="label" x="45" y="162" font-weight="bold" style="fill:#60a5fa">Ethereum</text>
+  <text class="toggle-on" x="320" y="162">[ON]</text>
+  <text class="label-sm" x="45" y="178">Chains: ethereum</text>
+  <text class="label-sm" x="45" y="192">Connections: Ethereum ●</text>
+  <text class="label-sm" x="45" y="206">Categories: 3 · Events: 567</text>
+  <line class="divider" x1="30" y1="221" x2="370" y2="221"/>
+
+  <!-- Provider 3: Base -->
+  <circle class="dot-on" cx="35" cy="241" r="4" style="animation-delay:.6s"/>
+  <text class="label" x="45" y="245" font-weight="bold" style="fill:#34d399">Base</text>
+  <text class="toggle-on" x="320" y="245">[ON]</text>
+  <text class="label-sm" x="45" y="261">Chains: base</text>
+  <text class="label-sm" x="45" y="275">Connections: Base ●</text>
+  <text class="label-sm" x="45" y="289">Categories: 3 · Events: 890</text>
+  <line class="divider" x1="30" y1="304" x2="370" y2="304"/>
+
+  <!-- Provider 4: AI Agents -->
+  <circle class="dot-on" cx="35" cy="324" r="4" style="animation-delay:.9s"/>
+  <text class="label" x="45" y="328" font-weight="bold" style="fill:#f472b6">AI Agents</text>
+  <text class="toggle-on" x="320" y="328">[ON]</text>
+  <text class="label-sm" x="45" y="344">Chains: solana, ethereum, base</text>
+  <text class="label-sm" x="45" y="358">Connections: Agent Tracker ●</text>
+  <text class="label-sm" x="45" y="372">Categories: 2 · Events: 45</text>
+  <line class="divider" x1="30" y1="387" x2="370" y2="387"/>
+
+  <!-- Provider 5: ERC-8004 (off) -->
+  <circle class="dot-off" cx="35" cy="407" r="4"/>
+  <text class="label" x="45" y="411" style="fill:#64748b">ERC-8004 Assets</text>
+  <text class="toggle-off" x="318" y="411">[OFF]</text>
+  <text class="label-dim" x="45" y="427">Chains: ethereum, base</text>
+  <text class="label-dim" x="45" y="441">Connections: ○ ○</text>
+  <text class="label-dim" x="45" y="455">Categories: 3 · Events: 0</text>
+  <line class="divider" x1="30" y1="470" x2="370" y2="470"/>
+
+  <!-- Provider 6: CEX Volume -->
+  <circle class="dot-on" cx="35" cy="490" r="4" style="animation-delay:1.2s"/>
+  <text class="label" x="45" y="494" font-weight="bold" style="fill:#fbbf24">CEX Volume</text>
+  <text class="toggle-on" x="320" y="494">[ON]</text>
+  <text class="label-sm" x="45" y="510">Chains: cex</text>
+  <text class="label-sm" x="45" y="524">Connections: Trades ● Liqs ●</text>
+  <text class="label-sm" x="45" y="538">Categories: 2 · Events: 2,345</text>
+
+  <!-- Footer -->
+  <line class="divider" x1="30" y1="560" x2="370" y2="560"/>
+  <rect class="footer" x="15" y="575" width="370" height="45"/>
+  <text class="label" x="35" y="598">+ Add Custom Provider        →</text>
+  <text class="label-dim" x="37" y="614">(coming soon)</text>
+</svg>

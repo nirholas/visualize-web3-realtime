@@ -13,52 +13,7 @@ Add a gear/settings icon button to the **bottom-left** of the screen (near the e
 
 ### Panel Layout
 
-```
-┌─────────────────────────────────────┐
-│  ⚙ Data Sources                    ✕│
-├─────────────────────────────────────┤
-│                                     │
-│  ● Solana (PumpFun)          [ON]  │
-│    Chains: solana                   │
-│    Connections: PumpFun ●  Claims ● │
-│    Categories: 6                    │
-│    Events: 1,234                    │
-│                                     │
-│  ● Ethereum                  [ON]  │
-│    Chains: ethereum                 │
-│    Connections: Ethereum ●          │
-│    Categories: 3                    │
-│    Events: 567                      │
-│                                     │
-│  ● Base                      [ON]  │
-│    Chains: base                     │
-│    Connections: Base ●              │
-│    Categories: 3                    │
-│    Events: 890                      │
-│                                     │
-│  ● AI Agents                 [ON]  │
-│    Chains: solana, ethereum, base   │
-│    Connections: Agent Tracker ●     │
-│    Categories: 2                    │
-│    Events: 45                       │
-│                                     │
-│  ● ERC-8004 Assets           [OFF] │
-│    Chains: ethereum, base           │
-│    Connections: ○ ○                 │
-│    Categories: 3                    │
-│    Events: 0                        │
-│                                     │
-│  ● CEX Volume                [ON]  │
-│    Chains: cex                      │
-│    Connections: Trades ●  Liqs ●   │
-│    Categories: 2                    │
-│    Events: 2,345                    │
-│                                     │
-├─────────────────────────────────────┤
-│  + Add Custom Provider         →   │
-│  (coming soon)                      │
-└─────────────────────────────────────┘
-```
+![Provider Config Panel](../public/diagrams/provider-config-panel.svg)
 
 ### Functionality
 
