@@ -9,12 +9,20 @@ export class EventBroadcaster {
   private recentEvents: AgentEvent[] = [];
 
   constructor(private readonly port: number) {
-    this.wss = new WebSocketServer({ port });
+    // Will be initialized in start() with either a provided httpServer or a new one
+    this.wss = null as any;
   }
 
   start(
     getSnapshot: () => { agents: AgentIdentity[]; tasks: AgentTask[]; recentEvents: AgentEvent[] },
+    httpServer?: any,
   ): void {
+    // Create WebSocketServer on either provided httpServer or standalone on port
+    if (httpServer) {
+      this.wss = new WebSocketServer({ server: httpServer });
+    } else {
+      this.wss = new WebSocketServer({ port: this.port });
+    }
     this.wss.on('connection', (ws: any) => {
       this.clients.add(ws);
 

@@ -209,19 +209,30 @@ export class ExecutorServer {
     // Initialize state store metadata
     this.stateStore.setMeta('start_time', String(this.startedAt));
 
-    // Start WebSocket server
-    this.broadcaster.start(() => ({
-      agents: this.agentManager.getActiveAgents(),
-      tasks: this.queue.getAll(),
-      recentEvents: this.recentEvents.slice(-50),
-    }));
-
-    // Start REST API server
+    // Start HTTP server (shared by both REST API and WebSocket)
     this.httpServer = createServer((req, res) => {
+      // Only handle REST API requests here (non-upgrade requests)
+      if (!req.url || !req.url.startsWith('/')) {
+        res.writeHead(404);
+        res.end();
+        return;
+      }
       this.handleRESTRequest(req, res);
     });
+
+    // Start WebSocket server on the same HTTP server
+    this.broadcaster.start(
+      () => ({
+        agents: this.agentManager.getActiveAgents(),
+        tasks: this.queue.getAll(),
+        recentEvents: this.recentEvents.slice(-50),
+      }),
+      this.httpServer,
+    );
+
+    // Listen on the shared HTTP server
     this.httpServer.listen(this.config.port, () => {
-      console.log(`[ExecutorServer] REST API listening on http://localhost:${this.config.port}`);
+      console.log(`[ExecutorServer] Ready on http://localhost:${this.config.port} (REST API + WebSocket)`);
     });
 
     // Spawn initial agents
