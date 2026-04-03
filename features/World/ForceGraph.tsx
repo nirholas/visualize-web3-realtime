@@ -267,29 +267,12 @@ const HubLabels = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
   return (
     <group ref={groupRef}>
       {labels.map((l) => (
-        <Html
+        <ProtocolLabel
           key={l.id}
-          position={[l.x, l.radius + 0.5, l.z]}
-          center
-          distanceFactor={50}
-          style={{ pointerEvents: 'none' }}
-        >
-          <div
-            style={{
-              fontFamily: 'monospace',
-              fontSize: 11,
-              fontWeight: 700,
-              color: '#1a1a2e',
-              background: 'rgba(255,255,255,0.85)',
-              padding: '2px 6px',
-              borderRadius: 3,
-              whiteSpace: 'nowrap',
-              userSelect: 'none',
-            }}
-          >
-            {l.label}
-          </div>
-        </Html>
+          name={l.label}
+          visible
+          position={[l.x, l.radius + 0.8, l.z]}
+        />
       ))}
     </group>
   );

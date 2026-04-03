@@ -95,7 +95,7 @@ const UnifiedCard = memo<UnifiedCardProps>(({ event, isNew }) => {
       {amount && (
         <span style={{ flexShrink: 0, color, fontWeight: 500 }}>{amount}</span>
       )}
-      <span style={{ flexShrink: 0, fontSize: 9, color: '#999' }}>>
+      <span style={{ flexShrink: 0, fontSize: 9, color: '#999' }}>&gt;
         {timeAgo(event.timestamp)}
       </span>
     </m.div>
