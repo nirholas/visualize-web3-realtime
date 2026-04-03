@@ -93,11 +93,33 @@ export function useDataProvider({ paused = false }: { paused?: boolean } = {}) {
   const [providers, setProviders] = useState<DataProvider[]>([]);
   const providersRef = useRef<DataProvider[]>([]);
 
-  // Collect all categories from registered providers
+  // Disabled providers
+  const [disabledProviders, setDisabledProviders] = useState<Set<string>>(new Set());
+
+  const toggleProvider = useCallback((providerId: string) => {
+    setDisabledProviders((prev) => {
+      const next = new Set(prev);
+      if (next.has(providerId)) {
+        next.delete(providerId);
+        // Reconnect
+        const provider = providersRef.current.find((p) => p.id === providerId);
+        provider?.connect();
+      } else {
+        next.add(providerId);
+        // Disconnect
+        const provider = providersRef.current.find((p) => p.id === providerId);
+        provider?.disconnect();
+      }
+      return next;
+    });
+  }, []);
+
+  // Collect all categories from registered providers (excluding disabled)
   const allCategories = useMemo<CategoryConfig[]>(() => {
     const seen = new Set<string>();
     const result: CategoryConfig[] = [];
     for (const p of providers) {
+      if (disabledProviders.has(p.id)) continue;
       for (const cat of p.categories) {
         if (!seen.has(cat.id)) {
           seen.add(cat.id);
@@ -106,7 +128,7 @@ export function useDataProvider({ paused = false }: { paused?: boolean } = {}) {
       }
     }
     return result;
-  }, [providers]);
+  }, [providers, disabledProviders]);
 
   // Category visibility (all enabled by default)
   const [enabledCategories, setEnabledCategories] = useState<Set<string>>(() => new Set());
@@ -153,9 +175,10 @@ export function useDataProvider({ paused = false }: { paused?: boolean } = {}) {
     return () => clearInterval(interval);
   }, []);
 
-  // Connect all providers, set paused state
+  // Connect all providers (skip disabled), set paused state
   useEffect(() => {
     for (const p of providers) {
+      if (disabledProviders.has(p.id)) continue;
       p.setPaused(paused);
       p.connect();
     }
@@ -164,27 +187,31 @@ export function useDataProvider({ paused = false }: { paused?: boolean } = {}) {
         p.disconnect();
       }
     };
-  }, [providers, paused]);
+  }, [providers, paused, disabledProviders]);
 
-  // Subscribe to events and rebuild stats
+  // Subscribe to events and rebuild stats (skip disabled)
   useEffect(() => {
     const unsubs: (() => void)[] = [];
 
     for (const p of providers) {
+      if (disabledProviders.has(p.id)) continue;
       const unsub = p.onEvent(() => {
-        // Rebuild merged stats on any event
-        setStats(mergeStats(providersRef.current));
+        const activeProviders = providersRef.current.filter(
+          (pr) => !disabledProviders.has(pr.id),
+        );
+        setStats(mergeStats(activeProviders));
       });
       unsubs.push(unsub);
     }
 
     // Initial stats
-    if (providers.length > 0) {
-      setStats(mergeStats(providers));
+    const activeProviders = providers.filter((p) => !disabledProviders.has(p.id));
+    if (activeProviders.length > 0) {
+      setStats(mergeStats(activeProviders));
     }
 
     return () => unsubs.forEach((u) => u());
-  }, [providers]);
+  }, [providers, disabledProviders]);
 
   // Connection states
   const connections = useMemo(() => {
@@ -217,5 +244,7 @@ export function useDataProvider({ paused = false }: { paused?: boolean } = {}) {
     allCategories,
     categoryConfigMap,
     providers,
+    disabledProviders,
+    toggleProvider,
   };
 }

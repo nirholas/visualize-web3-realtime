@@ -1,6 +1,6 @@
 'use client';
 
-import { PumpFunProvider, MockProvider } from '@web3viz/providers';
+import { PumpFunProvider, MockProvider, AgentProvider } from '@web3viz/providers';
 
 // ---------------------------------------------------------------------------
 // Provider instances
@@ -15,4 +15,5 @@ import { PumpFunProvider, MockProvider } from '@web3viz/providers';
 export const providers = [
   new PumpFunProvider(),
   new MockProvider(),
+  new AgentProvider(),
 ];

@@ -1,0 +1,470 @@
+'use client';
+
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
+import { AnimatePresence, m } from 'framer-motion';
+import type { DataProvider, ConnectionState, SourceConfig } from '@web3viz/core';
+
+// ============================================================================
+// Types
+// ============================================================================
+
+interface ProviderPanelProps {
+  open: boolean;
+  onClose: () => void;
+  providers: DataProvider[];
+  enabledProviders: Set<string>;
+  onToggleProvider: (id: string) => void;
+  connections: Record<string, ConnectionState[]>;
+  stats: { counts: Record<string, number> };
+}
+
+// ============================================================================
+// Toggle Switch
+// ============================================================================
+
+const ToggleSwitch = memo<{ enabled: boolean; onToggle: () => void }>(({ enabled, onToggle }) => (
+  <button
+    onClick={onToggle}
+    type="button"
+    aria-label={enabled ? 'Disable provider' : 'Enable provider'}
+    style={{
+      background: enabled ? '#34d399' : '#d1d5db',
+      border: 'none',
+      borderRadius: 10,
+      cursor: 'pointer',
+      height: 20,
+      position: 'relative',
+      transition: 'background 200ms',
+      width: 36,
+      flexShrink: 0,
+    }}
+  >
+    <div
+      style={{
+        background: '#fff',
+        borderRadius: '50%',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+        height: 16,
+        left: enabled ? 18 : 2,
+        position: 'absolute',
+        top: 2,
+        transition: 'left 200ms',
+        width: 16,
+      }}
+    />
+  </button>
+));
+
+ToggleSwitch.displayName = 'ToggleSwitch';
+
+// ============================================================================
+// Connection Dot
+// ============================================================================
+
+const StatusDot = memo<{ status: 'connected' | 'disconnected' | 'disabled' }>(({ status }) => {
+  const color = status === 'connected' ? '#22c55e' : status === 'disconnected' ? '#ef4444' : '#d1d5db';
+  const label = status === 'connected' ? 'Connected' : status === 'disconnected' ? 'Disconnected' : 'Disabled';
+  return (
+    <div
+      title={label}
+      style={{
+        background: color,
+        borderRadius: '50%',
+        height: 6,
+        width: 6,
+        flexShrink: 0,
+      }}
+    />
+  );
+});
+
+StatusDot.displayName = 'StatusDot';
+
+// ============================================================================
+// Chain Badge
+// ============================================================================
+
+const ChainBadge = memo<{ label: string; color: string }>(({ label, color }) => (
+  <span
+    style={{
+      background: color,
+      borderRadius: 10,
+      color: '#fff',
+      fontSize: 9,
+      fontWeight: 600,
+      letterSpacing: '0.02em',
+      padding: '2px 6px',
+      textTransform: 'uppercase',
+      whiteSpace: 'nowrap',
+    }}
+  >
+    {label}
+  </span>
+));
+
+ChainBadge.displayName = 'ChainBadge';
+
+// ============================================================================
+// Provider Card
+// ============================================================================
+
+const ProviderCard = memo<{
+  provider: DataProvider;
+  enabled: boolean;
+  onToggle: () => void;
+  connectionStatus: 'connected' | 'disconnected' | 'disabled';
+  eventCount: number;
+  categoryCount: number;
+}>(({ provider, enabled, onToggle, connectionStatus, eventCount, categoryCount }) => {
+  const src = provider.sourceConfig;
+
+  return (
+    <div
+      style={{
+        background: '#f8f8f8',
+        borderRadius: 8,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 6,
+        opacity: enabled ? 1 : 0.5,
+        padding: '12px 16px',
+        transition: 'opacity 200ms',
+      }}
+    >
+      {/* Header: name + toggle */}
+      <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
+        <div style={{ alignItems: 'center', display: 'flex', gap: 8 }}>
+          <StatusDot status={connectionStatus} />
+          <span
+            style={{
+              color: '#1a1a1a',
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 13,
+              fontWeight: 600,
+            }}
+          >
+            {src.icon} {provider.name}
+          </span>
+        </div>
+        <ToggleSwitch enabled={enabled} onToggle={onToggle} />
+      </div>
+
+      {/* Description */}
+      {src.description && (
+        <span
+          style={{
+            color: '#888',
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 10,
+            lineHeight: 1.4,
+          }}
+        >
+          {src.description}
+        </span>
+      )}
+
+      {/* Chain badge + stats row */}
+      <div style={{ alignItems: 'center', display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 2 }}>
+        <ChainBadge label={src.label} color={src.color} />
+        <span
+          style={{
+            color: '#999',
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 9,
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+          }}
+        >
+          {categoryCount} categories
+        </span>
+        <span
+          style={{
+            color: '#999',
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 9,
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+          }}
+        >
+          {formatCount(eventCount)} events
+        </span>
+      </div>
+    </div>
+  );
+});
+
+ProviderCard.displayName = 'ProviderCard';
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+function formatCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return String(n);
+}
+
+// ============================================================================
+// ProviderPanel
+// ============================================================================
+
+const ProviderPanel = memo<ProviderPanelProps>(({
+  open,
+  onClose,
+  providers,
+  enabledProviders,
+  onToggleProvider,
+  connections,
+  stats,
+}) => {
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // Close on Escape
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [open, onClose]);
+
+  // Close on click outside
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    const timer = setTimeout(() => document.addEventListener('mousedown', handler), 50);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('mousedown', handler);
+    };
+  }, [open, onClose]);
+
+  // Compute total events per second (approximate from stats)
+  const totalEvents = useMemo(() => {
+    return Object.values(stats.counts).reduce((sum, v) => sum + v, 0);
+  }, [stats.counts]);
+
+  // Derive connection status per provider
+  const getConnectionStatus = useCallback(
+    (providerId: string): 'connected' | 'disconnected' | 'disabled' => {
+      if (!enabledProviders.has(providerId)) return 'disabled';
+      const conns = connections[providerId];
+      if (!conns || conns.length === 0) return 'disconnected';
+      return conns.some((c) => c.connected) ? 'connected' : 'disconnected';
+    },
+    [enabledProviders, connections],
+  );
+
+  // Get event count for a provider (sum its category counts)
+  const getEventCount = useCallback(
+    (provider: DataProvider): number => {
+      let total = 0;
+      for (const cat of provider.categories) {
+        total += stats.counts[cat.id] ?? 0;
+      }
+      return total;
+    },
+    [stats.counts],
+  );
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <m.div
+          ref={panelRef}
+          initial={{ x: -320 }}
+          animate={{ x: 0 }}
+          exit={{ x: -320 }}
+          transition={{ type: 'tween', duration: 0.25, ease: 'easeOut' }}
+          style={{
+            background: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            borderRight: '1px solid #e0e0e0',
+            boxShadow: '4px 0 24px rgba(0,0,0,0.08)',
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            left: 0,
+            overflowY: 'auto',
+            padding: '24px 20px',
+            position: 'absolute',
+            top: 0,
+            width: 320,
+            zIndex: 50,
+          }}
+        >
+          {/* Header */}
+          <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+            <h2
+              style={{
+                color: '#1a1a1a',
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: 16,
+                fontWeight: 600,
+                margin: 0,
+              }}
+            >
+              Data Sources
+            </h2>
+            <button
+              onClick={onClose}
+              type="button"
+              aria-label="Close panel"
+              style={{
+                alignItems: 'center',
+                background: 'none',
+                border: 'none',
+                color: '#999',
+                cursor: 'pointer',
+                display: 'flex',
+                fontSize: 18,
+                height: 28,
+                justifyContent: 'center',
+                width: 28,
+              }}
+            >
+              &#x2715;
+            </button>
+          </div>
+
+          <p
+            style={{
+              color: '#888',
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 11,
+              lineHeight: 1.5,
+              margin: '0 0 16px',
+            }}
+          >
+            Manage live data providers. Toggle sources on/off to control what appears in the visualization.
+          </p>
+
+          {/* Global stats */}
+          <div
+            style={{
+              alignItems: 'center',
+              background: '#f0f0f0',
+              borderRadius: 6,
+              display: 'flex',
+              gap: 12,
+              justifyContent: 'space-between',
+              marginBottom: 16,
+              padding: '8px 12px',
+            }}
+          >
+            <span
+              style={{
+                color: '#666',
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: 10,
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+              }}
+            >
+              Total Events
+            </span>
+            <span
+              style={{
+                color: '#1a1a1a',
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: 14,
+                fontWeight: 600,
+              }}
+            >
+              {formatCount(totalEvents)}
+            </span>
+          </div>
+
+          {/* Provider list */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {providers.length === 0 ? (
+              <div
+                style={{
+                  color: '#999',
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: 11,
+                  padding: '24px 0',
+                  textAlign: 'center',
+                }}
+              >
+                No data providers registered.
+              </div>
+            ) : (
+              providers.map((provider) => (
+                <ProviderCard
+                  key={provider.id}
+                  provider={provider}
+                  enabled={enabledProviders.has(provider.id)}
+                  onToggle={() => onToggleProvider(provider.id)}
+                  connectionStatus={getConnectionStatus(provider.id)}
+                  eventCount={getEventCount(provider)}
+                  categoryCount={provider.categories.length}
+                />
+              ))
+            )}
+          </div>
+
+          {/* Spacer */}
+          <div style={{ flex: 1, minHeight: 16 }} />
+
+          {/* Add Custom Provider (future) */}
+          <div
+            style={{
+              borderTop: '1px solid #e0e0e0',
+              paddingTop: 16,
+            }}
+          >
+            <button
+              disabled
+              type="button"
+              style={{
+                alignItems: 'center',
+                background: '#e8e8e8',
+                border: '1px solid #d0d0d0',
+                borderRadius: 8,
+                color: '#aaa',
+                cursor: 'not-allowed',
+                display: 'flex',
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: 11,
+                gap: 6,
+                justifyContent: 'center',
+                letterSpacing: '0.04em',
+                padding: '10px 0',
+                textTransform: 'uppercase',
+                width: '100%',
+              }}
+            >
+              + Add Custom Provider
+            </button>
+            <span
+              style={{
+                color: '#bbb',
+                display: 'block',
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: 9,
+                letterSpacing: '0.04em',
+                marginTop: 6,
+                textAlign: 'center',
+                textTransform: 'uppercase',
+              }}
+            >
+              Coming soon
+            </span>
+          </div>
+        </m.div>
+      )}
+    </AnimatePresence>
+  );
+});
+
+ProviderPanel.displayName = 'ProviderPanel';
+
+export default ProviderPanel;

@@ -18,6 +18,7 @@ import StartJourney from '@/features/World/StartJourney';
 import StatsBar from '@/features/World/StatsBar';
 import { useJourney } from '@/features/World/useJourney';
 import EmbedConfigurator from '@/features/World/EmbedConfigurator';
+import ProviderPanel from '@/features/World/ProviderPanel';
 import { timestampedFilename } from '@/features/World/utils/screenshot';
 import { buildShareUrl, buildShareText, parseShareParams, shareOnX, shareOnLinkedIn } from '@/features/World/utils/shareUrl';
 import type { ForceGraphHandle } from '@/features/World/ForceGraph';
@@ -218,6 +219,7 @@ export default function WorldPage() {
   const [searchError, setSearchError] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [embedOpen, setEmbedOpen] = useState(false);
+  const [providerPanelOpen, setProviderPanelOpen] = useState(false);
   const [shareColors, setShareColors] = useState<ShareColors>({
     background: '#ffffff',
     protocol: '#1a1a1a',
@@ -234,12 +236,23 @@ export default function WorldPage() {
     allCategories, allSources
   } = useProviders({ providers, paused: !isPlaying, startEnabled: false });
 
-  // Auto-play when first provider is enabled
+  // Auto-play when first provider is enabled + sync agents toggle to URL
   const toggleProvider = useCallback((providerId: string) => {
     rawToggleProvider(providerId);
     // If enabling (not currently enabled), start playing
     if (!enabledProviders.has(providerId)) {
       setIsPlaying(true);
+    }
+    // Sync ?agents= URL param
+    if (providerId === 'agents') {
+      const url = new URL(window.location.href);
+      const willEnable = !enabledProviders.has('agents');
+      if (willEnable) {
+        url.searchParams.set('agents', 'true');
+      } else {
+        url.searchParams.delete('agents');
+      }
+      window.history.replaceState({}, '', url.toString());
     }
   }, [rawToggleProvider, enabledProviders]);
 
@@ -784,6 +797,17 @@ export default function WorldPage() {
         <EmbedConfigurator onClose={() => setEmbedOpen(false)} />
       )}
 
+      {/* Provider management panel */}
+      <ProviderPanel
+        open={providerPanelOpen}
+        onClose={() => setProviderPanelOpen(false)}
+        providers={providers}
+        enabledProviders={enabledProviders}
+        onToggleProvider={toggleProvider}
+        connections={connections}
+        stats={stats}
+      />
+
       {/* AI Chat interface — bottom left */}
       {hasActiveProvider && (
         <WorldChat
@@ -822,6 +846,35 @@ export default function WorldPage() {
           {'</>'}  Embed
         </button>
       )}
+
+      {/* Data Sources gear button — bottom left */}
+      <button
+        onClick={() => setProviderPanelOpen(true)}
+        title="Data Sources"
+        type="button"
+        style={{
+          alignItems: 'center',
+          background: '#ffffff',
+          border: '1px solid #e8e8e8',
+          borderRadius: 6,
+          bottom: 16,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          color: '#666',
+          cursor: 'pointer',
+          display: 'flex',
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: 10,
+          gap: 4,
+          left: 12,
+          letterSpacing: '0.06em',
+          padding: '4px 12px',
+          position: 'absolute',
+          textTransform: 'uppercase',
+          zIndex: 20,
+        }}
+      >
+        &#x2699; Sources
+      </button>
     </div>
   );
 }
