@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 600" width="340" height="600">
+  <style>
+    @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+    @keyframes fadeIn { 0%{opacity:0} 100%{opacity:1} }
+    @keyframes pulse { 0%,100%{opacity:.6} 50%{opacity:1} }
+    text { font-family: 'IBM Plex Mono', monospace; }
+    .frame { fill:#12121e; stroke:#60a5fa; stroke-width:1.2; rx:10; }
+    .title { fill:#e2e8f0; font-size:13px; font-weight:bold; }
+    .label { fill:#e2e8f0; font-size:11px; }
+    .label-sm { fill:#94a3b8; font-size:10px; }
+    .label-dim { fill:#64748b; font-size:10px; }
+    .section { fill:#a78bfa; font-size:10px; letter-spacing:1px; }
+    .ok { fill:#34d399; font-size:10px; }
+    .running { fill:#60a5fa; font-size:10px; animation: pulse 1.5s ease-in-out infinite; }
+    .close { fill:#94a3b8; font-size:16px; cursor:pointer; }
+    .divider { stroke:#2a2a40; stroke-width:1; }
+    .status-dot { fill:#34d399; }
+    .indent { fill:#94a3b8; font-size:10px; }
+  </style>
+
+  <rect width="340" height="600" rx="12" fill="#0f0f1a"/>
+  <rect class="frame" x="10" y="10" width="320" height="580"/>
+
+  <!-- Header -->
+  <text class="title" x="24" y="38">TASK: Review PR #42</text>
+  <text class="close" x="304" y="38">✕</text>
+
+  <!-- Agent / Status -->
+  <text class="label-sm" x="24" y="65">Agent:</text>
+  <text class="label" x="80" y="65">CodeReviewer</text>
+  <text class="label-sm" x="24" y="82">Status:</text>
+  <circle class="status-dot" cx="83" cy="78" r="4"/>
+  <text class="label" x="92" y="82">In Progress</text>
+  <text class="label-sm" x="24" y="99">Started:</text>
+  <text class="label" x="90" y="99">2m 14s ago</text>
+  <text class="label-sm" x="24" y="116">Duration:</text>
+  <text class="label" x="100" y="116">2m 14s (running)</text>
+
+  <!-- Divider -->
+  <line class="divider" x1="24" y1="130" x2="316" y2="130"/>
+  <text class="section" x="24" y="150">─── TOOL CALLS (7) ────</text>
+
+  <!-- Tool calls -->
+  <text class="label-dim" x="24" y="172">1.</text>
+  <text class="label" x="42" y="172">read_file</text>
+  <text class="indent" x="42" y="186">src/index.ts</text>
+  <text class="ok" x="270" y="186">✓ 0.3s</text>
+
+  <text class="label-dim" x="24" y="208">2.</text>
+  <text class="label" x="42" y="208">grep_search</text>
+  <text class="indent" x="42" y="222">"handleSubmit"</text>
+  <text class="ok" x="270" y="222">✓ 0.1s</text>
+
+  <text class="label-dim" x="24" y="244">3.</text>
+  <text class="label" x="42" y="244">read_file</text>
+  <text class="indent" x="42" y="258">src/components/Form.tsx</text>
+  <text class="ok" x="270" y="258">✓ 0.4s</text>
+
+  <text class="label-dim" x="24" y="280">4.</text>
+  <text class="label" x="42" y="280">run_in_terminal</text>
+  <text class="indent" x="42" y="294">npx tsc --noEmit</text>
+  <text class="running" x="250" y="294">⏳ running...</text>
+
+  <!-- Sub-agents -->
+  <line class="divider" x1="24" y1="318" x2="316" y2="318"/>
+  <text class="section" x="24" y="338">─── SUB-AGENTS (1) ────</text>
+  <text class="indent" x="24" y="360">└─ TypeChecker (coder)</text>
+  <text class="indent" x="42" y="376">1 task · 3 tool calls</text>
+
+  <!-- Reasoning -->
+  <line class="divider" x1="24" y1="396" x2="316" y2="396"/>
+  <text class="section" x="24" y="416">─── REASONING ─────────</text>
+  <text class="indent" x="24" y="440">"The form component has a</text>
+  <text class="indent" x="28" y="456">race condition in the</text>
+  <text class="indent" x="28" y="472">submit handler. Need to</text>
+  <text class="indent" x="28" y="488">check if the TypeScript</text>
+  <text class="indent" x="28" y="504">types allow concurrent..."</text>
+</svg>

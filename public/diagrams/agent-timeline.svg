@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 100" width="720" height="100">
+  <style>
+    @keyframes scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-40px)} }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+    @keyframes shimmer { 0%{opacity:.5} 50%{opacity:1} 100%{opacity:.5} }
+    text { font-family: 'IBM Plex Mono', monospace; }
+    .frame { fill:#12121e; stroke:#60a5fa; stroke-width:1.2; rx:8; }
+    .label { fill:#94a3b8; font-size:9px; }
+    .label-w { fill:#e2e8f0; font-size:10px; }
+    .btn { fill:#1e1e30; stroke:#60a5fa; stroke-width:1; rx:4; }
+    .live-dot { fill:#f87171; animation: blink 1.2s ease-in-out infinite; }
+    .bar-cr { fill:#a78bfa; rx:2; }
+    .bar-r { fill:#60a5fa; rx:2; }
+    .bar-p { fill:#f472b6; rx:2; }
+    .bar-idle { fill:#1e1e30; rx:2; }
+    .shimmer { animation: shimmer 2s ease-in-out infinite; }
+  </style>
+
+  <rect width="720" height="100" rx="10" fill="#0f0f1a"/>
+  <rect class="frame" x="10" y="10" width="700" height="80"/>
+
+  <!-- Time labels -->
+  <text class="label" x="25" y="30">◀ 2m ago</text>
+  <text class="label" x="490" y="30">NOW ▶</text>
+
+  <!-- Playback controls -->
+  <rect class="btn" x="535" y="18" width="45" height="20"/>
+  <text class="label-w" x="545" y="32">▶ ❚❚</text>
+
+  <rect class="btn" x="590" y="18" width="30" height="20"/>
+  <text class="label-w" x="597" y="32">2x</text>
+
+  <!-- LIVE indicator -->
+  <circle class="live-dot" cx="640" cy="28" r="4"/>
+  <text class="label-w" style="fill:#f87171;font-weight:bold" x="650" y="32">LIVE</text>
+
+  <!-- Timeline bars -->
+  <rect class="bar-cr shimmer" x="30" y="48" width="50" height="14"/>
+  <rect class="bar-idle" x="80" y="48" width="30" height="14"/>
+  <rect class="bar-cr shimmer" x="110" y="48" width="90" height="14" style="animation-delay:.3s"/>
+  <rect class="bar-idle" x="200" y="48" width="25" height="14"/>
+  <rect class="bar-r" x="225" y="48" width="70" height="14"/>
+  <rect class="bar-idle" x="295" y="48" width="20" height="14"/>
+  <rect class="bar-cr shimmer" x="315" y="48" width="60" height="14" style="animation-delay:.6s"/>
+  <rect class="bar-r" x="375" y="48" width="50" height="14"/>
+  <rect class="bar-p" x="425" y="48" width="40" height="14"/>
+  <rect class="bar-cr shimmer" x="465" y="48" width="90" height="14" style="animation-delay:.9s"/>
+
+  <!-- Legend -->
+  <rect class="bar-cr" x="30" y="72" width="10" height="10"/>
+  <text class="label" x="44" y="81">CR</text>
+  <rect class="bar-idle" x="70" y="72" width="10" height="10"/>
+  <text class="label" x="84" y="81">idle</text>
+  <rect class="bar-r" x="115" y="72" width="10" height="10"/>
+  <text class="label" x="129" y="81">R task</text>
+  <rect class="bar-p" x="175" y="72" width="10" height="10"/>
+  <text class="label" x="189" y="81">P task</text>
+</svg>

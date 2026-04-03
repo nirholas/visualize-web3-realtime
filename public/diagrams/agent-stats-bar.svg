@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 50" width="720" height="50">
+  <style>
+    @keyframes countUp { 0%{opacity:.5} 100%{opacity:1} }
+    text { font-family: 'IBM Plex Mono', monospace; }
+    .frame { fill:#12121e; stroke:#60a5fa; stroke-width:1; rx:6; }
+    .label { fill:#94a3b8; font-size:9px; }
+    .value { fill:#e2e8f0; font-size:12px; font-weight:bold; animation: countUp 0.5s ease-out; }
+    .sep { stroke:#2a2a40; stroke-width:1; }
+  </style>
+
+  <rect width="720" height="50" rx="8" fill="#0f0f1a"/>
+  <rect class="frame" x="10" y="6" width="700" height="38"/>
+
+  <text class="label" x="30" y="22">AGENTS:</text>
+  <text class="value" style="fill:#a78bfa" x="90" y="22">3</text>
+  <line class="sep" x1="120" y1="12" x2="120" y2="38"/>
+
+  <text class="label" x="140" y="22">TASKS:</text>
+  <text class="value" style="fill:#f472b6" x="192" y="22">7</text>
+  <line class="sep" x1="220" y1="12" x2="220" y2="38"/>
+
+  <text class="label" x="240" y="22">TOOLS/MIN:</text>
+  <text class="value" style="fill:#60a5fa" x="322" y="22">12</text>
+  <line class="sep" x1="360" y1="12" x2="360" y2="38"/>
+
+  <text class="label" x="380" y="22">COMPLETED:</text>
+  <text class="value" style="fill:#34d399" x="466" y="22">142</text>
+  <line class="sep" x1="510" y1="12" x2="510" y2="38"/>
+
+  <text class="label" x="530" y="22">ERRORS:</text>
+  <text class="value" style="fill:#f87171" x="594" y="22">3</text>
+</svg>

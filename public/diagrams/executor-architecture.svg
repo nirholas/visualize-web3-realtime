@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 400" width="720" height="400">
+  <style>
+    @keyframes pulse { 0%,100%{opacity:.6} 50%{opacity:1} }
+    @keyframes flowRight { 0%{stroke-dashoffset:16} 100%{stroke-dashoffset:0} }
+    @keyframes glow { 0%,100%{filter:drop-shadow(0 0 2px #a78bfa)} 50%{filter:drop-shadow(0 0 8px #a78bfa)} }
+    text { font-family: 'IBM Plex Mono', monospace; }
+    .outer { fill:#12121e; stroke:#a78bfa; stroke-width:2; rx:12; animation: glow 3s ease-in-out infinite; }
+    .box { fill:#181825; stroke-width:1.2; rx:6; }
+    .label { fill:#e2e8f0; font-size:12px; font-weight:bold; }
+    .label-sm { fill:#94a3b8; font-size:10px; }
+    .title { fill:#e2e8f0; font-size:14px; font-weight:bold; letter-spacing:2px; }
+    .conn { stroke-width:1.2; fill:none; stroke-dasharray:5,3; animation: flowRight 0.6s linear infinite; }
+    .arrow-out { stroke:#60a5fa; stroke-width:1.5; fill:none; stroke-dasharray:6,4; animation: flowRight 0.5s linear infinite; }
+    .pulse { animation: pulse 2s ease-in-out infinite; }
+  </style>
+
+  <rect width="720" height="400" rx="12" fill="#0f0f1a"/>
+
+  <!-- Outer executor box -->
+  <rect class="outer" x="60" y="40" width="530" height="300"/>
+  <text class="title" x="210" y="72">EXECUTOR SERVER</text>
+
+  <!-- Row 1 -->
+  <rect class="box" style="stroke:#fbbf24" x="90" y="100" width="130" height="55"/>
+  <text class="label" x="117" y="122">Task</text>
+  <text class="label" x="114" y="138">Queue</text>
+
+  <rect class="box" style="stroke:#a78bfa" x="260" y="100" width="130" height="55"/>
+  <text class="label" x="287" y="122">Agent</text>
+  <text class="label" x="281" y="138">Manager</text>
+
+  <rect class="box" style="stroke:#60a5fa" x="430" y="100" width="130" height="55"/>
+  <text class="label" x="450" y="122">WebSocket</text>
+  <text class="label" x="451" y="138">Broadcast</text>
+
+  <!-- Row 1 connectors -->
+  <line class="conn" style="stroke:#fbbf24" x1="220" y1="128" x2="260" y2="128"/>
+  <line class="conn" style="stroke:#a78bfa" x1="390" y1="128" x2="430" y2="128"/>
+
+  <!-- Row 2 -->
+  <rect class="box" style="stroke:#34d399" x="90" y="200" width="130" height="55"/>
+  <text class="label" x="117" y="222">State</text>
+  <text class="label" x="117" y="238">Store</text>
+
+  <rect class="box" style="stroke:#f472b6" x="260" y="200" width="130" height="55"/>
+  <text class="label" x="276" y="222">SperaxOS</text>
+  <text class="label" x="287" y="238">Client</text>
+
+  <rect class="box" style="stroke:#f87171" x="430" y="200" width="130" height="55"/>
+  <text class="label" x="457" y="222">Health</text>
+  <text class="label" x="454" y="238">Monitor</text>
+
+  <!-- Vertical connectors row1→row2 -->
+  <line class="conn" style="stroke:#34d399" x1="155" y1="155" x2="155" y2="200"/>
+  <line class="conn" style="stroke:#f472b6" x1="325" y1="155" x2="325" y2="200"/>
+  <line class="conn" style="stroke:#f87171" x1="495" y1="155" x2="495" y2="200"/>
+
+  <!-- Arrow out to Frontend -->
+  <line class="arrow-out" x1="560" y1="128" x2="660" y2="128"/>
+  <polygon fill="#60a5fa" points="660,123 672,128 660,133"/>
+  <text class="label-sm" x="630" y="115">→ Frontend</text>
+  <circle class="pulse" fill="#60a5fa" cx="660" cy="128" r="4"/>
+</svg>

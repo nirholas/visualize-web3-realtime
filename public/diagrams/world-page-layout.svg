@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 320" width="600" height="320">
+  <style>
+    @keyframes pulse { 0%,100%{opacity:.6} 50%{opacity:1} }
+    text { font-family: 'IBM Plex Mono', monospace; }
+    .frame { fill:#181825; stroke:#60a5fa; stroke-width:1.2; rx:8; }
+    .zone { fill:#12121e; stroke:#2a2a40; stroke-width:1; rx:4; }
+    .label { fill:#e2e8f0; font-size:10px; }
+    .label-sm { fill:#94a3b8; font-size:9px; }
+    .title { fill:#e2e8f0; font-size:9px; font-weight:bold; }
+    .pulse { animation: pulse 2s ease-in-out infinite; }
+  </style>
+
+  <rect width="600" height="320" rx="12" fill="#0f0f1a"/>
+  <rect class="frame" x="20" y="20" width="560" height="280"/>
+
+  <!-- Title -->
+  <text class="label" style="font-size:11px;font-weight:bold" x="230" y="15">WORLD PAGE LAYOUT</text>
+
+  <!-- Timeline Bar -->
+  <rect class="zone" x="35" y="35" width="530" height="35"/>
+  <text class="title" x="230" y="57">TimelineBar (top)</text>
+
+  <!-- Middle section -->
+  <!-- Sidebar -->
+  <rect class="zone" style="stroke:#a78bfa" x="35" y="80" width="80" height="170"/>
+  <text class="title" style="fill:#a78bfa" x="43" y="130">Side</text>
+  <text class="title" style="fill:#a78bfa" x="46" y="145">bar</text>
+
+  <!-- 3D Canvas -->
+  <rect class="zone" style="stroke:#f472b6" x="125" y="80" width="440" height="170"/>
+  <text class="title" style="fill:#f472b6" x="260" y="160">3D ForceGraph Canvas</text>
+  <circle class="pulse" fill="#f472b6" cx="253" cy="170" r="3"/>
+
+  <!-- Bottom section -->
+  <rect class="zone" style="stroke:#fbbf24" x="35" y="260" width="370" height="30"/>
+  <text class="title" style="fill:#fbbf24" x="130" y="280">StatsBar (bottom-left)</text>
+
+  <rect class="zone" style="stroke:#34d399" x="415" y="260" width="150" height="30"/>
+  <text class="title" style="fill:#34d399" x="445" y="280">LiveFeed</text>
+</svg>

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 580 200" width="580" height="200">
+  <style>
+    @keyframes pulse { 0%,100%{opacity:.7} 50%{opacity:1} }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+    text { font-family: 'IBM Plex Mono', monospace; }
+    .banner { rx:8; stroke-width:1.2; }
+    .healthy { fill:#0a2e1a; stroke:#34d399; }
+    .degraded { fill:#2e2a0a; stroke:#fbbf24; }
+    .offline { fill:#2e0a0a; stroke:#f87171; }
+    .text-ok { fill:#34d399; font-size:11px; }
+    .text-warn { fill:#fbbf24; font-size:11px; }
+    .text-err { fill:#f87171; font-size:11px; }
+    .dot-ok { fill:#34d399; animation: pulse 2s ease-in-out infinite; }
+    .dot-warn { fill:#fbbf24; animation: blink 1.5s ease-in-out infinite; }
+    .dot-err { fill:#f87171; animation: blink 0.8s ease-in-out infinite; }
+    .state-label { fill:#94a3b8; font-size:9px; font-style: italic; }
+  </style>
+
+  <rect width="580" height="200" rx="12" fill="#0f0f1a"/>
+
+  <!-- Healthy -->
+  <text class="state-label" x="20" y="18">Healthy:</text>
+  <rect class="banner healthy" x="20" y="24" width="540" height="38"/>
+  <circle class="dot-ok" cx="42" cy="43" r="5"/>
+  <text class="text-ok" x="55" y="47">EXECUTOR RUNNING · 3 agents · uptime 2d 14h</text>
+
+  <!-- Degraded -->
+  <text class="state-label" x="20" y="88">Degraded:</text>
+  <rect class="banner degraded" x="20" y="94" width="540" height="38"/>
+  <circle class="dot-warn" cx="42" cy="113" r="5"/>
+  <text class="text-warn" x="55" y="117">⚠ EXECUTOR SLOW · last heartbeat 45s ago</text>
+
+  <!-- Offline -->
+  <text class="state-label" x="20" y="158">Offline:</text>
+  <rect class="banner offline" x="20" y="164" width="540" height="38"/>
+  <circle class="dot-err" cx="42" cy="183" r="5"/>
+  <text class="text-err" x="55" y="187">✗ EXECUTOR OFFLINE · last seen 2m ago</text>
+</svg>

@@ -1,0 +1,186 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 520" width="720" height="520">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="srcGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <linearGradient id="provGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2563eb"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+    <linearGradient id="regGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0891b2"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+    <linearGradient id="leafGrad1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#10b981"/>
+    </linearGradient>
+    <linearGradient id="leafGrad2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#d97706"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+    <linearGradient id="leafGrad3" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#dc2626"/>
+      <stop offset="100%" stop-color="#ef4444"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.4"/>
+    </filter>
+    <!-- Animated pulse dot -->
+    <circle id="dot" r="4" fill="#38bdf8" filter="url(#glow)">
+      <animate attributeName="opacity" values="1;0.3;1" dur="1.2s" repeatCount="indefinite"/>
+    </circle>
+  </defs>
+
+  <!-- Background -->
+  <rect width="720" height="520" rx="16" fill="url(#bgGrad)"/>
+
+  <!-- ════════ CONNECTORS (drawn first, behind boxes) ════════ -->
+
+  <!-- Vertical: Data Source → DataProvider -->
+  <line x1="360" y1="88" x2="360" y2="148" stroke="#475569" stroke-width="2" stroke-dasharray="6,4"/>
+  <!-- Animated dot on this connector -->
+  <circle r="4" fill="#a78bfa" filter="url(#glow)">
+    <animateMotion dur="1.6s" repeatCount="indefinite" path="M360,88 L360,148" />
+    <animate attributeName="opacity" values="1;0.4;1" dur="0.8s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Vertical: DataProvider → Registry -->
+  <line x1="360" y1="228" x2="360" y2="298" stroke="#475569" stroke-width="2" stroke-dasharray="6,4"/>
+  <circle r="4" fill="#38bdf8" filter="url(#glow)">
+    <animateMotion dur="1.6s" repeatCount="indefinite" begin="0.4s" path="M360,228 L360,298" />
+    <animate attributeName="opacity" values="1;0.4;1" dur="0.8s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Left label: registerProvider() -->
+  <text x="270" y="268" fill="#94a3b8" font-family="monospace" font-size="11" text-anchor="end" opacity="0.85">registerProvider()</text>
+
+  <!-- Right label: onEvent(callback) -->
+  <text x="450" y="268" fill="#94a3b8" font-family="monospace" font-size="11" text-anchor="start" opacity="0.85">onEvent(callback)</text>
+
+  <!-- Fan-out lines: Registry → 3 leaves -->
+  <!-- Left branch -->
+  <path d="M260,378 L180,418" stroke="#475569" stroke-width="2" stroke-dasharray="6,4" fill="none"/>
+  <circle r="3.5" fill="#34d399" filter="url(#glow)">
+    <animateMotion dur="1.4s" repeatCount="indefinite" begin="0.8s" path="M260,378 L180,418"/>
+    <animate attributeName="opacity" values="1;0.3;1" dur="0.7s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Center branch -->
+  <line x1="360" y1="378" x2="360" y2="418" stroke="#475569" stroke-width="2" stroke-dasharray="6,4"/>
+  <circle r="3.5" fill="#fbbf24" filter="url(#glow)">
+    <animateMotion dur="1.4s" repeatCount="indefinite" begin="1s" path="M360,378 L360,418"/>
+    <animate attributeName="opacity" values="1;0.3;1" dur="0.7s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Right branch -->
+  <path d="M460,378 L540,418" stroke="#475569" stroke-width="2" stroke-dasharray="6,4" fill="none"/>
+  <circle r="3.5" fill="#f87171" filter="url(#glow)">
+    <animateMotion dur="1.4s" repeatCount="indefinite" begin="1.2s" path="M460,378 L540,418"/>
+    <animate attributeName="opacity" values="1;0.3;1" dur="0.7s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- ════════ BOXES ════════ -->
+
+  <!-- 1. Data Source -->
+  <g filter="url(#shadow)">
+    <rect x="170" y="28" width="380" height="60" rx="10" fill="url(#srcGrad)" opacity="0.95"/>
+    <text x="360" y="52" fill="#fff" font-family="system-ui,sans-serif" font-size="15" font-weight="700" text-anchor="middle">Your Data Source(s)</text>
+    <text x="360" y="74" fill="#c7d2fe" font-family="monospace" font-size="11" text-anchor="middle">WebSocket · REST · gRPC · Kafka</text>
+    <!-- Subtle shimmer -->
+    <rect x="170" y="28" width="380" height="60" rx="10" fill="#fff" opacity="0">
+      <animate attributeName="opacity" values="0;0.07;0" dur="3s" repeatCount="indefinite"/>
+    </rect>
+  </g>
+
+  <!-- 2. DataProvider -->
+  <g filter="url(#shadow)">
+    <rect x="185" y="148" width="350" height="80" rx="10" fill="url(#provGrad)" opacity="0.95"/>
+    <text x="360" y="176" fill="#fff" font-family="system-ui,sans-serif" font-size="15" font-weight="700" text-anchor="middle">DataProvider</text>
+    <text x="360" y="196" fill="#bfdbfe" font-family="monospace" font-size="11" text-anchor="middle">(implements)</text>
+    <text x="360" y="216" fill="#dbeafe" font-family="monospace" font-size="11" text-anchor="middle">connect() · emit() · getStats()</text>
+    <rect x="185" y="148" width="350" height="80" rx="10" fill="#fff" opacity="0">
+      <animate attributeName="opacity" values="0;0.06;0" dur="3.5s" repeatCount="indefinite" begin="0.5s"/>
+    </rect>
+  </g>
+
+  <!-- 3. Provider Registry -->
+  <g filter="url(#shadow)">
+    <rect x="140" y="298" width="440" height="80" rx="10" fill="url(#regGrad)" opacity="0.95"/>
+    <text x="360" y="328" fill="#fff" font-family="system-ui,sans-serif" font-size="15" font-weight="700" text-anchor="middle">Provider Registry</text>
+    <text x="360" y="352" fill="#cffafe" font-family="monospace" font-size="11" text-anchor="middle">getAllProviders() · getEnabledProviders()</text>
+    <!-- Pulsing border highlight -->
+    <rect x="140" y="298" width="440" height="80" rx="10" fill="none" stroke="#22d3ee" stroke-width="1.5" opacity="0">
+      <animate attributeName="opacity" values="0;0.5;0" dur="2.5s" repeatCount="indefinite"/>
+    </rect>
+  </g>
+
+  <!-- 4a. ForceGraph -->
+  <g filter="url(#shadow)">
+    <rect x="90" y="418" width="180" height="70" rx="10" fill="url(#leafGrad1)" opacity="0.95"/>
+    <text x="180" y="448" fill="#fff" font-family="system-ui,sans-serif" font-size="14" font-weight="700" text-anchor="middle">ForceGraph</text>
+    <text x="180" y="468" fill="#d1fae5" font-family="monospace" font-size="11" text-anchor="middle">(3D scene)</text>
+    <!-- Pulse -->
+    <rect x="90" y="418" width="180" height="70" rx="10" fill="#fff" opacity="0">
+      <animate attributeName="opacity" values="0;0.08;0" dur="2s" repeatCount="indefinite" begin="0.2s"/>
+    </rect>
+  </g>
+
+  <!-- 4b. StatsBar -->
+  <g filter="url(#shadow)">
+    <rect x="280" y="418" width="160" height="70" rx="10" fill="url(#leafGrad2)" opacity="0.95"/>
+    <text x="360" y="448" fill="#fff" font-family="system-ui,sans-serif" font-size="14" font-weight="700" text-anchor="middle">StatsBar</text>
+    <text x="360" y="468" fill="#fef3c7" font-family="monospace" font-size="11" text-anchor="middle">(counters)</text>
+    <rect x="280" y="418" width="160" height="70" rx="10" fill="#fff" opacity="0">
+      <animate attributeName="opacity" values="0;0.08;0" dur="2s" repeatCount="indefinite" begin="0.6s"/>
+    </rect>
+  </g>
+
+  <!-- 4c. LiveFeed -->
+  <g filter="url(#shadow)">
+    <rect x="450" y="418" width="180" height="70" rx="10" fill="url(#leafGrad3)" opacity="0.95"/>
+    <text x="540" y="448" fill="#fff" font-family="system-ui,sans-serif" font-size="14" font-weight="700" text-anchor="middle">LiveFeed</text>
+    <text x="540" y="468" fill="#fecaca" font-family="monospace" font-size="11" text-anchor="middle">(event log)</text>
+    <rect x="450" y="418" width="180" height="70" rx="10" fill="#fff" opacity="0">
+      <animate attributeName="opacity" values="0;0.08;0" dur="2s" repeatCount="indefinite" begin="1s"/>
+    </rect>
+  </g>
+
+  <!-- ════════ ARROW HEADS ════════ -->
+  <!-- Arrow: Source → Provider -->
+  <polygon points="355,146 360,156 365,146" fill="#a78bfa">
+    <animate attributeName="opacity" values="0.5;1;0.5" dur="1.6s" repeatCount="indefinite"/>
+  </polygon>
+
+  <!-- Arrow: Provider → Registry -->
+  <polygon points="355,296 360,306 365,296" fill="#38bdf8">
+    <animate attributeName="opacity" values="0.5;1;0.5" dur="1.6s" repeatCount="indefinite" begin="0.4s"/>
+  </polygon>
+
+  <!-- Arrow: Registry → ForceGraph -->
+  <polygon points="176,416 180,426 184,416" fill="#34d399" transform="rotate(-12,180,420)">
+    <animate attributeName="opacity" values="0.5;1;0.5" dur="1.4s" repeatCount="indefinite" begin="0.8s"/>
+  </polygon>
+
+  <!-- Arrow: Registry → StatsBar -->
+  <polygon points="355,416 360,426 365,416" fill="#fbbf24">
+    <animate attributeName="opacity" values="0.5;1;0.5" dur="1.4s" repeatCount="indefinite" begin="1s"/>
+  </polygon>
+
+  <!-- Arrow: Registry → LiveFeed -->
+  <polygon points="536,416 540,426 544,416" fill="#f87171" transform="rotate(12,540,420)">
+    <animate attributeName="opacity" values="0.5;1;0.5" dur="1.4s" repeatCount="indefinite" begin="1.2s"/>
+  </polygon>
+</svg>

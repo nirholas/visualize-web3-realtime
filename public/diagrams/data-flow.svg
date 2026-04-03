@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 520" width="720" height="520">
+  <style>
+    @keyframes pulse { 0%,100%{opacity:.7} 50%{opacity:1} }
+    @keyframes flowDown { 0%{stroke-dashoffset:20} 100%{stroke-dashoffset:0} }
+    @keyframes flowMerge { 0%{stroke-dashoffset:16} 100%{stroke-dashoffset:0} }
+    text { font-family: 'IBM Plex Mono', monospace; }
+    .box { fill:#181825; stroke:#a78bfa; stroke-width:1.5; rx:8; }
+    .box-inner { fill:#181825; stroke:#60a5fa; stroke-width:1.2; rx:6; }
+    .label { fill:#e2e8f0; font-size:11px; }
+    .label-sm { fill:#94a3b8; font-size:9.5px; }
+    .label-fn { fill:#a78bfa; font-size:10.5px; }
+    .label-fn2 { fill:#34d399; font-size:10.5px; }
+    .arrow { stroke:#a78bfa; stroke-width:1.5; fill:none; stroke-dasharray:6,4; animation: flowDown 0.6s linear infinite; }
+    .arrow2 { stroke:#34d399; stroke-width:1.5; fill:none; stroke-dasharray:6,4; animation: flowDown 0.6s linear infinite; }
+    .merge-arrow { stroke:#fbbf24; stroke-width:1.5; fill:none; stroke-dasharray:5,3; animation: flowMerge 0.5s linear infinite; }
+    .fan { stroke:#60a5fa; stroke-width:1; fill:none; stroke-dasharray:4,3; animation: flowDown 0.7s linear infinite; }
+    .pulse { animation: pulse 2s ease-in-out infinite; }
+    .dot { fill:#a78bfa; }
+    .dot2 { fill:#34d399; }
+    .dot3 { fill:#fbbf24; }
+  </style>
+
+  <!-- Background -->
+  <rect width="720" height="520" rx="12" fill="#0f0f1a"/>
+
+  <!-- PumpFun WebSocket Box -->
+  <rect class="box" x="60" y="30" width="220" height="80"/>
+  <text class="label" x="100" y="55">PumpFun WebSocket</text>
+  <text class="label-sm" x="82" y="72">wss://pumpportal.fun/api/data</text>
+  <circle class="dot pulse" cx="78" cy="52" r="4"/>
+
+  <!-- Solana RPC WebSocket Box -->
+  <rect class="box" style="stroke:#34d399" x="420" y="30" width="240" height="80"/>
+  <text class="label" x="462" y="55">Solana RPC WebSocket</text>
+  <text class="label-sm" x="438" y="72">wss://api.mainnet-beta.solana.com</text>
+  <circle class="dot2 pulse" cx="438" cy="52" r="4"/>
+
+  <!-- Arrows down from boxes -->
+  <line class="arrow" x1="170" y1="110" x2="170" y2="160"/>
+  <line class="arrow2" x1="540" y1="110" x2="540" y2="160"/>
+
+  <!-- Function labels -->
+  <text class="label-fn" x="110" y="145">usePumpFun()</text>
+  <text class="label-sm" x="100" y="175">token creates + all trades</text>
+  <text class="label-fn2" x="462" y="145">usePumpFunClaims()</text>
+  <text class="label-sm" x="465" y="175">program log parsing</text>
+  <text class="label-sm" x="473" y="188">(logsSubscribe)</text>
+
+  <!-- Merge arrows -->
+  <line class="merge-arrow" x1="170" y1="195" x2="340" y2="240"/>
+  <line class="merge-arrow" x1="540" y1="195" x2="380" y2="240"/>
+
+  <!-- useDataProvider box -->
+  <rect class="box" style="stroke:#fbbf24" x="250" y="240" width="220" height="70"/>
+  <text class="label-fn" style="fill:#fbbf24" x="290" y="263">useDataProvider()</text>
+  <text class="label-sm" x="265" y="280">merge → categorize → filter</text>
+  <text class="label-sm" x="273" y="294">(max 300 unified events)</text>
+  <circle class="dot3 pulse" cx="268" cy="260" r="4"/>
+
+  <!-- Arrow down from useDataProvider -->
+  <line class="merge-arrow" x1="360" y1="310" x2="360" y2="350"/>
+
+  <!-- WorldPage box -->
+  <rect class="box-inner" x="290" y="350" width="140" height="40"/>
+  <text class="label" x="313" y="374">WorldPage</text>
+  <text class="label-sm" x="296" y="405">app/world/page.tsx</text>
+
+  <!-- Fan-out arrows -->
+  <line class="fan" x1="320" y1="390" x2="140" y2="440"/>
+  <line class="fan" x1="360" y1="390" x2="360" y2="440"/>
+  <line class="fan" x1="400" y1="390" x2="580" y2="440"/>
+
+  <!-- Three output boxes -->
+  <rect class="box-inner" style="stroke:#f472b6" x="60" y="445" width="155" height="45"/>
+  <text class="label" x="83" y="465">X402Network</text>
+  <text class="label-sm" x="84" y="480">(3D canvas)</text>
+
+  <rect class="box-inner" style="stroke:#fbbf24" x="280" y="445" width="160" height="45"/>
+  <text class="label" x="318" y="465">StatsBar</text>
+  <text class="label-sm" x="298" y="480">(stats + search)</text>
+
+  <rect class="box-inner" style="stroke:#34d399" x="505" y="445" width="155" height="45"/>
+  <text class="label" x="540" y="465">LiveFeed</text>
+  <text class="label-sm" x="530" y="480">(event log)</text>
+</svg>

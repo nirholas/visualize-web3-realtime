@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 90" width="280" height="90">
+  <style>
+    @keyframes pulse { 0%,100%{opacity:.7} 50%{opacity:1} }
+    text { font-family: 'IBM Plex Mono', monospace; }
+    .pill { fill:#181825; stroke:#a78bfa; stroke-width:1.2; rx:8; }
+    .name { fill:#e2e8f0; font-size:12px; font-weight:bold; }
+    .meta { fill:#94a3b8; font-size:9.5px; }
+    .caret { fill:#a78bfa; animation: pulse 1.5s ease-in-out infinite; }
+  </style>
+
+  <rect width="280" height="90" rx="8" fill="#0f0f1a"/>
+  <rect class="pill" x="30" y="10" width="220" height="48"/>
+  <text class="name" x="50" y="32">CODEREVIEWER</text>
+  <text class="meta" x="50" y="47">coder · 3 tasks · 42</text>
+  <!-- Caret -->
+  <polygon class="caret" points="135,62 145,62 140,70"/>
+</svg>

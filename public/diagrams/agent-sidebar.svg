@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 460" width="240" height="460">
+  <style>
+    @keyframes pulse { 0%,100%{opacity:.7} 50%{opacity:1} }
+    text { font-family: 'IBM Plex Mono', monospace; }
+    .frame { fill:#12121e; stroke:#a78bfa; stroke-width:1.2; rx:8; }
+    .label { fill:#e2e8f0; font-size:10px; }
+    .label-sm { fill:#94a3b8; font-size:9px; }
+    .section { fill:#64748b; font-size:9px; font-weight:bold; letter-spacing:1px; }
+    .divider { stroke:#2a2a40; stroke-width:1; }
+    .dot-active { fill:#34d399; animation: pulse 2s ease-in-out infinite; }
+    .dot-idle { fill:#64748b; }
+    .check { fill:#60a5fa; font-size:10px; }
+  </style>
+
+  <rect width="240" height="460" rx="10" fill="#0f0f1a"/>
+  <rect class="frame" x="10" y="10" width="220" height="440"/>
+
+  <!-- AGENTS section -->
+  <text class="section" x="24" y="34">AGENTS</text>
+
+  <circle class="dot-active" cx="32" cy="58" r="4"/>
+  <text class="label" x="42" y="62" style="fill:#a78bfa">CodeReviewer</text>
+  <text class="label-sm" x="42" y="76">3 tasks · 42</text>
+
+  <circle class="dot-active" cx="32" cy="98" r="4" style="animation-delay:.5s"/>
+  <text class="label" x="42" y="102" style="fill:#60a5fa">Researcher</text>
+  <text class="label-sm" x="42" y="116">1 task · 18</text>
+
+  <circle class="dot-idle" cx="32" cy="138" r="4"/>
+  <text class="label" x="42" y="142">Planner</text>
+  <text class="label-sm" x="42" y="156">0 tasks · 0</text>
+
+  <!-- Divider -->
+  <line class="divider" x1="24" y1="175" x2="216" y2="175"/>
+
+  <!-- TOOLS section -->
+  <text class="section" x="24" y="195">TOOLS</text>
+
+  <text class="check" x="24" y="215">▣</text>
+  <text class="label" x="40" y="215">filesystem (24)</text>
+  <text class="check" x="24" y="233">▣</text>
+  <text class="label" x="40" y="233">search (18)</text>
+  <text class="check" x="24" y="251">▣</text>
+  <text class="label" x="40" y="251">terminal (12)</text>
+  <text class="check" x="24" y="269">▣</text>
+  <text class="label" x="40" y="269">network (6)</text>
+  <text class="check" x="24" y="287">▣</text>
+  <text class="label" x="40" y="287">code (8)</text>
+  <text class="check" x="24" y="305">▣</text>
+  <text class="label" x="40" y="305">reasoning (3)</text>
+
+  <!-- Divider -->
+  <line class="divider" x1="24" y1="320" x2="216" y2="320"/>
+
+  <!-- EXECUTOR section -->
+  <text class="section" x="24" y="340">EXECUTOR</text>
+  <circle class="dot-active" cx="32" cy="358" r="4"/>
+  <text class="label" x="42" y="362" style="fill:#34d399">Running</text>
+  <text class="label-sm" x="24" y="382">Uptime: 2d 14h</text>
+  <text class="label-sm" x="24" y="398">Tasks: 142</text>
+</svg>
