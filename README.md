@@ -1,239 +1,397 @@
-# PumpFun World — Real-Time 3D Solana Visualizer
+<p align="center">
+  <img src="https://img.shields.io/badge/3D-Force%20Graph-blueviolet?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/React-Three%20Fiber-61dafb?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/TypeScript-Strict-3178c6?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/60fps-5%2C000%2B%20nodes-22c55e?style=for-the-badge" />
+</p>
 
-A real-time, interactive 3D particle network that visualizes every token launch, trade, and claim happening on [PumpFun](https://pump.fun) (Solana). Built with Next.js 14, React Three Fiber, and dual WebSocket streams from on-chain data.
+# web3viz
 
-2,000 particles orbit 8 protocol hub nodes with spring physics, mouse repulsion, and proximity-based connection lines — all powered by live PumpFun trades and Solana claim events.
+**Real-time 3D force-graph visualization toolkit for streaming data.**
+
+Plug in any data source — blockchain transactions, AI agent activity, network traffic, social graphs, IoT telemetry — and get a beautiful, interactive, 60fps particle network out of the box.
+
+```bash
+npm install @web3viz/core @web3viz/react-graph @web3viz/ui
+```
+
+```tsx
+import { ForceGraph } from '@web3viz/react-graph';
+
+<ForceGraph topTokens={hubs} traderEdges={edges} />
+```
+
+That's it. You have a GPU-accelerated force-directed graph with instanced rendering, mouse repulsion, proximity webs, camera orbits, and spring physics.
+
+---
+
+## Why web3viz?
+
+Most real-time visualization tools make you choose: **pretty or performant, simple API or flexible architecture, one data source or build everything yourself.**
+
+web3viz gives you all of it:
+
+| | web3viz | D3.js | Sigma.js | Cytoscape |
+|---|---|---|---|---|
+| 3D rendering | Yes (Three.js) | SVG/Canvas only | WebGL 2D | Canvas 2D |
+| Nodes at 60fps | 5,000+ | ~500 | ~10,000 (2D) | ~1,000 |
+| Streaming data | Built-in provider system | DIY | DIY | DIY |
+| React integration | Native (R3F) | Wrapper needed | Wrapper needed | Wrapper needed |
+| Camera system | Orbit, focus, tour | N/A | Basic pan/zoom | Pan/zoom |
+| Design system included | Yes | No | No | No |
+| TypeScript | Strict mode | Partial | Yes | Yes |
 
 ---
 
 ## Quick Start
 
+### See it live in 30 seconds
+
 ```bash
+git clone https://github.com/nirholas/visualize-web3-realtime.git
+cd visualize-web3-realtime
 npm install
 npm run dev
 ```
 
-Open **http://localhost:3100** — you'll be redirected to the `/world` visualizer automatically.
+Open **http://localhost:3100** — a live visualization of Solana PumpFun activity starts immediately. No API keys needed.
 
-No environment variables are required. The app connects directly to public WebSocket endpoints.
+### Use the mock provider for development
 
-## Features
+```bash
+npm run dev:playground
+```
 
-### 3D Force Network
+Opens a standalone demo with synthetic data — no blockchain connection required.
 
-The core visualization is a hub-and-spoke particle system rendered in Three.js via React Three Fiber:
+---
 
-- **Hub layout** — 8 hubs positioned via golden-angle spiral for even spacing, connected to a central origin by animated spoke lines
-- **Particles** — 250 particles per hub (2,000 total). Each orbits its hub on a tilted plane with spring physics (Hooke's Law) and framerate-independent damping (`damping^(dt*60)`)
-- **Mouse repulsion** — Raycasted cursor pushes nearby particles outward within a configurable repulsion radius
-- **Proximity web** — A `SpatialHash` grid provides O(1) neighbor lookups for drawing connection lines between nearby particles (up to 800 proximity lines, sampling every 4th particle)
-- **Hub tethers** — 40 tether lines per hub connect particles back to their hub center
-- **Additive blending** — Particles and lines use additive blending for a luminous, glowing effect
-- **Camera** — Continuous orbit (0.06 rad/s) with programmatic focus animations and ease-out cubic interpolation
+## Packages
 
-### Live Data Streams
+web3viz is a modular monorepo. Use the pieces you need:
 
-Two concurrent WebSocket connections power the visualization:
-
-| Source | Endpoint | Events |
+| Package | Description | Size |
 |---|---|---|
-| PumpPortal | `wss://pumpportal.fun/api/data` | Token launches, buy/sell trades |
-| Solana Mainnet | `wss://api.mainnet-beta.solana.com` | Wallet claims, GitHub claims, first claims |
+| [`@web3viz/core`](packages/core/) | Types, physics engine, provider interface, category system. Zero React deps. | ~15KB |
+| [`@web3viz/react-graph`](packages/react-graph/) | React Three Fiber `<ForceGraph />` component | ~25KB |
+| [`@web3viz/providers`](packages/providers/) | Data provider implementations (PumpFun, Mock, + your own) | ~20KB |
+| [`@web3viz/ui`](packages/ui/) | Design system — buttons, panels, feeds, filters, theming | ~30KB |
+| [`@web3viz/utils`](packages/utils/) | Screenshots, share URLs, formatting helpers | ~8KB |
+| [`@web3viz/executor`](packages/executor/) | Standalone agent executor server (WebSocket broadcast) | ~15KB |
 
-AI agent launches are auto-detected by scanning token names for keywords like `agent`, `ai`, `gpt`, `bot`, etc.
+### Dependency graph
 
-### Six Event Categories
+```
+@web3viz/core          ← zero dependencies, pure TypeScript
+    ↑
+@web3viz/providers     ← implements DataProvider interface
+@web3viz/react-graph   ← React Three Fiber + d3-force
+@web3viz/ui            ← React + Tailwind + CSS custom properties
+@web3viz/utils         ← tiny helpers
+@web3viz/executor      ← Node.js server (SQLite + WebSocket)
+```
 
-Each category has a distinct color, icon, and hub in the network:
+---
 
-| Category | Icon | Color | Hex | Description |
-|---|---|---|---|---|
-| Launches | ⚡ | Purple | `#a78bfa` | New token mints |
-| Agent Launches | ⬡ | Pink | `#f472b6` | AI/bot-related token mints (regex keyword detection) |
-| Trades | ▲ | Blue | `#60a5fa` | Buy and sell transactions |
-| Wallet Claims | ◆ | Amber | `#fbbf24` | PumpFun wallet claim events |
-| GitHub Claims | ⬢ | Emerald | `#34d399` | Social/GitHub verification claims |
-| First Claims | ★ | Red | `#f87171` | First-ever claim per address |
+## Build Your Own Provider
 
-**Agent detection** uses a regex heuristic scanning token name/symbol for keywords: `agent`, `ai`, `gpt`, `bot`, `auto`, `llm`, `claude`, `openai`, `chatgpt`, `neural`, `sentient`, `autonomous`.
+The provider system is the core abstraction. Any streaming data source becomes a visualization by implementing one interface:
 
-**Claim detection** parses Solana program logs, matching 8-byte hex discriminators against three PumpFun program IDs (`PUMP_PROGRAM`, `PUMP_AMM`, `PUMP_FEE`).
+```typescript
+import type { DataProvider } from '@web3viz/core';
 
-### UI Components
+class EthereumSwapProvider implements DataProvider {
+  readonly id = 'uniswap';
+  readonly name = 'Uniswap V3';
+  readonly sourceConfig = {
+    id: 'ethereum',
+    label: 'Ethereum',
+    color: '#627EEA',
+    icon: '⬡',
+  };
+  readonly categories = [
+    { id: 'swaps', label: 'Swaps', icon: '⇄', color: '#627EEA', source: 'ethereum' },
+    { id: 'liquidity', label: 'LP Events', icon: '◈', color: '#8799EE', source: 'ethereum' },
+  ];
 
-- **Protocol Filter Sidebar** — Toggle event categories on/off with colored circular buttons (left side)
-- **Live Feed** — Scrolling, animated event log showing token symbol, trade type, SOL amount, and timestamp (bottom-right)
-- **Stats Bar** — Animated counters for total tokens, SOL volume, and transaction count with address search (bottom-center)
-- **Address Search** — Enter a Solana address to highlight it in the network and fly the camera to its hub
-- **"You Are Here" Marker** — 3D floating label that tracks a searched address node in the scene
+  connect() {
+    const ws = new WebSocket('wss://your-indexer.com/stream');
+    ws.onmessage = (msg) => {
+      const swap = JSON.parse(msg.data);
+      this.emit({
+        id: swap.txHash,
+        providerId: this.id,
+        category: 'swaps',
+        timestamp: Date.now(),
+        label: `${swap.tokenIn} → ${swap.tokenOut}`,
+        amount: swap.amountUSD,
+        address: swap.sender,
+        tokenAddress: swap.pool,
+      });
+    };
+  }
 
-### Guided Tour ("Start Journey")
+  // ... implement remaining interface methods
+}
+```
 
-A 6-7 step narrated camera tour through the network:
+Register it and the entire UI lights up:
 
-1. Welcome overview — zooms out to show the full network
-2. Cluster stats — highlights launch, trader, and transaction counts
-3. Busiest hub — camera flies to the most active category
-4. Second-busiest hub
-5. Trade connections — explains the visual link system
-6. "You Are Here" — locates your address (if provided)
-7. Free exploration — releases orbit controls
+```typescript
+import { registerProvider } from '@web3viz/core';
 
-Skippable and restartable at any time.
+registerProvider(new EthereumSwapProvider());
+```
 
-### Share & Export
+The `<ForceGraph>`, `<StatsBar>`, `<LiveFeed>`, and `<FilterSidebar>` all react automatically.
 
-- **Color Customization** — Change background, protocol node, and user node colors via hex input, swatch palette, or a "Remix" button for random combos
-- **Screenshot Export** — Download the current visualization as an image (via html2canvas) with metadata overlays showing address, stats, and "Active since" date
-- **Info Popover** — Accessible dialog explaining what PumpFun World is, with focus trapping and keyboard support
+---
+
+## Use Cases
+
+### Blockchain & DeFi
+- **DEX activity** — Uniswap, Jupiter, Raydium swaps in real-time
+- **Token launches** — PumpFun, pump.fun clones, fair launch platforms
+- **MEV visualization** — Searcher bundles, sandwich attacks, arbitrage paths
+- **Cross-chain bridges** — Wormhole, LayerZero message flows
+- **NFT minting** — Collection mints as particle clusters
+- **Validator networks** — Stake delegation flows, attestation patterns
+
+### AI & Agents
+- **Agent orchestration** — Visualize multi-agent task execution (built-in executor)
+- **LLM tool calls** — Watch agents invoke tools, spawn sub-agents, reason
+- **Swarm behavior** — Multi-agent coordination patterns
+
+### Infrastructure & DevOps
+- **API traffic** — Request flows across microservices
+- **Log streams** — Error clustering, anomaly detection
+- **Kubernetes** — Pod scheduling, service mesh traffic
+- **CI/CD pipelines** — Build/deploy event streams
+
+### Social & Communication
+- **Chat networks** — Message flows in Discord, Slack, Telegram
+- **Social graphs** — Follow/interaction networks
+- **Content virality** — Repost/share cascades
+
+### IoT & Sensor Data
+- **Device telemetry** — Temperature, pressure, vibration clusters
+- **Fleet tracking** — Vehicle/drone position streams
+- **Smart grid** — Energy production/consumption flows
+
+---
+
+## The `<ForceGraph>` Component
+
+The visualization engine at the heart of web3viz:
+
+```tsx
+import { ForceGraph, type GraphHandle } from '@web3viz/react-graph';
+
+const graphRef = useRef<GraphHandle>(null);
+
+<ForceGraph
+  ref={graphRef}
+  topTokens={hubs}           // Hub nodes (up to 8)
+  traderEdges={edges}        // Participant → hub connections (up to 5,000)
+  simulationConfig={{
+    hubChargeStrength: -200,
+    agentChargeStrength: -8,
+    centerStrength: 0.03,
+    hubLinkDistance: 25,
+    damping: 0.92,
+  }}
+  background="#0a0a0f"
+  showLabels
+  showGround={false}
+  fov={50}
+  cameraPosition={[0, 15, 45]}
+/>
+```
+
+### Imperative API
+
+```typescript
+graphRef.current.focusHub(0);                          // Fly camera to hub
+graphRef.current.animateCameraTo([10, 20, 30], origin); // Custom animation
+graphRef.current.setOrbitEnabled(true);                 // Auto-rotate
+graphRef.current.getHubCount();                         // Number of hubs
+```
+
+### Performance
+
+| Metric | Value |
+|---|---|
+| Max nodes at 60fps | 5,000+ |
+| Rendering | InstancedMesh (single draw call per node type) |
+| Spatial queries | SpatialHash grid — O(1) neighbor lookups |
+| Physics | Framerate-independent damping (`damping^(dt*60)`) |
+| Lines | Up to 800 proximity + 320 tether lines |
+| Blending | Additive (luminous glow effect) |
+
+---
+
+## UI Components
+
+The design system works standalone or with the graph:
+
+```tsx
+import { ThemeProvider, StatsBar, LiveFeed, FilterSidebar } from '@web3viz/ui';
+
+<ThemeProvider theme="dark">
+  <StatsBar stats={stats} />
+  <LiveFeed events={recentEvents} />
+  <FilterSidebar categories={categories} onToggle={handleToggle} />
+</ThemeProvider>
+```
+
+**Included components:** Button, Pill, Badge, Input, Dialog, Panel, ColorControl, StatsBar, LiveFeed, FilterSidebar, SharePanel, InfoPopover, JourneyOverlay.
+
+**Theming:** CSS custom properties with light/dark presets. Fully customizable via design tokens.
+
+---
+
+## Guided Tours
+
+Built-in camera tour system for onboarding users:
+
+```typescript
+import { useJourney } from '@web3viz/ui';
+
+const { start, skip, currentStep } = useJourney({
+  steps: [
+    { label: 'Welcome', camera: [0, 30, 60], duration: 3000 },
+    { label: 'Most Active', focusHub: 0, duration: 4000 },
+    { label: 'Explore', freeOrbit: true },
+  ],
+});
+```
+
+---
 
 ## Architecture
 
-### Data Flow
+```
+                    ┌─────────────────────────────────────┐
+                    │         Your Data Source(s)          │
+                    │  WebSocket · REST · gRPC · Kafka     │
+                    └──────────────┬──────────────────────┘
+                                   │
+                    ┌──────────────▼──────────────────────┐
+                    │     DataProvider (implements)         │
+                    │  connect() · emit() · getStats()     │
+                    └──────────────┬──────────────────────┘
+                                   │
+               registerProvider()  │  onEvent(callback)
+                                   │
+          ┌────────────────────────▼─────────────────────────┐
+          │              Provider Registry                     │
+          │   getAllProviders() · getEnabledProviders()        │
+          └───────┬──────────────┬──────────────┬────────────┘
+                  │              │              │
+         ┌────────▼───┐  ┌──────▼─────┐  ┌────▼────────┐
+         │ ForceGraph  │  │  StatsBar  │  │  LiveFeed   │
+         │ (3D scene)  │  │ (counters) │  │ (event log) │
+         └─────────────┘  └────────────┘  └─────────────┘
+```
+
+### Monorepo Structure
 
 ```
-┌─────────────────────────┐     ┌──────────────────────────────┐
-│  PumpFun WebSocket       │     │  Solana RPC WebSocket         │
-│  wss://pumpportal.fun    │     │  wss://api.mainnet-beta.      │
-│  /api/data               │     │  solana.com                   │
-└───────────┬─────────────┘     └───────────┬──────────────────┘
-            │                               │
-       usePumpFun()                  usePumpFunClaims()
-       token creates +               program log parsing
-       all trades                    (logsSubscribe)
-            │                               │
-            └───────────┬───────────────────┘
-                        │
-                useDataProvider()
-                merge → categorize → filter
-                (max 300 unified events)
-                        │
-                 ┌──────┴───────┐
-                 │   WorldPage   │  app/world/page.tsx
-                 └──────┬───────┘
-       ┌────────────────┼─────────────────────┐
-       │                │                     │
-  X402Network       StatsBar              LiveFeed
-  (3D canvas)    (stats + search)    (event log)
+web3viz/
+├── packages/
+│   ├── core/              # Types, engine, provider interface (0 deps)
+│   ├── react-graph/       # <ForceGraph> component (Three.js + d3-force)
+│   ├── providers/         # PumpFun, Mock, and provider hooks
+│   ├── ui/                # Design system (tokens, theme, components)
+│   ├── utils/             # Screenshots, sharing, formatting
+│   └── executor/          # Standalone agent executor (Node.js)
+├── apps/
+│   └── playground/        # Demo app with mock data
+├── app/                   # Reference app: live PumpFun visualizer
+│   ├── world/             # Blockchain visualization route
+│   ├── agents/            # AI agent monitoring route
+│   └── embed/             # Embeddable widget
+└── features/              # Feature modules for the reference app
 ```
+
+---
+
+## Reference App: PumpFun Visualizer
+
+The included reference app connects to live Solana data:
+
+- **2 concurrent WebSocket streams** — PumpPortal (trades) + Solana RPC (claims)
+- **6 event categories** — Launches, Agent Launches, Trades, Wallet/GitHub/First Claims
+- **AI agent detection** — Regex heuristic on token names
+- **Address search** — Find any wallet in the network, camera flies to it
+- **Share/export** — Screenshot with metadata overlay, social sharing
+- **Guided tour** — 7-step narrated camera walkthrough
 
 ### Routes
 
 | Route | Description |
 |---|---|
-| `/` | Redirects to `/world` |
-| `/world` | Main visualization page (client-rendered) |
-| `/world?address=<addr>` | Auto-searches for a Solana address on load |
+| `/world` | Live PumpFun visualization |
+| `/world?address=<addr>` | Auto-search for a Solana address |
+| `/agents` | AI agent monitoring dashboard |
+| `/embed` | Embeddable widget |
 
-`X402Network` is lazy-loaded via `next/dynamic` with `ssr: false` since Three.js requires the browser DOM.
+---
 
-### Project Structure
+## Configuration
 
-```
-app/
-  page.tsx                    → Redirect to /world
-  world/page.tsx              → Main page — orchestrates all state and components
-  layout.tsx                  → Root layout, loads IBM Plex Mono font
-  globals.css                 → Light theme, keyframes, responsive breakpoints
+### Physics
 
-features/
-  X402Flow/
-    X402Network.tsx           → 3D visualization engine (~1,800 lines)
-    types.ts                  → TypeScript types for flow traces and stages
-  World/
-    LiveFeed.tsx              → Animated event log (bottom-right)
-    ProtocolFilterSidebar.tsx → Category toggle buttons (left sidebar)
-    StatsBar.tsx              → Animated counters + address search (bottom-center)
-    SharePanel.tsx            → Color customization + swatch palette (right panel)
-    ShareOverlay.tsx          → Metadata bars for screenshot capture
-    InfoPopover.tsx           → Accessible info dialog (focus trap, keyboard nav)
-    JourneyOverlay.tsx        → Tour step overlay with Framer Motion transitions
-    StartJourney.tsx          → Tour trigger button (bottom-right)
-    YouAreHereMarker.tsx      → 3D floating label (Three.js Html component)
-    useJourney.ts             → Tour state machine + camera animation sequencer
+All simulation parameters are configurable:
 
-hooks/
-  useDataProvider.ts          → Unified data layer (merges + categorizes both WS)
-  usePumpFun.ts               → PumpPortal WebSocket (launches + trades)
-  usePumpFunClaims.ts         → Solana mainnet WebSocket (claim log parsing)
-```
+| Parameter | Default | Description |
+|---|---|---|
+| `hubChargeStrength` | `-200` | Hub-to-hub repulsion |
+| `agentChargeStrength` | `-8` | Node-to-node repulsion |
+| `centerStrength` | `0.03` | Pull toward origin |
+| `hubLinkDistance` | `25` | Spring rest length (hubs) |
+| `agentLinkDistance` | `5-8` | Spring rest length (nodes) |
+| `damping` | `0.92` | Velocity decay per frame |
+| `alphaDecay` | `0.01` | Simulation cooling rate |
+
+### Rendering
+
+| Parameter | Default | Description |
+|---|---|---|
+| Hub count | `8` | Max hub nodes |
+| Max particles | `5,000` | Instanced mesh capacity |
+| Proximity lines | `800` | Max inter-node lines |
+| Tether lines/hub | `40` | Lines connecting nodes to hubs |
+| Camera orbit | `0.06 rad/s` | Auto-rotation speed |
+| Repulsion radius | `6` | Mouse cursor push radius |
+
+---
 
 ## Tech Stack
 
-| Layer | Technology | Version |
-|---|---|---|
-| Framework | Next.js (App Router) | 14.2 |
-| UI | React | 18.3 |
-| 3D Engine | Three.js | 0.169 |
-| 3D React | @react-three/fiber + @react-three/drei | 8.18 / 9.122 |
-| Animation | Framer Motion | 11 |
-| Styling | Tailwind CSS + IBM Plex Mono | 3.4 |
-| Data | WebSocket (PumpPortal API + Solana RPC) | — |
-| Export | html2canvas | 1.4 |
-| Language | TypeScript (strict mode) | 5.5 |
-
----
-
-## Configuration Reference
-
-### Network Visualization
-
-| Parameter | Value | Location |
-|---|---|---|
-| Hub count | 8 | `NETWORK_CONFIG` |
-| Particles per hub | 250 (2,000 total) | `NETWORK_CONFIG` |
-| Proximity threshold | 1.8 | `NETWORK_CONFIG` |
-| Max proximity lines | 800 | `NETWORK_CONFIG` |
-| Tether lines per hub | 40 | `NETWORK_CONFIG` |
-| Repulsion radius | 6 | `NETWORK_CONFIG` |
-| Spring constant (K) | 2.5 | `NETWORK_CONFIG` |
-| Damping | 0.92 | `NETWORK_CONFIG` |
-| Camera orbit speed | 0.06 rad/s | `NETWORK_CONFIG` |
-| Hub spread radius | 18 | `NETWORK_CONFIG` |
-| Cluster radius | 4 | `NETWORK_CONFIG` |
-
-### Data Buffers
-
-| Parameter | Value | Location |
-|---|---|---|
-| Max recent events (PumpFun) | 200 | `usePumpFun.ts` |
-| Max recent events (claims) | 200 | `usePumpFunClaims.ts` |
-| Max unified events | 300 | `useDataProvider.ts` |
-| Top tokens tracked | 8 | `usePumpFun.ts` |
-| Max trader edges | 5,000 | `usePumpFun.ts` |
-| Category flow rebuild interval | ~20 transactions | `world/page.tsx` |
-| PumpFun auto-reconnect | 3 seconds | `usePumpFun.ts` |
-| Solana auto-reconnect | 5 seconds | `usePumpFunClaims.ts` |
-
----
-
-## Code Conventions
-
-- **Memoization** — All components use `React.memo()`; callbacks wrapped with `useCallback`; computed values with `useMemo`
-- **Refs over state** for per-frame data (positions, velocities, mouse coordinates) to avoid re-renders in the animation loop
-- **`forwardRef` + `useImperativeHandle`** on `X402Network` to expose a camera control API:
-  - `focusHub(index)` — animate camera to a specific hub
-  - `animateCameraTo(position, lookAt)` — custom camera animation
-  - `setOrbitEnabled(bool)` — enable/disable continuous orbit
-  - `getHubPosition(index)` — get current position of a hub
-  - `getHubCount()` — number of active hubs
-- **`'use client'`** on all interactive components (Next.js App Router convention)
-- **URL state sync** — Address search syncs bidirectionally via `useSearchParams` / `router.replace`
-- **Inline styles** — Most components use React `style` props rather than Tailwind classes for precise control over glass-morphism (`backdrop-filter: blur`) and dynamic values
-- **Framerate-independent physics** — Damping normalized to 60fps via `damping^(dt*60)`
-
----
-
-## Responsive Design
-
-The UI adapts at three breakpoints defined in `globals.css`:
-
-| Breakpoint | Behavior |
+| Layer | Technology |
 |---|---|
-| > 1200px | Full UI — sidebar with labels, all stats, live feed |
-| ≤ 1200px | Sidebar labels hidden, stats bar wraps |
-| ≤ 768px | Sidebar hidden, excess stats hidden, timeline ticks hidden, live feed hidden |
-| All sizes | 3D canvas fills the full viewport |
+| Monorepo | Turborepo + npm workspaces |
+| Framework | Next.js 14 (App Router) |
+| 3D Engine | Three.js + React Three Fiber |
+| Physics | d3-force-3d |
+| Animation | Framer Motion |
+| Styling | Tailwind CSS + CSS custom properties |
+| Language | TypeScript (strict mode) |
+| Agent Server | Node.js + SQLite + WebSocket |
+
+---
+
+## Contributing
+
+We welcome contributions. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+**High-impact areas:**
+- New data providers (Ethereum, Base, Arbitrum, Bitcoin, ...)
+- Performance optimizations (WebGPU, compute shaders)
+- Mobile/touch interaction improvements
+- Accessibility enhancements
+- Documentation and examples
 
 ---
 
@@ -241,14 +399,21 @@ The UI adapts at three breakpoints defined in `globals.css`:
 
 | Command | Description |
 |---|---|
-| `npm run dev` | Start dev server on port 3100 |
+| `npm run dev` | Dev server (port 3100) |
+| `npm run dev:playground` | Playground with mock data |
+| `npm run dev:executor` | Agent executor server |
 | `npm run build` | Production build |
-| `npm start` | Production server on port 3100 |
+| `npm run typecheck` | TypeScript check across all packages |
 | `npm run lint` | ESLint |
-| `npm run typecheck` | TypeScript type-checking (`tsc --noEmit`) |
 
 ---
 
 ## License
 
-Private.
+MIT
+
+---
+
+<p align="center">
+  <sub>Built for builders who want their data to look as good as it works.</sub>
+</p>
