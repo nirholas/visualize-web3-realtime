@@ -16,6 +16,8 @@ export interface PumpFunToken {
   marketCapSol: number;
   signature: string;
   timestamp: number;
+  /** Whether this token appears to be an AI agent launch */
+  isAgent: boolean;
 }
 
 export interface PumpFunTrade {
@@ -55,6 +57,17 @@ export interface PumpFunStats {
 const WS_URL = 'wss://pumpportal.fun/api/data';
 const MAX_EVENTS = 200;
 const MAX_TOP_TOKENS = 8;
+
+// ---------------------------------------------------------------------------
+// Agent launch detection
+// ---------------------------------------------------------------------------
+
+const AGENT_KEYWORDS = /\b(agent|ai\b|gpt|bot|auto|llm|claude|openai|chatgpt|neural|sentient|autonomous)/i;
+
+/** Heuristic: check if a token launch looks like an AI agent */
+function isAgentLaunch(name: string, symbol: string): boolean {
+  return AGENT_KEYWORDS.test(name) || AGENT_KEYWORDS.test(symbol);
+}
 
 export function usePumpFun({ paused = false }: { paused?: boolean } = {}) {
   const [stats, setStats] = useState<PumpFunStats>({
@@ -97,16 +110,19 @@ export function usePumpFun({ paused = false }: { paused?: boolean } = {}) {
         // Detect event type
         if (raw.txType === undefined && raw.mint && raw.name) {
           // Token create
+          const tokenName = raw.name || 'Unknown';
+          const tokenSymbol = raw.symbol || '???';
           const token: PumpFunToken = {
             mint: raw.mint,
-            name: raw.name || 'Unknown',
-            symbol: raw.symbol || '???',
+            name: tokenName,
+            symbol: tokenSymbol,
             uri: raw.uri || '',
             traderPublicKey: raw.traderPublicKey || '',
             initialBuy: raw.initialBuy || 0,
             marketCapSol: raw.marketCapSol || 0,
             signature: raw.signature || '',
             timestamp: Date.now(),
+            isAgent: isAgentLaunch(tokenName, tokenSymbol),
           };
           tokenCache.current.set(token.mint, { name: token.name, symbol: token.symbol });
 

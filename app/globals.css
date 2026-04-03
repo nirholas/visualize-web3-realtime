@@ -2,16 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&display=swap');
+
 @layer base {
   :root {
-    --bg-primary: #08080f;
+    --bg-primary: #ffffff;
+    --font-mono: 'IBM Plex Mono', monospace;
   }
-  html { color-scheme: dark; }
+  html { color-scheme: light; }
   body {
     background-color: var(--bg-primary);
-    color: #f0f0f0;
-    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    color: #1a1a1a;
+    font-family: var(--font-mono);
     -webkit-font-smoothing: antialiased;
     margin: 0;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
   }
 }

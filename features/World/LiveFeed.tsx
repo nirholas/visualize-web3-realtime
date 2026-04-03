@@ -4,6 +4,8 @@ import { AnimatePresence, m } from 'framer-motion';
 import { memo, useEffect, useRef, useState } from 'react';
 
 import type { PumpFunEvent } from '@/hooks/usePumpFun';
+import type { DataProviderEvent } from '@/hooks/useDataProvider';
+import { CATEGORY_CONFIG_MAP } from '@/hooks/useDataProvider';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -27,7 +29,82 @@ function formatSol(lamports: number): string {
 }
 
 // ---------------------------------------------------------------------------
-// Single event card
+// Unified event card (works with DataProviderEvent)
+// ---------------------------------------------------------------------------
+
+interface UnifiedCardProps {
+  event: DataProviderEvent;
+  isNew: boolean;
+}
+
+const UnifiedCard = memo<UnifiedCardProps>(({ event, isNew }) => {
+  const cfg = CATEGORY_CONFIG_MAP[event.category];
+  const color = cfg?.color || '#9090b8';
+  const typeLabel = cfg?.label || event.category;
+  const amount = event.amount != null ? `${event.amount.toFixed(3)} SOL` : '';
+
+  return (
+    <m.div
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, transition: { duration: 0.15 } }}
+      initial={{ opacity: isNew ? 0 : 1, x: isNew ? 12 : 0 }}
+      layout
+      transition={{ duration: 0.25, ease: 'easeOut' }}
+      style={{
+        display: 'flex',
+        gap: 6,
+        alignItems: 'center',
+        padding: '3px 10px',
+        fontFamily: 'monospace',
+        fontSize: 11,
+        color: 'rgb(176 176 200 / 70%)',
+        background: 'rgb(176 176 200 / 4%)',
+        border: '1px solid rgb(176 176 200 / 6%)',
+        borderRadius: 4,
+      }}
+    >
+      <span
+        style={{
+          display: 'inline-block',
+          width: 6,
+          height: 6,
+          borderRadius: '50%',
+          background: color,
+          flexShrink: 0,
+        }}
+      />
+      <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {event.label}
+      </span>
+      <span
+        style={{
+          flexShrink: 0,
+          fontSize: 9,
+          color: color + '80',
+          textTransform: 'uppercase',
+          letterSpacing: '0.04em',
+          maxWidth: 80,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {typeLabel}
+      </span>
+      {amount && (
+        <span style={{ flexShrink: 0, color }}>{amount}</span>
+      )}
+      <span style={{ flexShrink: 0, fontSize: 9, color: 'rgb(176 176 200 / 30%)' }}>
+        {timeAgo(event.timestamp)}
+      </span>
+    </m.div>
+  );
+});
+
+UnifiedCard.displayName = 'UnifiedCard';
+
+// ---------------------------------------------------------------------------
+// Legacy event card (PumpFun raw events, kept for backward compat)
 // ---------------------------------------------------------------------------
 
 interface EventCardProps {
@@ -112,29 +189,43 @@ EventCard.displayName = 'EventCard';
 const MAX_VISIBLE = 12;
 
 interface LiveFeedProps {
+  /** Raw PumpFun events (legacy) */
   events: PumpFunEvent[];
+  /** Unified provider events (new — takes priority when provided) */
+  unifiedEvents?: DataProviderEvent[];
 }
 
-const LiveFeed = memo<LiveFeedProps>(({ events }) => {
+const LiveFeed = memo<LiveFeedProps>(({ events, unifiedEvents }) => {
   const prevKeysRef = useRef<Set<string>>(new Set());
   const [newKeys, setNewKeys] = useState<Set<string>>(new Set());
 
-  const visible = events.slice(0, MAX_VISIBLE);
+  // Prefer unified events when available
+  const useUnified = unifiedEvents && unifiedEvents.length > 0;
 
-  const getKey = (e: PumpFunEvent) =>
+  const visibleUnified = unifiedEvents?.slice(0, MAX_VISIBLE) || [];
+  const visibleLegacy = events.slice(0, MAX_VISIBLE);
+
+  const getKeyLegacy = (e: PumpFunEvent) =>
     e.type === 'trade'
       ? (e.data as { signature: string }).signature
       : (e.data as { signature: string }).signature || (e.data as { mint: string }).mint;
 
+  const getKeyUnified = (e: DataProviderEvent) => e.id;
+
   useEffect(() => {
-    if (!visible.length) return;
-    const currentKeys = new Set(visible.map(getKey));
+    const keys = useUnified
+      ? visibleUnified.map(getKeyUnified)
+      : visibleLegacy.map(getKeyLegacy);
+    if (!keys.length) return;
+
+    const currentKeys = new Set(keys);
     const incoming = new Set([...currentKeys].filter((k) => !prevKeysRef.current.has(k)));
     if (incoming.size > 0) setNewKeys(incoming);
     prevKeysRef.current = currentKeys;
-  }, [visible]);
+  }, [useUnified, visibleUnified, visibleLegacy]);
 
-  if (visible.length === 0) return null;
+  const hasEvents = useUnified ? visibleUnified.length > 0 : visibleLegacy.length > 0;
+  if (!hasEvents) return null;
 
   return (
     <div
@@ -146,7 +237,7 @@ const LiveFeed = memo<LiveFeedProps>(({ events }) => {
         display: 'flex',
         flexDirection: 'column',
         gap: 2,
-        width: 280,
+        width: 300,
         maxHeight: '40vh',
         overflow: 'hidden',
       }}
@@ -178,10 +269,15 @@ const LiveFeed = memo<LiveFeedProps>(({ events }) => {
         LIVE
       </div>
       <AnimatePresence initial={false} mode="popLayout">
-        {visible.map((e) => {
-          const key = getKey(e);
-          return <EventCard isNew={newKeys.has(key)} key={key} event={e} />;
-        })}
+        {useUnified
+          ? visibleUnified.map((e) => {
+              const key = getKeyUnified(e);
+              return <UnifiedCard isNew={newKeys.has(key)} key={key} event={e} />;
+            })
+          : visibleLegacy.map((e) => {
+              const key = getKeyLegacy(e);
+              return <EventCard isNew={newKeys.has(key)} key={key} event={e} />;
+            })}
       </AnimatePresence>
       <style>{`@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }`}</style>
     </div>

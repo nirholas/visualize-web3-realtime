@@ -62,22 +62,22 @@ const NETWORK_CONFIG = {
     DRIFT_SPEED: 0.3,
 } as const;
 
-// Dark theme colors — no pure white; brightest elements are soft off-white
+// Light theme — clean white background, dark nodes (Giza-inspired)
 const NETWORK_COLORS = {
-    bg: '#08080f',
-    node: '#b8b8cc',
-    particle: '#9090b8',
-    line: '#4060ff',
-    lineProximity: '#6080ff',
+    bg: '#ffffff',
+    node: '#1a1a1a',
+    particle: '#2a2a2a',
+    line: '#888888',
+    lineProximity: '#999999',
     paymentPulse: '#d49020',
-    accent: '#8090ff',
-    /** Soft text/UI overlay color (never white) */
-    text: '#b0b0c8',
-    textMuted: '#70708a',
-    textFaint: '#50506a',
+    accent: '#1a1a1a',
+    /** Text colors */
+    text: '#1a1a1a',
+    textMuted: '#666666',
+    textFaint: '#999999',
     /** UI surface overlays */
-    surface: 'rgba(180, 180, 210, 0.08)',
-    surfaceBorder: 'rgba(180, 180, 210, 0.12)',
+    surface: 'rgba(0, 0, 0, 0.04)',
+    surfaceBorder: 'rgba(0, 0, 0, 0.10)',
 };
 
 // ============================================================================
@@ -276,18 +276,34 @@ function extractNodeLabel(endpoint: string): string {
 
 interface PrimaryNodesProps {
     apiEndpoints: string[];
+    /** Per-hub category colors */
+    categoryColors?: string[];
     hubPositions: THREE.Vector3[];
     nodeColor: string;
     stage: VortexStage;
 }
 
-const PrimaryNodes = memo<PrimaryNodesProps>(({ hubPositions, stage, apiEndpoints, nodeColor }) => {
+const PrimaryNodes = memo<PrimaryNodesProps>(({ hubPositions, stage, apiEndpoints, categoryColors, nodeColor }) => {
     const meshRef = useRef<THREE.InstancedMesh>(null);
     const dummy = useMemo(() => new THREE.Object3D(), []);
     const scaleRef = useRef<Float32Array>(new Float32Array(hubPositions.length).fill(1));
+    const colorObj = useMemo(() => new THREE.Color(), []);
 
     // Track drifted positions for labels
     const driftedPositions = useRef<THREE.Vector3[]>(hubPositions.map((p) => p.clone()));
+
+    // Apply per-instance colors when categoryColors change
+    useEffect(() => {
+        if (!meshRef.current) return;
+        for (let i = 0; i < hubPositions.length; i++) {
+            const c = categoryColors?.[i] || nodeColor;
+            colorObj.set(c);
+            meshRef.current.setColorAt(i, colorObj);
+        }
+        if (meshRef.current.instanceColor) {
+            meshRef.current.instanceColor.needsUpdate = true;
+        }
+    }, [categoryColors, nodeColor, hubPositions.length, colorObj]);
 
     useFrame((state) => {
         if (!meshRef.current) return;
@@ -344,7 +360,7 @@ const PrimaryNodes = memo<PrimaryNodesProps>(({ hubPositions, stage, apiEndpoint
             {labels.map((label, i) =>
                 label ? (
                     <NodeLabel
-                        color={nodeColor}
+                        color={categoryColors?.[i] || nodeColor}
                         key={`label-${i}`}
                         label={label}
                         position={hubPositions[i]}
@@ -1194,6 +1210,8 @@ StatChip.displayName = 'StatChip';
 
 interface NetworkSceneProps {
     apiEndpoints: string[];
+    /** Per-hub colors (falls back to nodeColor) */
+    categoryColors?: string[];
     hubPositions: THREE.Vector3[];
     mouseActive: React.MutableRefObject<boolean>;
     mouseWorldPos: React.MutableRefObject<THREE.Vector3>;
@@ -1204,7 +1222,7 @@ interface NetworkSceneProps {
 }
 
 const NetworkScene = memo<NetworkSceneProps>(
-    ({ hubPositions, stage, apiEndpoints, mouseWorldPos, mouseActive, nodeColor, visibleHubs }) => {
+    ({ hubPositions, stage, apiEndpoints, categoryColors, mouseWorldPos, mouseActive, nodeColor, visibleHubs }) => {
         return (
             <>
                 <CameraController />
@@ -1219,6 +1237,7 @@ const NetworkScene = memo<NetworkSceneProps>(
 
                 <PrimaryNodes
                     apiEndpoints={apiEndpoints}
+                    categoryColors={categoryColors}
                     hubPositions={hubPositions}
                     nodeColor={nodeColor}
                     stage={stage}
@@ -1260,8 +1279,8 @@ export interface X402NetworkTheme {
 
 const DEFAULT_THEME: X402NetworkTheme = {
     bg: NETWORK_COLORS.bg,
-    nodeColor: '#8165ee',
-    userColor: '#8165ee',
+    nodeColor: '#1a1a1a',
+    userColor: '#1a1a1a',
 };
 
 // ============================================================================
@@ -1483,6 +1502,8 @@ ActionButtons.displayName = 'ActionButtons';
 interface X402NetworkProps {
     /** API endpoints involved in the flow */
     apiEndpoints?: string[];
+    /** Per-hub category colors (one per apiEndpoint). Falls back to theme.nodeColor. */
+    categoryColors?: string[];
     /** If true, renders compact (300px) for chat embed; otherwise full-size */
     compact?: boolean;
     /** Complete flow trace for timeline replay */
@@ -1505,6 +1526,7 @@ const X402Network = memo<X402NetworkProps>(
     ({
         stage: externalStage = 'idle',
         apiEndpoints = [],
+        categoryColors = [],
         compact = false,
         flow = null,
         height: externalHeight,
@@ -1534,16 +1556,8 @@ const X402Network = memo<X402NetworkProps>(
         // Merge theme
         const theme = useMemo(() => ({ ...DEFAULT_THEME, ...themeOverride }), [themeOverride]);
 
-        // Sidebar filter state
-        const [hiddenNodes, setHiddenNodes] = useState<Set<number>>(new Set());
-        const handleToggleNode = useCallback((index: number) => {
-            setHiddenNodes((prev) => {
-                const next = new Set(prev);
-                if (next.has(index)) next.delete(index);
-                else next.add(index);
-                return next;
-            });
-        }, []);
+        // Node visibility (filtering is now handled by the page-level category toggles)
+        const hiddenNodes = useMemo(() => new Set<number>(), []);
 
         // Address search — currently a no-op; future: highlight matching node
         const handleAddressSearch = useCallback((_address: string) => {
@@ -1692,6 +1706,7 @@ const X402Network = memo<X402NetworkProps>(
                     <Suspense fallback={null}>
                         <NetworkScene
                             apiEndpoints={apiEndpoints}
+                            categoryColors={categoryColors}
                             hubPositions={hubPositions}
                             mouseActive={mouseActive}
                             mouseWorldPos={mouseWorldPos}
@@ -1727,15 +1742,6 @@ const X402Network = memo<X402NetworkProps>(
                             Click to reload
                         </span>
                     </div>
-                )}
-
-                {/* Left sidebar: protocol filters (full mode only) */}
-                {!compact && apiEndpoints.length > 0 && (
-                    <SidebarFilters
-                        apiEndpoints={apiEndpoints}
-                        hiddenNodes={hiddenNodes}
-                        onToggle={handleToggleNode}
-                    />
                 )}
 
                 {/* Bottom bar: stats + address search */}

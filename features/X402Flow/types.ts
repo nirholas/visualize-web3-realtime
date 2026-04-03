@@ -1,5 +1,10 @@
+import type { PumpFunCategory } from '@/hooks/useDataProvider';
+
 // Flow visualization stage types
 export type VortexStage = 'idle' | 'prompt' | 'calling' | 'paying' | 'receiving' | 'complete';
+
+// Re-export for convenience
+export type { PumpFunCategory };
 
 export type X402FlowEventType =
   | 'api_call_start'
@@ -14,6 +19,7 @@ export type X402FlowEventType =
 export interface X402FlowEvent {
   amount?: string;
   apiUrl: string;
+  category?: PumpFunCategory;
   sequenceIndex: number;
   timestamp: number;
   type: X402FlowEventType;
