@@ -363,7 +363,7 @@ export default function WorldPage() {
   }, []);
 
   // --- Share on X ---
-  const totalVolume = getTotalVolume(stats.totalVolume);
+  const totalVolume = getTotalVolume(stats.totalVolume ?? {});
   const handleShareX = useCallback(() => {
     const url = buildShareUrl(shareColors, userAddress || undefined);
     const text = buildShareText(
