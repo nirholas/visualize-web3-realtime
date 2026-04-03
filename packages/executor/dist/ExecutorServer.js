@@ -1,9 +1,12 @@
+import { createServer } from 'http';
+import { URL } from 'url';
 import { TaskQueue } from './TaskQueue.js';
 import { AgentManager } from './AgentManager.js';
 import { EventBroadcaster } from './EventBroadcaster.js';
 import { HealthMonitor } from './HealthMonitor.js';
 import { SperaxOSClient } from './SperaxOSClient.js';
-const DEFAULT_AGENT_ROLES = ['coder', 'researcher', 'planner'];
+import { StateStore } from './StateStore.js';
+export const DEFAULT_AGENT_ROLES = ['coder', 'researcher', 'planner'];
 export class ExecutorServer {
     config;
     queue;
@@ -11,10 +14,12 @@ export class ExecutorServer {
     broadcaster;
     health;
     speraxos;
+    stateStore;
     startedAt = 0;
     running = false;
     pollTimer;
     heartbeatTimer;
+    httpServer;
     recentEvents = [];
     constructor(config) {
         this.config = config;
@@ -23,14 +28,145 @@ export class ExecutorServer {
         this.agentManager = new AgentManager(this.speraxos);
         this.broadcaster = new EventBroadcaster(config.port);
         this.health = new HealthMonitor();
-        // Forward agent events to broadcaster
+        this.stateStore = new StateStore(config.statePath);
+        // Forward agent events to broadcaster and state store
         this.agentManager.onEvent((event) => {
             this.recentEvents.push(event);
             if (this.recentEvents.length > 500)
                 this.recentEvents = this.recentEvents.slice(-500);
             this.broadcaster.broadcast(event);
+            this.stateStore.saveEvent(event);
         });
         this.setupHealthChecks();
+    }
+    parseRequestBody(req) {
+        return new Promise((resolve) => {
+            let body = '';
+            req.on('data', (chunk) => {
+                body += chunk;
+                if (body.length > 1024 * 1024) {
+                    resolve({});
+                    return;
+                }
+            });
+            req.on('end', () => {
+                try {
+                    const parsed = body ? JSON.parse(body) : {};
+                    const result = typeof parsed === 'object' && parsed !== null ? parsed : {};
+                    resolve(result);
+                }
+                catch {
+                    resolve({});
+                }
+            });
+            req.on('error', () => {
+                resolve({});
+            });
+        });
+    }
+    handleRESTRequest(req, res) {
+        const url = new URL(req.url, `http://${req.headers.host}`);
+        const path = url.pathname;
+        const method = req.method;
+        // CORS headers
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+        res.setHeader('Content-Type', 'application/json');
+        if (method === 'OPTIONS') {
+            res.writeHead(200);
+            res.end();
+            return;
+        }
+        // Route matching
+        if (path === '/api/status' && method === 'GET') {
+            const state = this.getStatus();
+            const health = this.health.getHealth();
+            res.writeHead(200);
+            res.end(JSON.stringify({ state, health }));
+        }
+        else if (path === '/api/agents' && method === 'GET') {
+            const agents = this.agentManager.getActiveAgents();
+            res.writeHead(200);
+            res.end(JSON.stringify(agents));
+        }
+        else if (path === '/api/tasks' && method === 'GET') {
+            const tasks = this.queue.getAll();
+            res.writeHead(200);
+            res.end(JSON.stringify(tasks));
+        }
+        else if (path.match(/^\/api\/tasks\/[^/]+$/) && method === 'GET') {
+            const taskId = path.split('/').pop();
+            const tasks = this.queue.getAll();
+            const task = tasks.find((t) => t.taskId === taskId);
+            if (task) {
+                res.writeHead(200);
+                res.end(JSON.stringify(task));
+            }
+            else {
+                res.writeHead(404);
+                res.end(JSON.stringify({ error: 'Task not found' }));
+            }
+        }
+        else if (path === '/api/tasks' && method === 'POST') {
+            this.parseRequestBody(req)
+                .then((body) => {
+                const definition = {
+                    description: String(body.description || 'Unnamed task'),
+                    priority: typeof body.priority === 'number' ? body.priority : undefined,
+                    requiredRole: typeof body.requiredRole === 'string' ? body.requiredRole : undefined,
+                    timeout: typeof body.timeout === 'number' ? body.timeout : undefined,
+                    retryCount: typeof body.retryCount === 'number' ? body.retryCount : undefined,
+                    metadata: typeof body.metadata === 'object' && body.metadata !== null ? body.metadata : undefined,
+                };
+                const taskId = this.enqueueTask(definition);
+                res.writeHead(201);
+                res.end(JSON.stringify({ taskId }));
+            })
+                .catch(() => {
+                res.writeHead(400);
+                res.end(JSON.stringify({ error: 'Invalid request body' }));
+            });
+        }
+        else if (path.match(/^\/api\/tasks\/[^/]+$/) && method === 'DELETE') {
+            res.writeHead(501);
+            res.end(JSON.stringify({ error: 'Task cancellation not yet implemented' }));
+        }
+        else if (path === '/api/agents/spawn' && method === 'POST') {
+            this.parseRequestBody(req)
+                .then((body) => {
+                this.agentManager.spawnAgent({ role: String(body.role || 'coder'), name: String(body.name || '') })
+                    .then((agent) => {
+                    this.stateStore.saveAgent(agent);
+                    res.writeHead(201);
+                    res.end(JSON.stringify(agent));
+                })
+                    .catch((err) => {
+                    res.writeHead(500);
+                    res.end(JSON.stringify({ error: String(err) }));
+                });
+            })
+                .catch(() => {
+                res.writeHead(400);
+                res.end(JSON.stringify({ error: 'Invalid request body' }));
+            });
+        }
+        else if (path.match(/^\/api\/agents\/[^/]+\/stop$/) && method === 'POST') {
+            const agentId = path.split('/').slice(-2, -1)[0];
+            this.agentManager.shutdownAgent(agentId)
+                .then(() => {
+                res.writeHead(200);
+                res.end(JSON.stringify({ agentId, status: 'stopped' }));
+            })
+                .catch((err) => {
+                res.writeHead(500);
+                res.end(JSON.stringify({ error: String(err) }));
+            });
+        }
+        else {
+            res.writeHead(404);
+            res.end(JSON.stringify({ error: 'Not found' }));
+        }
     }
     setupHealthChecks() {
         this.health.addCheck('speraxos', () => ({
@@ -63,19 +199,36 @@ export class ExecutorServer {
         this.startedAt = Date.now();
         this.running = true;
         console.log('[ExecutorServer] Starting...');
-        // Start WebSocket server
+        // Initialize state store metadata
+        this.stateStore.setMeta('start_time', String(this.startedAt));
+        // Start HTTP server (shared by both REST API and WebSocket)
+        this.httpServer = createServer((req, res) => {
+            // Only handle REST API requests here (non-upgrade requests)
+            if (!req.url || !req.url.startsWith('/')) {
+                res.writeHead(404);
+                res.end();
+                return;
+            }
+            this.handleRESTRequest(req, res);
+        });
+        // Start WebSocket server on the same HTTP server
         this.broadcaster.start(() => ({
             agents: this.agentManager.getActiveAgents(),
             tasks: this.queue.getAll(),
             recentEvents: this.recentEvents.slice(-50),
-        }));
+        }), this.httpServer);
+        // Listen on the shared HTTP server
+        this.httpServer.listen(this.config.port, () => {
+            console.log(`[ExecutorServer] Ready on http://localhost:${this.config.port} (REST API + WebSocket)`);
+        });
         // Spawn initial agents
         const agentCount = Math.min(this.config.maxAgents, DEFAULT_AGENT_ROLES.length);
         for (let i = 0; i < agentCount; i++) {
-            await this.agentManager.spawnAgent({
+            const agent = await this.agentManager.spawnAgent({
                 role: DEFAULT_AGENT_ROLES[i],
                 name: `${DEFAULT_AGENT_ROLES[i].charAt(0).toUpperCase()}${DEFAULT_AGENT_ROLES[i].slice(1)}Agent`,
             });
+            this.stateStore.saveAgent(agent);
         }
         // Start task processing loop
         this.pollTimer = setInterval(() => this.processTasks(), this.config.taskPollInterval);
@@ -90,8 +243,11 @@ export class ExecutorServer {
             return;
         // Check stalled tasks
         this.queue.checkTimeouts();
+        // Auto-scale agents
+        const queueLength = this.queue.getQueueLength();
+        await this.agentManager.autoScale(queueLength, this.config.maxAgents);
         // Assign queued tasks to available agents
-        if (this.queue.getQueueLength() === 0)
+        if (queueLength === 0)
             return;
         const agent = this.agentManager.getAvailableAgent();
         if (!agent)
@@ -102,6 +258,8 @@ export class ExecutorServer {
         task.agentId = agent.agentId;
         try {
             await this.agentManager.assignTask(task);
+            // Persist task to state store after assignment
+            this.stateStore.saveTask(task);
         }
         catch (err) {
             console.error('[ExecutorServer] Task assignment failed:', err);
@@ -134,7 +292,13 @@ export class ExecutorServer {
         this.broadcaster.broadcast(hbEvent);
     }
     enqueueTask(definition) {
-        return this.queue.enqueue(definition);
+        const taskId = this.queue.enqueue(definition);
+        const tasks = this.queue.getAll();
+        const task = tasks.find((t) => t.taskId === taskId);
+        if (task) {
+            this.stateStore.saveTask(task);
+        }
+        return taskId;
     }
     getStatus() {
         return {
@@ -155,6 +319,14 @@ export class ExecutorServer {
             clearInterval(this.heartbeatTimer);
         this.health.stop();
         this.broadcaster.stop();
+        // Close HTTP server
+        if (this.httpServer) {
+            await new Promise((resolve) => {
+                this.httpServer.close(() => resolve());
+            });
+        }
+        // Close state store
+        this.stateStore.close();
         console.log('[ExecutorServer] Stopped.');
     }
 }

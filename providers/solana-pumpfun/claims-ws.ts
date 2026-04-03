@@ -107,7 +107,6 @@ export class SolanaClaimsWebSocket {
           this.config.onEvent({
             id: generateId(),
             providerId: 'solana-pumpfun',
-            source: 'solana-pumpfun',
             category: claim.isFirstClaim ? 'claimsFirst' : category,
             chain: 'solana',
             timestamp: Date.now(),

@@ -67,6 +67,7 @@ export const CATEGORIES = [
   // ERC-8004
   'erc8004Mints',
   'erc8004Transfers',
+  'erc8004Updates',
   // CEX
   'cexSpotTrades',
   'cexLiquidations',
@@ -118,8 +119,9 @@ export const CATEGORY_CONFIGS: CategoryConfig[] = [
   { id: 'taskComplete', label: 'Completions', icon: '\u2713', color: '#34d399', sourceId: 'agents' },
   { id: 'taskFailed', label: 'Failures', icon: '\u2717', color: '#f87171', sourceId: 'agents' },
   // ERC-8004 categories
-  { id: 'erc8004Mints', label: 'ERC-8004 Issuance', icon: '\u2B22', color: '#2dd4bf', sourceId: 'erc8004' },
-  { id: 'erc8004Transfers', label: 'ERC-8004 Transfers', icon: '\u2192', color: '#34d399', sourceId: 'erc8004' },
+  { id: 'erc8004Mints', label: 'Asset Mints', icon: '\u25C8', color: '#00BCD4', sourceId: 'erc8004' },
+  { id: 'erc8004Transfers', label: 'Asset Transfers', icon: '\u25C7', color: '#26C6DA', sourceId: 'erc8004' },
+  { id: 'erc8004Updates', label: 'Metadata Updates', icon: '\u21BB', color: '#00ACC1', sourceId: 'erc8004' },
   // CEX categories
   { id: 'cexSpotTrades', label: 'CEX Spot Trades', icon: '\u25CF', color: '#fbbf24', sourceId: 'cex' },
   { id: 'cexLiquidations', label: 'CEX Liquidations', icon: '\u2716', color: '#f59e0b', sourceId: 'cex' },

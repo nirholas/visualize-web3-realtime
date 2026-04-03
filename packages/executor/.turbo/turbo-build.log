@@ -2,8 +2,17 @@
 > @web3viz/executor@0.1.0 build
 > tsc
 
-src/EventBroadcaster.ts(1,49): error TS2307: Cannot find module 'ws' or its corresponding type declarations.
-src/EventBroadcaster.ts(17,32): error TS7006: Parameter 'ws' implicitly has an 'any' type.
+../core/src/engine/ForceGraphSimulation.ts(153,22): error TS2339: Property 'mint' does not exist on type 'TopToken'.
+../core/src/engine/ForceGraphSimulation.ts(154,43): error TS2339: Property 'mint' does not exist on type 'TopToken'.
+../core/src/engine/ForceGraphSimulation.ts(155,36): error TS2551: Property 'volumeSol' does not exist on type 'TopToken'. Did you mean 'volume'?
+../core/src/engine/ForceGraphSimulation.ts(157,30): error TS2551: Property 'volumeSol' does not exist on type 'TopToken'. Did you mean 'volume'?
+../core/src/engine/ForceGraphSimulation.ts(166,17): error TS2339: Property 'mint' does not exist on type 'TopToken'.
+../core/src/engine/ForceGraphSimulation.ts(174,28): error TS2339: Property 'mint' does not exist on type 'TopToken'.
+../core/src/engine/ForceGraphSimulation.ts(186,30): error TS2339: Property 'mint' does not exist on type 'TraderEdge'.
+../core/src/engine/ForceGraphSimulation.ts(187,52): error TS2339: Property 'mint' does not exist on type 'TraderEdge'.
+../core/src/engine/ForceGraphSimulation.ts(191,41): error TS2339: Property 'mint' does not exist on type 'TraderEdge'.
+../core/src/engine/ForceGraphSimulation.ts(200,23): error TS2339: Property 'mint' does not exist on type 'TraderEdge'.
+../core/src/engine/ForceGraphSimulation.ts(305,7): error TS2353: Object literal may only specify known properties, and 'hubMint' does not exist in type 'GraphNode'.
 npm error Lifecycle script `build` failed with error:
 npm error code 2
 npm error path /workspaces/visualize-web3-realtime/packages/executor

@@ -18,6 +18,7 @@ import {
   type DataProviderStats,
   type ConnectionState,
   type CategoryConfig,
+  type SourceConfig,
   type TopToken,
   type TraderEdge,
 } from '@web3viz/core';
@@ -31,9 +32,17 @@ class EthereumProvider implements DataProvider {
   readonly name = 'Ethereum';
   readonly chains = ['ethereum'];
   readonly categories: CategoryConfig[] = ETH_CATEGORIES;
+  readonly sourceConfig: SourceConfig = {
+    id: 'ethereum',
+    label: 'Ethereum',
+    color: '#627EEA',
+    icon: '◆',
+    description: 'Ethereum mainnet activity',
+  };
 
   private listeners = new Set<(event: DataProviderEvent) => void>();
   private paused = false;
+  private enabled = true;
   private ws: EthereumWebSocket;
 
   private stats: DataProviderStats = {
@@ -89,6 +98,14 @@ class EthereumProvider implements DataProvider {
     return this.paused;
   }
 
+  isEnabled(): boolean {
+    return this.enabled;
+  }
+
+  setEnabled(enabled: boolean): void {
+    this.enabled = enabled;
+  }
+
   private handleEvent(event: DataProviderEvent): void {
     if (this.paused) return;
 
@@ -121,15 +138,15 @@ class EthereumProvider implements DataProvider {
 
     if (existing) {
       existing.trades++;
-      existing.volumeSol = (existing.volumeSol || 0) + swap.volume;
+      existing.volume += swap.volume;
     } else {
       this.tokenAcc.set(swap.tokenAddress, {
-        mint: swap.tokenAddress,
+        tokenAddress: swap.tokenAddress,
         symbol: swap.symbol || swap.tokenAddress.slice(0, 8),
         name: swap.name || swap.symbol || 'Unknown',
         chain: 'ethereum',
         trades: 1,
-        volumeSol: swap.volume,
+        volume: swap.volume,
         nativeSymbol: 'ETH',
       });
     }
@@ -140,27 +157,27 @@ class EthereumProvider implements DataProvider {
 
     if (existingEdge) {
       existingEdge.trades++;
-      existingEdge.volumeSol = (existingEdge.volumeSol || 0) + swap.volume;
+      existingEdge.volume += swap.volume;
     } else {
       this.traderAcc.set(edgeKey, {
         trader: swap.trader,
-        mint: swap.tokenAddress,
+        tokenAddress: swap.tokenAddress,
         chain: 'ethereum',
         trades: 1,
-        volumeSol: swap.volume,
+        volume: swap.volume,
       });
     }
 
     // Rebuild sorted top tokens and filter edges
     const sorted = Array.from(this.tokenAcc.values())
-      .sort((a, b) => (b.volumeSol || 0) - (a.volumeSol || 0))
+      .sort((a, b) => b.volume - a.volume)
       .slice(0, 8);
 
-    const topAddrs = new Set(sorted.map((t) => t.mint));
+    const topAddrs = new Set(sorted.map((t) => t.tokenAddress));
 
     this.stats.topTokens = sorted;
     this.stats.traderEdges = Array.from(this.traderAcc.values())
-      .filter((e) => topAddrs.has(e.mint))
+      .filter((e) => topAddrs.has(e.tokenAddress))
       .slice(0, 5000);
     this.stats.totalAgents = sorted.length;
   }

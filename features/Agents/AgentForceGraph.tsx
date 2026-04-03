@@ -57,6 +57,8 @@ interface AgentHubState {
   isReasoning: boolean;
   reasoningStartTime?: number;
   pulseEvents: Array<{ timestamp: number; status: 'complete' | 'failed' }>;
+  spawnedAt: number;
+  errorShakeStart?: number;
 }
 
 interface TaskNodeState {
@@ -80,6 +82,8 @@ interface ToolParticleState {
   progress: number;  // 0-1
   path: THREE.Vector3[];
   createdAt: number;
+  returning?: boolean;
+  prevPositions?: THREE.Vector3[]; // ghost trail positions
 }
 
 interface CameraAnimation {
@@ -124,6 +128,8 @@ export interface AgentForceGraphProps {
   height?: string | number;
   /** Color scheme for theme-aware rendering */
   colorScheme?: 'dark' | 'light';
+  /** Respect prefers-reduced-motion */
+  reducedMotion?: boolean;
 }
 
 export interface AgentForceGraphHandle {
@@ -189,20 +195,30 @@ interface AgentHubNodeProps {
   isActive: boolean;
   isDimmed: boolean;
   isHovered: boolean;
+  reducedMotion?: boolean;
   onPointerOver: () => void;
   onPointerOut: () => void;
   onClick: () => void;
 }
 
 const AgentHubNode = memo<AgentHubNodeProps>(
-  ({ hub, isActive, isDimmed, isHovered, onPointerOver, onPointerOut, onClick }) => {
+  ({ hub, isActive, isDimmed, isHovered, reducedMotion, onPointerOver, onPointerOut, onClick }) => {
     const groupRef = useRef<THREE.Group>(null!);
     const meshRef = useRef<THREE.Mesh>(null!);
     const haloRef = useRef<THREE.Mesh>(null!);
+    const pulseRingRef = useRef<THREE.Mesh>(null!);
+    const pulseRingMatRef = useRef<THREE.MeshStandardMaterial>(null!);
     const materialRef = useRef<THREE.MeshStandardMaterial>(null!);
     const haloMaterialRef = useRef<THREE.MeshStandardMaterial>(null!);
     const targetColor = useRef(new THREE.Color(hub.color));
     const targetOpacity = useRef(1);
+    const lighterColor = useRef(new THREE.Color(hub.color));
+
+    // Pre-compute a lighter variant for idle color pulse
+    useEffect(() => {
+      lighterColor.current.set(hub.color);
+      lighterColor.current.offsetHSL(0, 0, AGENT_GRAPH_CONFIG.idleColorPulseAmount);
+    }, [hub.color]);
 
     useEffect(() => {
       if (isActive) {
@@ -222,31 +238,105 @@ const AgentHubNode = memo<AgentHubNodeProps>(
 
       groupRef.current.position.copy(hub.position);
 
-      // Breathing animation when idle
-      const breatheTime = (state.clock.getElapsedTime() * 1000) % AGENT_GRAPH_CONFIG.breathingPeriod;
-      const breathAmount = Math.sin((breatheTime / AGENT_GRAPH_CONFIG.breathingPeriod) * Math.PI * 2) * AGENT_GRAPH_CONFIG.breathingAmplitude;
+      const now = Date.now();
+      const elapsed = state.clock.getElapsedTime();
       const baseScale = hub.radius;
-      meshRef.current.scale.setScalar(baseScale * (1 + breathAmount));
 
-      // Pulse when active
-      if (isActive) {
-        const pulse = 1 + Math.sin(state.clock.getElapsedTime() * Math.PI) * 0.08;
+      // --- Spawn animation: elastic scale from 0 → full over 500ms ---
+      const spawnAge = now - hub.spawnedAt;
+      let spawnScale = 1;
+      if (spawnAge < AGENT_GRAPH_CONFIG.spawnDurationMs && !reducedMotion) {
+        const t = spawnAge / AGENT_GRAPH_CONFIG.spawnDurationMs;
+        // Elastic ease-out: overshoot then settle
+        spawnScale = 1 - Math.pow(2, -10 * t) * Math.cos(t * Math.PI * 3);
+      }
+
+      // --- Idle breathing animation ---
+      let breathAmount = 0;
+      if (!reducedMotion) {
+        const breatheTime = (elapsed * 1000) % AGENT_GRAPH_CONFIG.breathingPeriod;
+        breathAmount = Math.sin((breatheTime / AGENT_GRAPH_CONFIG.breathingPeriod) * Math.PI * 2) * AGENT_GRAPH_CONFIG.breathingAmplitude;
+
+        // Idle color pulse: slightly lighter on the upswing
+        if (hub.activeTasks === 0 && !isActive) {
+          const colorPulse = (Math.sin((breatheTime / AGENT_GRAPH_CONFIG.breathingPeriod) * Math.PI * 2) + 1) * 0.5;
+          const baseCol = new THREE.Color(AGENT_COLORS.default);
+          baseCol.lerp(lighterColor.current, colorPulse * 0.3);
+          targetColor.current.copy(baseCol);
+        }
+      }
+
+      meshRef.current.scale.setScalar(baseScale * (1 + breathAmount) * spawnScale);
+
+      // --- Pulse when active ---
+      if (isActive && !reducedMotion) {
+        const pulse = 1 + Math.sin(elapsed * Math.PI) * 0.08;
         meshRef.current.scale.multiplyScalar(pulse);
       }
 
-      // Halo for reasoning
+      // --- Error shake: ±amplitude, 3 cycles over 300ms ---
+      if (hub.errorShakeStart && !reducedMotion) {
+        const shakeAge = now - hub.errorShakeStart;
+        if (shakeAge < AGENT_GRAPH_CONFIG.errorShakeDurationMs) {
+          const t = shakeAge / AGENT_GRAPH_CONFIG.errorShakeDurationMs;
+          const shakeX = Math.sin(t * AGENT_GRAPH_CONFIG.errorShakeCycles * Math.PI * 2)
+            * AGENT_GRAPH_CONFIG.errorShakeAmplitude * (1 - t);
+          groupRef.current.position.x += shakeX;
+          // Brief red flash overlay
+          materialRef.current.emissive.set('#f87171');
+          materialRef.current.emissiveIntensity = (1 - t) * 0.5;
+        } else {
+          materialRef.current.emissive.set('#000000');
+          materialRef.current.emissiveIntensity = 0;
+        }
+      }
+
+      // --- Completion pulse ring ---
+      if (pulseRingRef.current && pulseRingMatRef.current && !reducedMotion) {
+        const latestPulse = hub.pulseEvents[hub.pulseEvents.length - 1];
+        if (latestPulse) {
+          const pulseAge = now - latestPulse.timestamp;
+          if (pulseAge < AGENT_GRAPH_CONFIG.completionRingDurationMs) {
+            const t = pulseAge / AGENT_GRAPH_CONFIG.completionRingDurationMs;
+            const ringScale = baseScale * (1 + t * AGENT_GRAPH_CONFIG.completionRingExpandScale);
+            pulseRingRef.current.scale.setScalar(ringScale);
+            pulseRingMatRef.current.opacity = 0.6 * (1 - t);
+            pulseRingMatRef.current.color.set(latestPulse.status === 'complete' ? '#34d399' : '#f87171');
+            pulseRingRef.current.visible = true;
+          } else {
+            pulseRingRef.current.visible = false;
+          }
+        }
+      }
+
+      // --- Halo for reasoning ---
       if (hub.isReasoning && haloRef.current && haloMaterialRef.current) {
-        const reasoningDuration = (Date.now() - (hub.reasoningStartTime || 0)) / 1000;
-        const haloScale = 1 + Math.sin(reasoningDuration * 2) * 0.3;
+        const reasoningDuration = (now - (hub.reasoningStartTime || 0)) / 1000;
+        const haloScale = reducedMotion ? 2 : 1 + Math.sin(reasoningDuration * 2) * 0.3;
         const haloOpacity = 0.3 * (1 - Math.min(reasoningDuration / 2, 1));
         haloRef.current.scale.setScalar(baseScale * haloScale * 2);
         haloMaterialRef.current.opacity = haloOpacity;
       }
 
-      // Color lerp
+      // --- Color lerp ---
       const lerpFactor = 1 - Math.exp(-10 * delta);
       materialRef.current.color.lerp(targetColor.current, lerpFactor);
       materialRef.current.opacity += (targetOpacity.current - materialRef.current.opacity) * lerpFactor;
+
+      // --- Spawn flash: brief white → brand color during first 500ms ---
+      if (spawnAge < AGENT_GRAPH_CONFIG.spawnDurationMs && !reducedMotion) {
+        const flashT = spawnAge / AGENT_GRAPH_CONFIG.spawnDurationMs;
+        if (flashT < 0.3) {
+          materialRef.current.emissive.set('#ffffff');
+          materialRef.current.emissiveIntensity = (1 - flashT / 0.3) * 0.8;
+        } else if (flashT < 0.6) {
+          materialRef.current.emissive.set(hub.color);
+          materialRef.current.emissiveIntensity = (1 - (flashT - 0.3) / 0.3) * 0.5;
+        } else if (!hub.errorShakeStart) {
+          materialRef.current.emissive.set('#000000');
+          materialRef.current.emissiveIntensity = 0;
+        }
+      }
     });
 
     return (
@@ -263,6 +353,7 @@ const AgentHubNode = memo<AgentHubNodeProps>(
             e.stopPropagation();
             onClick();
           }}
+          frustumCulled
         >
           <sphereGeometry args={[1, 32, 32]} />
           <meshStandardMaterial
@@ -275,9 +366,21 @@ const AgentHubNode = memo<AgentHubNodeProps>(
           />
         </mesh>
 
+        {/* Completion / error pulse ring */}
+        <mesh ref={pulseRingRef} visible={false} rotation={[-Math.PI / 2, 0, 0]} frustumCulled>
+          <ringGeometry args={[0.9, 1.0, 32]} />
+          <meshStandardMaterial
+            ref={pulseRingMatRef}
+            color="#34d399"
+            transparent
+            opacity={0}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+
         {/* Reasoning halo */}
         {hub.isReasoning && (
-          <mesh ref={haloRef}>
+          <mesh ref={haloRef} frustumCulled>
             <sphereGeometry args={[1, 32, 32]} />
             <meshStandardMaterial
               ref={haloMaterialRef}
@@ -331,10 +434,18 @@ const TaskNodes = memo<TaskNodesProps>(({ tasks, selectedAgentId }) => {
 
     let instanceIndex = 0;
     const maxInstances = AGENT_GRAPH_CONFIG.maxTaskNodes;
+    const now = Date.now();
 
-    for (const [agentId, taskList] of tasks) {
+    for (const [, taskList] of tasks) {
       for (const task of taskList) {
         if (instanceIndex >= maxInstances) break;
+
+        // Skip tasks that have fully faded out (5s after completion)
+        const taskAge = now - task.createdAt;
+        if ((task.status === 'completed' || task.status === 'failed') &&
+            taskAge > AGENT_GRAPH_CONFIG.taskFadeOutDelayMs) {
+          continue;
+        }
 
         // Orbital position
         const orbitTime = state.clock.getElapsedTime() * AGENT_GRAPH_CONFIG.taskOrbitSpeed;
@@ -342,12 +453,27 @@ const TaskNodes = memo<TaskNodesProps>(({ tasks, selectedAgentId }) => {
         const orbitX = Math.cos(angle) * AGENT_GRAPH_CONFIG.taskOrbitRadius;
         const orbitZ = Math.sin(angle) * AGENT_GRAPH_CONFIG.taskOrbitRadius;
 
+        let yOffset = 0.2 * Math.sin(angle * 2);
+        let scale = AGENT_GRAPH_CONFIG.taskNodeRadius;
+
+        // Completed: shrink over 300ms, then stay small until fade
+        if (task.status === 'completed') {
+          const shrinkT = Math.min(taskAge / AGENT_GRAPH_CONFIG.completionFadeDurationMs, 1);
+          scale *= (1 - shrinkT * 0.6);
+        }
+
+        // Failed: float downward before fading
+        if (task.status === 'failed') {
+          const fallT = Math.min(taskAge / AGENT_GRAPH_CONFIG.taskFadeOutDelayMs, 1);
+          yOffset -= fallT * 2;
+        }
+
         tempObj.position.set(
           task.position.x + orbitX,
-          task.position.y + 0.2 * Math.sin(angle * 2),
+          task.position.y + yOffset,
           task.position.z + orbitZ,
         );
-        tempObj.scale.setScalar(AGENT_GRAPH_CONFIG.taskNodeRadius);
+        tempObj.scale.setScalar(scale);
         tempObj.updateMatrix();
         mesh.setMatrixAt(instanceIndex, tempObj.matrix);
 
@@ -361,10 +487,9 @@ const TaskNodes = memo<TaskNodesProps>(({ tasks, selectedAgentId }) => {
           tempColor.multiplyScalar(pulse);
         }
 
-        // Fade out completed/failed tasks
+        // Fade out completed/failed tasks over 5s
         if (task.status === 'completed' || task.status === 'failed') {
-          const fadeTime = (state.clock.getElapsedTime() * 1000) - task.createdAt;
-          const fadeOpacity = Math.max(0, 1 - fadeTime / AGENT_GRAPH_CONFIG.pulseDuration);
+          const fadeOpacity = Math.max(0, 1 - taskAge / AGENT_GRAPH_CONFIG.taskFadeOutDelayMs);
           tempColor.multiplyScalar(fadeOpacity);
         }
 
@@ -382,7 +507,7 @@ const TaskNodes = memo<TaskNodesProps>(({ tasks, selectedAgentId }) => {
     <instancedMesh
       ref={meshRef}
       args={[geometry, material, AGENT_GRAPH_CONFIG.maxTaskNodes]}
-      frustumCulled={false}
+      frustumCulled
     />
   );
 });
@@ -394,6 +519,24 @@ TaskNodes.displayName = 'TaskNodes';
 
 interface ToolCallParticlesProps {
   particles: ToolParticleState[];
+}
+
+/** Compute position on a quadratic bezier with a perpendicular control offset */
+function quadBezierPos(p0: THREE.Vector3, p3: THREE.Vector3, controlOffset: number, t: number): THREE.Vector3 {
+  const mid = new THREE.Vector3().addVectors(p0, p3).multiplyScalar(0.5);
+  // perpendicular in XZ plane
+  const dx = p3.x - p0.x;
+  const dz = p3.z - p0.z;
+  mid.x += -dz * controlOffset;
+  mid.z += dx * controlOffset;
+  mid.y += 2; // arc upward
+
+  const it = 1 - t;
+  return new THREE.Vector3(
+    it * it * p0.x + 2 * it * t * mid.x + t * t * p3.x,
+    it * it * p0.y + 2 * it * t * mid.y + t * t * p3.y,
+    it * it * p0.z + 2 * it * t * mid.z + t * t * p3.z,
+  );
 }
 
 const ToolCallParticles = memo<ToolCallParticlesProps>(({ particles }) => {
@@ -411,6 +554,8 @@ const ToolCallParticles = memo<ToolCallParticlesProps>(({ particles }) => {
     [],
   );
 
+  const ghostOpacities = AGENT_GRAPH_CONFIG.trailGhostOpacities;
+
   useFrame(() => {
     const mesh = meshRef.current;
     if (!mesh) return;
@@ -421,39 +566,37 @@ const ToolCallParticles = memo<ToolCallParticlesProps>(({ particles }) => {
     for (const particle of particles) {
       if (instanceIndex >= maxInstances) break;
 
-      // Bezier interpolation along path
       const t = particle.progress;
       const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 
-      let position: THREE.Vector3;
-      if (particle.path.length >= 2) {
-        // Cubic bezier: start, start control, end control, end
-        const p0 = particle.startPos;
-        const p3 = particle.targetPos;
-        const p1 = new THREE.Vector3().addVectors(p0, p3).multiplyScalar(0.3).add(p0);
-        const p2 = new THREE.Vector3().addVectors(p0, p3).multiplyScalar(0.7).add(p3);
-
-        position = new THREE.Vector3()
-          .copy(p0)
-          .multiplyScalar((1 - eased) ** 3)
-          .addScaledVector(p1, 3 * (1 - eased) ** 2 * eased)
-          .addScaledVector(p2, 3 * (1 - eased) * eased ** 2)
-          .addScaledVector(p3, eased ** 3);
-      } else {
-        position = new THREE.Vector3().lerpVectors(particle.startPos, particle.targetPos, eased);
-      }
+      // Use quadratic bezier with different curve for outgoing vs returning
+      const curveOffset = particle.returning ? -0.3 : 0.3;
+      const position = quadBezierPos(particle.startPos, particle.targetPos, curveOffset, eased);
 
       tempObj.position.copy(position);
       tempObj.scale.setScalar(0.1);
       tempObj.updateMatrix();
       mesh.setMatrixAt(instanceIndex, tempObj.matrix);
 
-      // Color with fade
       const fadeOpacity = 1 - (eased * 0.3);
       tempColor.set(AGENT_COLORS.toolParticle).multiplyScalar(fadeOpacity);
       mesh.setColorAt(instanceIndex, tempColor);
-
       instanceIndex++;
+
+      // Ghost trail: render 3 trailing positions at decreasing opacity
+      if (particle.prevPositions) {
+        for (let g = 0; g < Math.min(particle.prevPositions.length, ghostOpacities.length); g++) {
+          if (instanceIndex >= maxInstances) break;
+          const ghostPos = particle.prevPositions[g];
+          tempObj.position.copy(ghostPos);
+          tempObj.scale.setScalar(0.07 - g * 0.015);
+          tempObj.updateMatrix();
+          mesh.setMatrixAt(instanceIndex, tempObj.matrix);
+          tempColor.set(AGENT_COLORS.toolParticle).multiplyScalar(ghostOpacities[g]);
+          mesh.setColorAt(instanceIndex, tempColor);
+          instanceIndex++;
+        }
+      }
     }
 
     mesh.count = instanceIndex;
@@ -465,7 +608,7 @@ const ToolCallParticles = memo<ToolCallParticlesProps>(({ particles }) => {
     <instancedMesh
       ref={meshRef}
       args={[geometry, material, AGENT_GRAPH_CONFIG.maxToolParticles]}
-      frustumCulled={false}
+      frustumCulled
     />
   );
 });
@@ -701,6 +844,7 @@ interface NetworkSceneProps {
   activeAgentId: string | null;
   onSelectAgent: (agentId: string | null) => void;
   shareColors?: ShareColors;
+  reducedMotion?: boolean;
 }
 
 const NetworkScene = memo<NetworkSceneProps>(
@@ -713,6 +857,7 @@ const NetworkScene = memo<NetworkSceneProps>(
     activeAgentId,
     onSelectAgent,
     shareColors,
+    reducedMotion,
   }) => {
     const [hoveredAgent, setHoveredAgent] = useState<string | null>(null);
 
@@ -731,6 +876,7 @@ const NetworkScene = memo<NetworkSceneProps>(
             isActive={activeAgentId === hub.id}
             isDimmed={activeAgentId !== null && activeAgentId !== hub.id}
             isHovered={hoveredAgent === hub.id}
+            reducedMotion={reducedMotion}
             onPointerOver={() => setHoveredAgent(hub.id)}
             onPointerOut={() => setHoveredAgent(null)}
             onClick={() =>
@@ -743,7 +889,7 @@ const NetworkScene = memo<NetworkSceneProps>(
         <TaskNodes tasks={tasks} selectedAgentId={activeAgentId} />
 
         {/* Tool call particles */}
-        <ToolCallParticles particles={particles} />
+        {!reducedMotion && <ToolCallParticles particles={particles} />}
 
         {/* Sub-agent edges */}
         <SubAgentEdges edges={subAgentEdges} />
@@ -775,6 +921,7 @@ const AgentForceGraphInner = forwardRef<AgentForceGraphHandle, AgentForceGraphPr
       backgroundColor = '#ffffff',
       shareColors,
       height = '100%',
+      reducedMotion,
     },
     ref,
   ) {
@@ -791,8 +938,8 @@ const AgentForceGraphInner = forwardRef<AgentForceGraphHandle, AgentForceGraphPr
     // Update hubs from agents and flows
     useEffect(() => {
       const newHubs: AgentHubState[] = agents.map((agent, i) => {
-        const flow = flows.get(agent.mint);
-        const existingHub = hubs.find((h) => h.id === agent.mint);
+        const flow = flows.get(agent.tokenAddress);
+        const existingHub = hubs.find((h) => h.id === agent.tokenAddress);
         const position = existingHub?.position || new THREE.Vector3(
           Math.cos(i / Math.max(agents.length, 1) * Math.PI * 2) * 15,
           0,
@@ -800,16 +947,18 @@ const AgentForceGraphInner = forwardRef<AgentForceGraphHandle, AgentForceGraphPr
         );
 
         return {
-          id: agent.mint,
+          id: agent.tokenAddress,
           name: flow?.agent.name || agent.symbol || 'Unknown',
           role: flow?.agent.role || 'agent',
           position,
-          radius: AGENT_GRAPH_CONFIG.hubBaseRadius + (agent.volumeSol / (agents[0]?.volumeSol || 1)) * (AGENT_GRAPH_CONFIG.hubMaxRadius - AGENT_GRAPH_CONFIG.hubBaseRadius),
+          radius: AGENT_GRAPH_CONFIG.hubBaseRadius + (agent.volume / (agents[0]?.volume || 1)) * (AGENT_GRAPH_CONFIG.hubMaxRadius - AGENT_GRAPH_CONFIG.hubBaseRadius),
           color: AGENT_COLOR_PALETTE[i % AGENT_COLOR_PALETTE.length],
           activeTasks: flow?.tasks.filter((t) => t.status !== 'completed' && t.status !== 'failed').length || 0,
           totalToolCalls: flow?.totalToolCalls || 0,
           isReasoning: false,
-          pulseEvents: [],
+          pulseEvents: existingHub?.pulseEvents || [],
+          spawnedAt: existingHub?.spawnedAt || Date.now(),
+          errorShakeStart: existingHub?.errorShakeStart,
         };
       });
 
@@ -861,8 +1010,30 @@ const AgentForceGraphInner = forwardRef<AgentForceGraphHandle, AgentForceGraphPr
               h.id === event.agentId ? { ...h, isReasoning: false } : h,
             ),
           );
+        } else if (event.type === 'task:completed') {
+          // Trigger green pulse ring on the agent hub
+          setHubs((prev) =>
+            prev.map((h) =>
+              h.id === event.agentId
+                ? { ...h, pulseEvents: [...h.pulseEvents.slice(-5), { timestamp: Date.now(), status: 'complete' as const }] }
+                : h,
+            ),
+          );
+        } else if (event.type === 'task:failed') {
+          // Trigger error shake + red pulse on the agent hub
+          setHubs((prev) =>
+            prev.map((h) =>
+              h.id === event.agentId
+                ? {
+                    ...h,
+                    errorShakeStart: Date.now(),
+                    pulseEvents: [...h.pulseEvents.slice(-5), { timestamp: Date.now(), status: 'failed' as const }],
+                  }
+                : h,
+            ),
+          );
         } else if (event.type === 'tool:started') {
-          // Spawn a new tool call particle
+          // Spawn a new tool call particle (outgoing)
           const agentHub = hubs.find((h) => h.id === event.agentId);
           if (agentHub && event.payload) {
             const toolCategory = (event.payload.toolCategory as string) || 'code';
@@ -878,23 +1049,56 @@ const AgentForceGraphInner = forwardRef<AgentForceGraphHandle, AgentForceGraphPr
               progress: 0,
               path: [],
               createdAt: Date.now(),
+              returning: false,
+              prevPositions: [],
             };
 
             setParticles((prev) => [...prev.slice(-AGENT_GRAPH_CONFIG.maxToolParticles), newParticle]);
+          }
+        } else if (event.type === 'tool:completed') {
+          // Spawn a return particle (tool cluster → agent)
+          const agentHub = hubs.find((h) => h.id === event.agentId);
+          if (agentHub && event.payload) {
+            const toolCategory = (event.payload.toolCategory as string) || 'code';
+            const toolClusterKey = toolCategory as keyof typeof TOOL_CLUSTER_POSITIONS;
+            const clusterPos = TOOL_CLUSTER_POSITIONS[toolClusterKey] || TOOL_CLUSTER_POSITIONS.code;
+
+            const returnParticle: ToolParticleState = {
+              id: `${event.eventId}-return`,
+              agentId: event.agentId,
+              toolCategory,
+              startPos: new THREE.Vector3(clusterPos[0], 0, clusterPos[1]),
+              targetPos: agentHub.position.clone(),
+              progress: 0,
+              path: [],
+              createdAt: Date.now(),
+              returning: true,
+              prevPositions: [],
+            };
+
+            setParticles((prev) => [...prev.slice(-AGENT_GRAPH_CONFIG.maxToolParticles), returnParticle]);
           }
         }
       }
     }, [recentEvents, hubs]);
 
-    // Update particle progress
+    // Update particle progress and ghost trail
     useEffect(() => {
       const interval = setInterval(() => {
         setParticles((prev) =>
           prev
-            .map((p) => ({
-              ...p,
-              progress: Math.min(p.progress + AGENT_GRAPH_CONFIG.toolParticleSpeed, 1),
-            }))
+            .map((p) => {
+              const newProgress = Math.min(p.progress + AGENT_GRAPH_CONFIG.toolParticleSpeed, 1);
+              const t = newProgress;
+              const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+              const curveOffset = p.returning ? -0.3 : 0.3;
+              const currentPos = quadBezierPos(p.startPos, p.targetPos, curveOffset, eased);
+
+              // Shift previous positions for trail
+              const prevPositions = p.prevPositions ? [currentPos.clone(), ...p.prevPositions.slice(0, AGENT_GRAPH_CONFIG.trailGhostCount - 1)] : [currentPos.clone()];
+
+              return { ...p, progress: newProgress, prevPositions };
+            })
             .filter((p) => p.progress < 1),
         );
       }, 16); // ~60fps
@@ -1015,6 +1219,7 @@ const AgentForceGraphInner = forwardRef<AgentForceGraphHandle, AgentForceGraphPr
             activeAgentId={activeAgentId}
             onSelectAgent={onAgentSelect}
             shareColors={shareColors}
+            reducedMotion={reducedMotion}
           />
         </Canvas>
       </div>

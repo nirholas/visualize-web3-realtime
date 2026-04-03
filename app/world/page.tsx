@@ -19,7 +19,7 @@ import StatsBar from '@/features/World/StatsBar';
 import { useJourney } from '@/features/World/useJourney';
 import EmbedConfigurator from '@/features/World/EmbedConfigurator';
 import ProviderPanel from '@/features/World/ProviderPanel';
-import { timestampedFilename } from '@/features/World/utils/screenshot';
+import { captureCanvas, captureSnapshot, downloadBlob, timestampedFilename } from '@/features/World/utils/screenshot';
 import { buildShareUrl, buildShareText, parseShareParams, shareOnX, shareOnLinkedIn } from '@/features/World/utils/shareUrl';
 import type { ForceGraphHandle } from '@/features/World/ForceGraph';
 import { WorldChat } from '@/features/World/ai/WorldChat';
@@ -343,8 +343,8 @@ export default function WorldPage() {
 
   const displayTraderEdges = useMemo(() => {
     if (timeFilter === null) return stats.traderEdges;
-    const visibleMints = new Set(displayTopTokens.map((t) => t.mint));
-    return stats.traderEdges.filter((e) => visibleMints.has(e.mint));
+    const visibleAddresses = new Set(displayTopTokens.map((t) => t.tokenAddress));
+    return stats.traderEdges.filter((e) => visibleAddresses.has(e.tokenAddress));
   }, [stats.traderEdges, displayTopTokens, timeFilter]);
 
   // -- Time-filtered events for LiveFeed --
@@ -455,23 +455,36 @@ export default function WorldPage() {
   const handleCloseShare = useCallback(() => setShareOpen(false), []);
 
   // --- Download World (raw WebGL canvas) ---
-  const handleDownloadWorld = useCallback(() => {
-    const dataURL = graphRef.current?.takeSnapshot();
-    if (!dataURL) return;
-    const link = document.createElement('a');
-    link.download = timestampedFilename('pumpfun-world');
-    link.href = dataURL;
-    link.click();
+  const handleDownloadWorld = useCallback(async () => {
+    const canvas = graphRef.current?.getCanvasElement();
+    if (!canvas) return;
+    setDownloading('world');
+    try {
+      const blob = await captureCanvas(canvas);
+      downloadBlob(blob, timestampedFilename('pumpfun-world'));
+    } finally {
+      setDownloading(null);
+    }
   }, []);
 
-  // --- Download Snapshot (WebGL canvas capture) ---
-  const handleDownloadSnapshot = useCallback(() => {
-    const dataURL = graphRef.current?.takeSnapshot();
-    if (!dataURL) return;
-    const link = document.createElement('a');
-    link.download = timestampedFilename('pumpfun-snapshot');
-    link.href = dataURL;
-    link.click();
+  // --- Download Snapshot (WebGL canvas + overlay composite) ---
+  const handleDownloadSnapshot = useCallback(async () => {
+    const canvas = graphRef.current?.getCanvasElement();
+    const overlay = overlayRef.current;
+    if (!canvas) return;
+    setDownloading('snapshot');
+    try {
+      if (overlay) {
+        const blob = await captureSnapshot(canvas, overlay);
+        downloadBlob(blob, timestampedFilename('pumpfun-snapshot'));
+      } else {
+        // Fallback: just capture canvas if overlay not mounted
+        const blob = await captureCanvas(canvas);
+        downloadBlob(blob, timestampedFilename('pumpfun-snapshot'));
+      }
+    } finally {
+      setDownloading(null);
+    }
   }, []);
 
   // --- Share on X ---
@@ -500,6 +513,7 @@ export default function WorldPage() {
     const { colors } = parseShareParams(window.location.search);
     if (colors.background || colors.protocol || colors.user) {
       setShareColors((prev) => ({ ...prev, ...colors }));
+      setShareOpen(true);
     }
   }, []);
 
@@ -715,7 +729,7 @@ export default function WorldPage() {
         <Suspense fallback={null}>
           <StatsBar
             totalTokens={(stats.counts.launches ?? 0) + (stats.counts.agentLaunches ?? 0)}
-            totalVolumeSol={Math.round(totalVolume)}
+            totalVolume={stats.totalVolume ?? {}}
             totalTrades={stats.totalTransactions}
             highlightedAddress={highlightedAddress}
             onAddressSearch={handleAddressSearch}
@@ -774,7 +788,7 @@ export default function WorldPage() {
         <>
           <ShareOverlay
             ref={overlayRef}
-            address={userAddress || 'pump.fun'}
+            address={userAddress || 'web3viz'}
             activeSince="Jan 2025"
             transactionCount={stats.totalTransactions}
             volume={Math.round(totalVolume)}

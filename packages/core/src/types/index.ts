@@ -28,127 +28,89 @@ export type BuiltInSource =
 /** A token on-chain (e.g. from PumpFun, Uniswap, etc.) */
 export interface Token {
   /** Token contract address (mint on Solana, contract on EVM) */
-  tokenAddress?: string;
-  /** Solana mint address */
-  mint?: string;
+  tokenAddress: string;
   name: string;
   symbol: string;
   /** Chain identifier: 'solana' | 'ethereum' | 'base' | string */
-  chain?: string;
+  chain: string;
   uri?: string;
-  /** Normalized creator/deployer address */
-  creatorAddress?: string;
-  /** Backward-compat alias for creatorAddress (Solana) */
-  traderPublicKey?: string;
+  creatorAddress: string;
   initialBuy?: number;
   marketCap?: number;
-  marketCapSol?: number;
   /** Native currency symbol for marketCap (e.g. 'SOL', 'ETH') */
   nativeSymbol?: string;
   signature?: string;
   timestamp: number;
   /** Whether this token appears to be an AI agent launch */
   isAgent?: boolean;
-  /** Which data source produced this token */
-  source?: string;
   /** Arbitrary provider-specific metadata */
   meta?: Record<string, unknown>;
 }
 
 /** An on-chain trade event */
 export interface Trade {
-  tokenAddress?: string;
-  /** Solana mint address */
-  mint?: string;
-  chain?: string;
+  tokenAddress: string;
+  chain: string;
   signature: string;
-  /** Normalized trader address */
-  traderAddress?: string;
-  /** Backward-compat alias for traderAddress (Solana) */
-  traderPublicKey?: string;
+  traderAddress: string;
   txType: 'buy' | 'sell' | 'swap' | string;
   tokenAmount: number;
-  /** Normalized native currency amount */
-  nativeAmount?: number;
-  /** Backward-compat alias for nativeAmount (Solana, in lamports) */
-  solAmount?: number;
-  nativeSymbol?: string;
+  nativeAmount: number;
+  nativeSymbol: string;
   /** USD equivalent if available */
   usdAmount?: number;
   marketCap?: number;
-  marketCapSol?: number;
   timestamp: number;
   name?: string;
   symbol?: string;
-  /** Solana-specific bonding curve fields */
-  newTokenBalance?: number;
-  bondingCurveKey?: string;
-  vTokensInBondingCurve?: number;
-  vSolInBondingCurve?: number;
-  /** Which data source produced this trade */
-  source?: string;
-  /** Arbitrary provider-specific metadata */
   meta?: Record<string, unknown>;
 }
 
 /** A token/entity ranked by activity — used as a hub node in the graph */
 export interface TopToken {
-  /** Solana mint address or EVM contract address */
+  tokenAddress: string;
+  /** Alias for tokenAddress — used by ForceGraph as the hub node ID */
   mint: string;
-  /** Normalized alias for mint (multi-chain) */
-  tokenAddress?: string;
   symbol: string;
   name: string;
-  chain?: string;
+  chain: string;
   trades: number;
-  /** Total volume in the chain's native currency */
+  volume: number;
+  /** Volume in native currency (e.g. SOL, TASKS) */
   volumeSol: number;
-  /** Normalized alias for volumeSol */
-  volume?: number;
-  nativeSymbol?: string;
+  nativeSymbol: string;
   /** USD volume if available */
   volumeUsd?: number;
-  /** Source provider that produced this entry */
+  /** Provider source identifier (e.g. 'pumpfun', 'agents') */
   source?: string;
 }
 
 /** An edge between a participant and a hub (for graph visualization) */
 export interface TraderEdge {
   trader: string;
-  /** Solana mint address or EVM contract address */
+  tokenAddress: string;
+  /** Alias for tokenAddress — used by ForceGraph for hub matching */
   mint: string;
-  /** Normalized alias for mint (multi-chain) */
-  tokenAddress?: string;
-  chain?: string;
+  chain: string;
   trades: number;
-  /** Total volume in the chain's native currency */
+  volume: number;
+  /** Volume in native currency */
   volumeSol: number;
-  /** Normalized alias for volumeSol */
-  volume?: number;
-  /** Source provider that produced this edge */
+  /** Provider source identifier */
   source?: string;
 }
 
 /** A claim event (e.g. fee claims, social claims) */
 export interface Claim {
   signature: string;
-  chain?: string;
+  chain: string;
   slot?: number;
   timestamp: number;
   claimType: string;
   programId: string;
-  claimer?: string;
-  /** Backward-compat alias for claimer (Solana wallet address) */
-  wallet?: string;
-  /** Solana token mint associated with the claim */
-  mint?: string;
+  claimer: string;
   isFirstClaim: boolean;
   logs?: string[];
-  /** SOL amount claimed (Solana-specific) */
-  solAmount?: number;
-  /** Token amount associated with the claim */
-  tokenAmount?: number;
-  /** Arbitrary provider-specific metadata */
   meta?: Record<string, unknown>;
 }
 
@@ -173,12 +135,9 @@ export type RawEvent =
 export interface DataProviderEvent {
   id: string;
   /** Which provider emitted this */
-  providerId?: string;
-  /** Source identifier (backward-compat alias for providerId) */
-  source?: string;
-  /** Category within the source (e.g. 'launches', 'trades', 'swaps') */
+  providerId: string;
   category: string;
-  chain?: string;
+  chain: string;
   timestamp: number;
   label: string;
   amount?: number;
@@ -188,8 +147,6 @@ export interface DataProviderEvent {
   amountUsd?: number;
   address: string;
   tokenAddress?: string;
-  /** Solana mint address (backward-compat alias for tokenAddress) */
-  mint?: string;
   meta?: Record<string, unknown>;
 }
 
@@ -205,10 +162,6 @@ export interface GraphNode {
   color: string;
   chain?: string;
   hubTokenAddress?: string;
-  /** Backward-compat alias for hubTokenAddress (Solana mint) */
-  hubMint?: string;
-  /** Source provider that owns this node */
-  source?: string;
   x?: number;
   y?: number;
   vx?: number;
@@ -231,10 +184,8 @@ export interface GraphEdge {
 /** Aggregate stats from a single data provider */
 export interface DataProviderStats {
   counts: Record<string, number>;
-  /** Total volume in SOL (Solana-native) */
-  totalVolumeSol?: number;
   /** Total volume per chain: { solana: 123.4, ethereum: 56.7 } */
-  totalVolume?: Record<string, number>;
+  totalVolume: Record<string, number>;
   totalTransactions: number;
   totalAgents: number;
   recentEvents: DataProviderEvent[];

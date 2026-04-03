@@ -14,9 +14,9 @@
 // Register providers (each file calls registerProvider internally)
 // import './solana-pumpfun';   // ← Task 23 will add this
 import './ethereum';          // ← Task 24
-// import './base';              // ← Task 25
+import './base';                // ← Task 25
 // import './agents';            // ← Task 26
-// import './erc8004';           // ← Task 27
+import './erc8004';              // ← Task 27
 // import './cex-volume';        // ← Task 28
 
 export {};

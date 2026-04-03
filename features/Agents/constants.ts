@@ -115,6 +115,39 @@ export const AGENT_GRAPH_CONFIG = {
   taskNodeGeometrySegments: 8,    // low-poly for performance
   taskNodeMaterialSamples: 2,     // multisampling
 
+  // Spawn animation
+  spawnDurationMs: 500,
+  spawnParticleCount: 10,
+  spawnParticleSpeed: 0.08,
+  spawnParticleLifespan: 40, // frames
+
+  // Task completion celebration
+  completionRingExpandScale: 3,
+  completionRingDurationMs: 800,
+  completionFadeDurationMs: 300,
+  completionScoreFloatSpeed: 0.02,
+  completionScoreLifespan: 60, // frames
+
+  // Tool call trail
+  trailGhostCount: 3,
+  trailGhostOpacities: [0.8, 0.4, 0.1] as readonly number[],
+  trailReturnCurveJitter: 2, // px randomness on return path
+
+  // Error shake
+  errorShakeDurationMs: 300,
+  errorShakeCycles: 3,
+  errorShakeAmplitude: 0.15, // world units
+
+  // Idle breathing (extended)
+  idleColorPulseAmount: 0.08, // how much lighter on peak
+
+  // Fade-out timing
+  taskFadeOutDelayMs: 5000, // remove completed task nodes after 5s
+
+  // Event caps
+  maxEventsPerAgent: 500,
+  maxEventsTotal: 2000,
+
   // Debug
   debugVisualize: false,  // Show tool cluster nodes and guides
 };

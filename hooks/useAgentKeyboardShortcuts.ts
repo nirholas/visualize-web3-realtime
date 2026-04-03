@@ -10,6 +10,8 @@ interface UseAgentKeyboardShortcutsOptions {
   onFitCamera: () => void;
   onToggleFeed?: () => void;
   onCloseInspector?: () => void;
+  onStepBackward?: () => void;
+  onStepForward?: () => void;
 }
 
 export function useAgentKeyboardShortcuts({
@@ -19,6 +21,8 @@ export function useAgentKeyboardShortcuts({
   onFitCamera,
   onToggleFeed,
   onCloseInspector,
+  onStepBackward,
+  onStepForward,
 }: UseAgentKeyboardShortcutsOptions) {
   useEffect(() => {
     const agentList = Array.from(agents.values());
@@ -35,6 +39,14 @@ export function useAgentKeyboardShortcuts({
         case 'Escape':
           onSelectAgent(null);
           onCloseInspector?.();
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          onStepBackward?.();
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          onStepForward?.();
           break;
         case 'KeyF':
           onFitCamera();
@@ -62,5 +74,5 @@ export function useAgentKeyboardShortcuts({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [agents, onSelectAgent, onTogglePlay, onFitCamera, onToggleFeed, onCloseInspector]);
+  }, [agents, onSelectAgent, onTogglePlay, onFitCamera, onToggleFeed, onCloseInspector, onStepBackward, onStepForward]);
 }

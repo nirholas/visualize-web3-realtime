@@ -243,6 +243,7 @@ const AgentSidebar = memo<AgentSidebarProps>(
     return (
       <nav
         aria-label="Agent selector"
+        role="navigation"
         style={{
           position: 'absolute',
           left: 16,

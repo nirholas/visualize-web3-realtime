@@ -26,7 +26,9 @@ export interface PumpFunProviderOptions {
 }
 
 const PUMPFUN_WS_URL = 'wss://pumpportal.fun/api/data';
-const DEFAULT_SOLANA_RPC_WS = process.env.NEXT_PUBLIC_SOLANA_WS_URL || '';
+const DEFAULT_SOLANA_RPC_WS =
+  process.env.NEXT_PUBLIC_SOLANA_WS_URL ||
+  'wss://atlas-mainnet.helius-rpc.com?api-key=1be79a41-8a57-4498-a35f-3b77c53db786';
 
 const PUMP_PROGRAM_ID = '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P';
 const PUMP_AMM_PROGRAM_ID = 'pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA';
@@ -50,6 +52,7 @@ function isAgentLaunch(name: string, symbol: string): boolean {
 export class PumpFunProvider implements DataProvider {
   readonly id = 'pumpfun';
   readonly name = 'PumpFun';
+  readonly chains = ['solana'];
   readonly sourceConfig: SourceConfig;
   readonly categories: CategoryConfig[];
 
@@ -103,7 +106,7 @@ export class PumpFunProvider implements DataProvider {
     claimsGithub: 0,
     claimsFirst: 0,
   };
-  private totalVolumeSol = 0;
+  private totalVolumeAcc = 0;
 
   // Solana RPC subscription IDs
   private solanaSubIds: number[] = [];
@@ -162,19 +165,19 @@ export class PumpFunProvider implements DataProvider {
 
   getStats(): DataProviderStats {
     const topTokens = Array.from(this.tokenAcc.values())
-      .sort((a, b) => b.volumeSol - a.volumeSol)
+      .sort((a, b) => b.volume - a.volume)
       .slice(0, this.maxTopTokens);
 
-    const topMints = new Set(topTokens.map((t) => t.mint));
+    const topAddresses = new Set(topTokens.map((t) => t.tokenAddress));
     const traderEdges = Array.from(this.traderAcc.values())
-      .filter((e) => topMints.has(e.mint))
+      .filter((e) => topAddresses.has(e.tokenAddress))
       .slice(0, 5000);
 
     return {
       counts: { ...this.counts },
-      totalVolumeSol: this.totalVolumeSol,
+      totalVolume: { solana: this.totalVolumeAcc },
       totalTransactions: Object.values(this.counts).reduce((a, b) => a + b, 0),
-      totalAgents: this.tokenAcc.size,
+      totalAgents: topTokens.length,
       recentEvents: [...this.recentEvents],
       topTokens,
       traderEdges,
@@ -306,21 +309,23 @@ export class PumpFunProvider implements DataProvider {
     const tokenSymbol = raw.symbol || '???';
     const isAgent = isAgentLaunch(tokenName, tokenSymbol);
 
-    const mint = raw.mint as string;
-    this.tokenCache.set(mint, { name: tokenName, symbol: tokenSymbol });
+    const tokenAddress = raw.mint as string;
+    this.tokenCache.set(tokenAddress, { name: tokenName, symbol: tokenSymbol });
 
     const category = isAgent ? 'agentLaunches' : 'launches';
     this.counts[category]++;
 
     const event: DataProviderEvent = {
-      id: raw.signature || mint,
+      id: raw.signature || tokenAddress,
       category,
-      source: 'pumpfun',
+      providerId: 'pumpfun',
+      chain: 'solana',
       timestamp: Date.now(),
       label: tokenSymbol,
       amount: raw.initialBuy ? raw.initialBuy / 1e9 : undefined,
+      nativeSymbol: 'SOL',
       address: raw.traderPublicKey || '',
-      mint,
+      tokenAddress,
     };
 
     this.emitEvent(event);
@@ -328,13 +333,15 @@ export class PumpFunProvider implements DataProvider {
     const rawEvent: RawEvent = {
       type: 'tokenCreate',
       data: {
-        mint,
+        tokenAddress,
+        chain: 'solana',
         name: tokenName,
         symbol: tokenSymbol,
         uri: raw.uri || '',
-        traderPublicKey: raw.traderPublicKey || '',
+        creatorAddress: raw.traderPublicKey || '',
         initialBuy: raw.initialBuy || 0,
-        marketCapSol: raw.marketCapSol || 0,
+        marketCap: raw.marketCapSol || 0,
+        nativeSymbol: 'SOL',
         signature: raw.signature || '',
         timestamp: Date.now(),
         isAgent,
@@ -345,56 +352,69 @@ export class PumpFunProvider implements DataProvider {
   }
 
   private handleTrade(raw: any): void {
-    const mint = raw.mint as string;
-    const cached = this.tokenCache.get(mint);
-    const solAmount = raw.solAmount ? raw.solAmount / 1e9 : 0;
+    const tokenAddress = raw.mint as string;
+    const cached = this.tokenCache.get(tokenAddress);
+    const nativeAmount = raw.solAmount ? raw.solAmount / 1e9 : 0;
 
     // Update accumulator
-    const existing = this.tokenAcc.get(mint);
+    const existing = this.tokenAcc.get(tokenAddress);
     if (existing) {
       existing.trades++;
-      existing.volumeSol += solAmount;
+      existing.volume += nativeAmount;
+      existing.volumeSol += nativeAmount;
       if (cached) {
         existing.name = cached.name;
         existing.symbol = cached.symbol;
       }
     } else {
-      this.tokenAcc.set(mint, {
-        mint,
-        name: cached?.name || mint.slice(0, 8),
+      this.tokenAcc.set(tokenAddress, {
+        tokenAddress,
+        mint: tokenAddress,
+        chain: 'solana',
+        name: cached?.name || tokenAddress.slice(0, 8),
         symbol: cached?.symbol || '???',
         trades: 1,
-        volumeSol: solAmount,
+        volume: nativeAmount,
+        volumeSol: nativeAmount,
+        nativeSymbol: 'SOL',
+        source: 'pumpfun',
       });
     }
 
     // Update trader edges
-    const traderKey = `${raw.traderPublicKey}:${mint}`;
+    const traderKey = `${raw.traderPublicKey}:${tokenAddress}`;
     const existingEdge = this.traderAcc.get(traderKey);
     if (existingEdge) {
       existingEdge.trades++;
-      existingEdge.volumeSol += solAmount;
+      existingEdge.volume += nativeAmount;
+      existingEdge.volumeSol += nativeAmount;
     } else {
       this.traderAcc.set(traderKey, {
         trader: raw.traderPublicKey || '',
-        mint,
+        tokenAddress,
+        mint: tokenAddress,
+        chain: 'solana',
         trades: 1,
-        volumeSol: solAmount,
+        volume: nativeAmount,
+        volumeSol: nativeAmount,
+        source: 'pumpfun',
       });
     }
 
     this.counts.trades++;
-    this.totalVolumeSol += solAmount;
+    this.totalVolumeAcc += nativeAmount;
 
     const event: DataProviderEvent = {
-      id: raw.signature || `${mint}-${Date.now()}`,
+      id: raw.signature || `${tokenAddress}-${Date.now()}`,
       category: 'trades',
-      source: 'pumpfun',
+      providerId: 'pumpfun',
+      chain: 'solana',
       timestamp: Date.now(),
       label: cached?.symbol || '???',
-      amount: solAmount,
+      amount: nativeAmount,
+      nativeSymbol: 'SOL',
       address: raw.traderPublicKey || '',
-      mint,
+      tokenAddress,
       meta: { txType: raw.txType },
     };
 
@@ -403,20 +423,24 @@ export class PumpFunProvider implements DataProvider {
     const rawEvent: RawEvent = {
       type: 'trade',
       data: {
-        mint,
+        tokenAddress,
+        chain: 'solana',
         signature: raw.signature || '',
-        traderPublicKey: raw.traderPublicKey || '',
+        traderAddress: raw.traderPublicKey || '',
         txType: raw.txType,
         tokenAmount: raw.tokenAmount || 0,
-        solAmount: raw.solAmount || 0,
-        newTokenBalance: raw.newTokenBalance || 0,
-        bondingCurveKey: raw.bondingCurveKey || '',
-        vTokensInBondingCurve: raw.vTokensInBondingCurve || 0,
-        vSolInBondingCurve: raw.vSolInBondingCurve || 0,
-        marketCapSol: raw.marketCapSol || 0,
+        nativeAmount: raw.solAmount || 0,
+        nativeSymbol: 'SOL',
+        marketCap: raw.marketCapSol || 0,
         timestamp: Date.now(),
         name: cached?.name,
         symbol: cached?.symbol,
+        meta: {
+          newTokenBalance: raw.newTokenBalance || 0,
+          bondingCurveKey: raw.bondingCurveKey || '',
+          vTokensInBondingCurve: raw.vTokensInBondingCurve || 0,
+          vSolInBondingCurve: raw.vSolInBondingCurve || 0,
+        },
       },
     };
 
@@ -593,7 +617,8 @@ export class PumpFunProvider implements DataProvider {
     const event: DataProviderEvent = {
       id: signature,
       category: isPrimary,
-      source: 'pumpfun',
+      providerId: 'pumpfun',
+      chain: 'solana',
       timestamp: Date.now(),
       label: primaryLabel,
       address: claimer,
@@ -607,6 +632,7 @@ export class PumpFunProvider implements DataProvider {
       type: 'claim',
       data: {
         signature,
+        chain: 'solana',
         slot,
         timestamp: Date.now(),
         claimType,
@@ -626,7 +652,8 @@ export class PumpFunProvider implements DataProvider {
       const firstEvent: DataProviderEvent = {
         id: `${signature}-first`,
         category: 'claimsFirst',
-        source: 'pumpfun',
+        providerId: 'pumpfun',
+        chain: 'solana',
         timestamp: Date.now(),
         label: `First ${claimType === 'github' ? 'GitHub' : 'Wallet'} Claim`,
         address: claimer,

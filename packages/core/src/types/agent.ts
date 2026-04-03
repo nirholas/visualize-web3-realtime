@@ -104,12 +104,15 @@ export type AgentEventType =
   | 'agent:spawn'
   | 'agent:idle'
   | 'agent:shutdown'
+  | 'agent:resume'
   // Task lifecycle
   | 'task:queued'
   | 'task:started'
   | 'task:progress'
   | 'task:completed'
   | 'task:failed'
+  | 'task:cancelled'
+  | 'task:retry'
   // Tool calls
   | 'tool:started'
   | 'tool:streaming'
@@ -118,13 +121,15 @@ export type AgentEventType =
   // Sub-agent delegation
   | 'subagent:spawn'
   | 'subagent:result'
+  | 'subagent:failed'
   // Reasoning / thinking
   | 'reasoning:start'
   | 'reasoning:update'
   | 'reasoning:end'
   // System
   | 'heartbeat'
-  | 'error';
+  | 'error'
+  | 'executor:status';
 
 export interface AgentEvent {
   /** Unique event ID */

@@ -1,5 +1,6 @@
 const MOCK_TOOL_NAMES = ['read_file', 'grep_search', 'run_in_terminal', 'semantic_search', 'create_file'];
 const MOCK_CATEGORIES = ['filesystem', 'search', 'terminal', 'search', 'filesystem'];
+const DEFAULT_AGENT_ROLES = ['coder', 'researcher', 'planner'];
 let _callId = 0;
 function uid() { return `call_${Date.now()}_${++_callId}`; }
 function randomFrom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
@@ -20,7 +21,7 @@ export class AgentManager {
     }
     async spawnAgent(config) {
         const identity = await this.client.spawnAgent(config);
-        this.agents.set(identity.agentId, { identity, status: 'idle', currentTaskId: null });
+        this.agents.set(identity.agentId, { identity, status: 'idle', currentTaskId: null, idleSince: Date.now() });
         this.emit({
             eventId: `evt_spawn_${identity.agentId}`,
             type: 'agent:spawn',
@@ -39,6 +40,7 @@ export class AgentManager {
         }
         agent.status = 'busy';
         agent.currentTaskId = task.taskId;
+        agent.idleSince = null;
         this.emit({
             eventId: `evt_task_start_${task.taskId}`,
             type: 'task:started',
@@ -107,6 +109,7 @@ export class AgentManager {
         }
         agent.status = 'idle';
         agent.currentTaskId = null;
+        agent.idleSince = Date.now();
     }
     getAvailableAgent(role) {
         for (const [, state] of this.agents) {
@@ -135,4 +138,33 @@ export class AgentManager {
     }
     getAgentCount() { return this.agents.size; }
     getBusyCount() { return Array.from(this.agents.values()).filter((a) => a.status === 'busy').length; }
+    async autoScale(queueDepth, maxAgents, roleSequence = DEFAULT_AGENT_ROLES) {
+        // Spawn new agents if queue is growing and all agents are busy
+        if (queueDepth > 0) {
+            const busyCount = this.getBusyCount();
+            const totalCount = this.agents.size;
+            if (busyCount === totalCount && totalCount < maxAgents) {
+                // All agents busy and we can spawn more
+                const nextRole = roleSequence[totalCount % roleSequence.length];
+                await this.spawnAgent({
+                    role: nextRole,
+                    name: `${nextRole.charAt(0).toUpperCase()}${nextRole.slice(1)}Agent${totalCount + 1}`,
+                });
+            }
+        }
+        // Retire agents that have been idle for too long (but keep at least 1)
+        const now = Date.now();
+        const idleThreshold = 5 * 60_000; // 5 minutes
+        const agentsToRetire = [];
+        for (const [agentId, state] of this.agents) {
+            if (state.status === 'idle' && state.idleSince && now - state.idleSince > idleThreshold) {
+                if (this.agents.size > 1) {
+                    agentsToRetire.push(agentId);
+                }
+            }
+        }
+        for (const agentId of agentsToRetire) {
+            await this.shutdownAgent(agentId);
+        }
+    }
 }

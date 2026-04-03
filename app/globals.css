@@ -19,6 +19,7 @@
     color: #1a1a1a;
     font-family: 'IBM Plex Mono', monospace;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   * {
@@ -43,13 +44,40 @@
   50%      { opacity: 0.4; }
 }
 
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes nodeEntrance {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
 /* ─── Transitions ─── */
-button, a, input {
+button, a, input, select {
   transition: all 150ms ease;
 }
 
 button:hover {
   cursor: pointer;
+}
+
+/* Focus states */
+input:focus, select:focus {
+  outline: none;
+  border-color: #3d63ff;
+  box-shadow: 0 0 0 2px rgba(61, 99, 255, 0.15);
+}
+
+button:focus-visible {
+  outline: 2px solid #3d63ff;
+  outline-offset: 2px;
 }
 
 /* ─── Cursor States ─── */
@@ -81,9 +109,4 @@ canvas:active {
   .stats-bar > :nth-child(n+3):not(.search-pill) { display: none; }
   .timeline-ticks { display: none; }
   .live-feed { display: none; }
-}
-
-@keyframes slideInRight {
-  from { transform: translateX(100%); }
-  to   { transform: translateX(0); }
 }

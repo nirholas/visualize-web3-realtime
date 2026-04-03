@@ -13,6 +13,16 @@ export default function StartJourney({ disabled = false, isRunning, onClick, res
       aria-label={restarted ? 'Restart journey' : 'Start journey'}
       disabled={disabled}
       onClick={onClick}
+      onMouseEnter={(e) => {
+        if (!disabled) {
+          (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.06)';
+          (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)';
+        }
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)';
+        (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none';
+      }}
       style={{
         alignItems: 'center',
         background: disabled ? '#e8e8e8' : '#1a1a1a',
@@ -22,7 +32,7 @@ export default function StartJourney({ disabled = false, isRunning, onClick, res
         color: '#ffffff',
         cursor: disabled ? 'not-allowed' : 'pointer',
         display: 'flex',
-        fontFamily: 'IBM Plex Mono, ui-monospace, SFMono-Regular, Menlo, monospace',
+        fontFamily: "'IBM Plex Mono', monospace",
         fontSize: 11,
         fontWeight: 600,
         height: 68,

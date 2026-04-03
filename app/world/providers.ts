@@ -3,17 +3,32 @@
 import { PumpFunProvider, MockProvider, AgentProvider } from '@web3viz/providers';
 
 // ---------------------------------------------------------------------------
-// Provider instances
+// Data Provider Registration
 //
-// To add a new data provider:
+// To add a new real-time data source:
+//
 // 1. Create a class implementing DataProvider from @web3viz/core
-//    (see PumpFunProvider for reference)
-// 2. Add it to this array
-// 3. The provider's categories automatically appear in the filter sidebar
+//    (see PumpFunProvider and MockProvider for reference patterns)
+//
+// 2. Your provider must declare:
+//    - id, name, sourceConfig, categories
+//    - connect() / disconnect() for WebSocket/API lifecycle
+//    - onEvent(cb) to emit DataProviderEvent objects
+//    - getStats() returning DataProviderStats
+//    - getConnections() returning ConnectionState[]
+//
+// 3. Add your provider instance to this array:
+//    new MyChainProvider({ wsUrl: '...' }),
+//
+// Your provider's categories will automatically appear in the filter sidebar,
+// events will appear in the LiveFeed, and stats will aggregate into the dashboard.
 // ---------------------------------------------------------------------------
 
 export const providers = [
-  new PumpFunProvider(),
-  new MockProvider(),
+  new PumpFunProvider({
+    rpcWsUrl: process.env.NEXT_PUBLIC_SOLANA_WS_URL || undefined,
+  }),
+  // Uncomment to test multi-provider:
+  // new MockProvider({ interval: 1000 }),
   new AgentProvider(),
 ];

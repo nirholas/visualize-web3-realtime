@@ -27,7 +27,7 @@ interface ForceNode extends SimulationNodeDatum {
   label: string;
   radius: number;
   color: string;
-  hubMint?: string;
+  hubTokenAddress?: string;
 }
 
 interface ForceEdge extends SimulationLinkDatum<ForceNode> {
@@ -147,14 +147,14 @@ export class ForceGraphSimulation {
     let changed = false;
 
     // Hub nodes from top tokens
-    const hubMints = new Set<string>();
+    const hubAddresses = new Set<string>();
     for (let i = 0; i < topTokens.length; i++) {
       const t = topTokens[i];
-      hubMints.add(t.mint);
-      const existing = this.nodeMap.get(t.mint);
-      const maxVol = topTokens[0]?.volumeSol || 1;
+      hubAddresses.add(t.tokenAddress);
+      const existing = this.nodeMap.get(t.tokenAddress);
+      const maxVol = topTokens[0]?.volume || 1;
       const scaledRadius =
-        c.hubBaseRadius + (t.volumeSol / maxVol) * (c.hubMaxRadius - c.hubBaseRadius);
+        c.hubBaseRadius + (t.volume / maxVol) * (c.hubMaxRadius - c.hubBaseRadius);
 
       if (existing) {
         existing.radius = scaledRadius;
@@ -163,7 +163,7 @@ export class ForceGraphSimulation {
         const angle = (i / Math.max(topTokens.length, 1)) * Math.PI * 2;
         const dist = 15 + Math.random() * 5;
         const node: ForceNode = {
-          id: t.mint,
+          id: t.tokenAddress,
           type: 'hub',
           label: t.symbol || t.name,
           radius: scaledRadius,
@@ -171,7 +171,7 @@ export class ForceGraphSimulation {
           x: Math.cos(angle) * dist,
           y: Math.sin(angle) * dist,
         };
-        this.nodeMap.set(t.mint, node);
+        this.nodeMap.set(t.tokenAddress, node);
         this.nodes.push(node);
         changed = true;
       }
@@ -183,12 +183,12 @@ export class ForceGraphSimulation {
     let added = 0;
 
     for (const edge of traderEdges) {
-      if (!hubMints.has(edge.mint)) continue;
-      const agentId = `agent:${edge.trader}:${edge.mint}`;
+      if (!hubAddresses.has(edge.tokenAddress)) continue;
+      const agentId = `agent:${edge.trader}:${edge.tokenAddress}`;
       if (this.nodeMap.has(agentId)) continue;
       if (added >= budget) break;
 
-      const hub = this.nodeMap.get(edge.mint);
+      const hub = this.nodeMap.get(edge.tokenAddress);
       const angle = Math.random() * Math.PI * 2;
       const dist = 2 + Math.random() * 4;
       const node: ForceNode = {
@@ -197,7 +197,7 @@ export class ForceGraphSimulation {
         label: edge.trader.slice(0, 6),
         radius: c.agentRadius,
         color: c.agentColor,
-        hubMint: edge.mint,
+        hubTokenAddress: edge.tokenAddress,
         x: (hub?.x ?? 0) + Math.cos(angle) * dist,
         y: (hub?.y ?? 0) + Math.sin(angle) * dist,
       };
@@ -226,12 +226,12 @@ export class ForceGraphSimulation {
 
       // Agent-to-hub
       for (const node of this.nodes) {
-        if (node.type === 'agent' && node.hubMint && this.nodeMap.has(node.hubMint)) {
+        if (node.type === 'agent' && node.hubTokenAddress && this.nodeMap.has(node.hubTokenAddress)) {
           newEdges.push({
             sourceId: node.id,
-            targetId: node.hubMint,
+            targetId: node.hubTokenAddress,
             source: node.id,
-            target: node.hubMint,
+            target: node.hubTokenAddress,
           });
         }
       }
@@ -276,7 +276,7 @@ export class ForceGraphSimulation {
         label: n.label,
         radius: n.radius,
         color: n.color,
-        hubMint: n.hubMint,
+        hubTokenAddress: n.hubTokenAddress,
         x: n.x,
         y: n.y,
       }));
@@ -302,7 +302,7 @@ export class ForceGraphSimulation {
       label: n.label,
       radius: n.radius,
       color: n.color,
-      hubMint: n.hubMint,
+      hubTokenAddress: n.hubTokenAddress,
       x: n.x,
       y: n.y,
     };

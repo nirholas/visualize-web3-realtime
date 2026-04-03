@@ -111,20 +111,17 @@ export class PumpFunWebSocket {
       type: 'tokenCreate',
       data: {
         tokenAddress: mint,
-        mint,
         name: tokenName,
         symbol: tokenSymbol,
+        chain: 'solana',
         uri: (raw.uri as string) || '',
         creatorAddress: (raw.traderPublicKey as string) || '',
-        traderPublicKey: (raw.traderPublicKey as string) || '',
         initialBuy: (raw.initialBuy as number) || 0,
         marketCap: (raw.marketCapSol as number) || 0,
-        marketCapSol: (raw.marketCapSol as number) || 0,
         nativeSymbol: 'SOL',
         signature: (raw.signature as string) || '',
         timestamp: Date.now(),
         isAgent,
-        source: 'solana-pumpfun',
       },
     });
 
@@ -133,7 +130,6 @@ export class PumpFunWebSocket {
     this.config.onEvent({
       id: generateId(),
       providerId: 'solana-pumpfun',
-      source: 'solana-pumpfun',
       category,
       chain: 'solana',
       timestamp: Date.now(),
@@ -142,7 +138,6 @@ export class PumpFunWebSocket {
       nativeSymbol: 'SOL',
       address: (raw.traderPublicKey as string) || '',
       tokenAddress: mint,
-      mint,
       meta: {
         name: tokenName,
         symbol: tokenSymbol,
@@ -161,26 +156,23 @@ export class PumpFunWebSocket {
       type: 'trade',
       data: {
         tokenAddress: mint,
-        mint,
         chain: 'solana',
         signature: (raw.signature as string) || '',
         traderAddress: (raw.traderPublicKey as string) || '',
-        traderPublicKey: (raw.traderPublicKey as string) || '',
         txType: (raw.txType as string) || 'buy',
         tokenAmount: (raw.tokenAmount as number) || 0,
         nativeAmount: solAmount,
-        solAmount: (raw.solAmount as number) || 0,
         nativeSymbol: 'SOL',
         marketCap: (raw.marketCapSol as number) || 0,
-        marketCapSol: (raw.marketCapSol as number) || 0,
         timestamp: Date.now(),
         name: cached?.name,
         symbol: cached?.symbol,
-        newTokenBalance: (raw.newTokenBalance as number) || 0,
-        bondingCurveKey: (raw.bondingCurveKey as string) || '',
-        vTokensInBondingCurve: (raw.vTokensInBondingCurve as number) || 0,
-        vSolInBondingCurve: (raw.vSolInBondingCurve as number) || 0,
-        source: 'solana-pumpfun',
+        meta: {
+          newTokenBalance: (raw.newTokenBalance as number) || 0,
+          bondingCurveKey: (raw.bondingCurveKey as string) || '',
+          vTokensInBondingCurve: (raw.vTokensInBondingCurve as number) || 0,
+          vSolInBondingCurve: (raw.vSolInBondingCurve as number) || 0,
+        },
       },
     });
 
@@ -188,54 +180,54 @@ export class PumpFunWebSocket {
     const existing = this.tokenAcc.get(mint);
     if (existing) {
       existing.trades++;
-      existing.volumeSol += solAmount;
+      existing.volume += solAmount;
       if (cached) {
         existing.name = cached.name;
         existing.symbol = cached.symbol;
       }
     } else {
       this.tokenAcc.set(mint, {
-        mint,
+        tokenAddress: mint,
         name: cached?.name || mint.slice(0, 8),
         symbol: cached?.symbol || '???',
+        chain: 'solana',
         trades: 1,
-        volumeSol: solAmount,
-        source: 'solana-pumpfun',
+        volume: solAmount,
+        nativeSymbol: 'SOL',
       });
     }
 
     // Compute top tokens
     const sorted = Array.from(this.tokenAcc.values())
-      .sort((a, b) => b.volumeSol - a.volumeSol)
+      .sort((a, b) => b.volume - a.volume)
       .slice(0, MAX_TOP_TOKENS);
 
     // Build trader → token edges for top-token mints only
-    const topMints = new Set(sorted.map((t) => t.mint));
+    const topAddrs = new Set(sorted.map((t) => t.tokenAddress));
     const traderKey = `${raw.traderPublicKey}:${mint}`;
     const existingEdge = this.traderAcc.get(traderKey);
     if (existingEdge) {
       existingEdge.trades++;
-      existingEdge.volumeSol += solAmount;
+      existingEdge.volume += solAmount;
     } else {
       this.traderAcc.set(traderKey, {
         trader: (raw.traderPublicKey as string) || '',
-        mint,
+        tokenAddress: mint,
+        chain: 'solana',
         trades: 1,
-        volumeSol: solAmount,
-        source: 'solana-pumpfun',
+        volume: solAmount,
       });
     }
 
     // Snapshot trader edges for top tokens only (capped for perf)
     const traderEdges = Array.from(this.traderAcc.values())
-      .filter((e) => topMints.has(e.mint))
+      .filter((e) => topAddrs.has(e.tokenAddress))
       .slice(0, 5000);
 
     // Emit categorized event
     this.config.onEvent({
       id: generateId(),
       providerId: 'solana-pumpfun',
-      source: 'solana-pumpfun',
       category: 'trades',
       chain: 'solana',
       timestamp: Date.now(),
@@ -244,7 +236,6 @@ export class PumpFunWebSocket {
       nativeSymbol: 'SOL',
       address: (raw.traderPublicKey as string) || '',
       tokenAddress: mint,
-      mint,
       meta: {
         symbol: cached?.symbol,
         txType: raw.txType,

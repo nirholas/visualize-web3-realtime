@@ -136,6 +136,7 @@ const AgentLiveFeed = memo<AgentLiveFeedProps>(({ events, agents, onSelectAgent,
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
   const prevIdsRef = useRef<Set<string>>(new Set());
 
+  // Cap visible events
   const visible = events.slice(0, MAX_VISIBLE);
 
   // Track new events

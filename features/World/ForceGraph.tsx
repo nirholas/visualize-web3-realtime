@@ -19,7 +19,7 @@ import type { TopToken, TraderEdge } from '@web3viz/core';
 import type { ShareColors } from './SharePanel';
 
 import { ProtocolLabel } from './ProtocolLabel';
-import { COLOR_PALETTE, PROTOCOL_COLORS } from './constants';
+import { CHAIN_COLORS, COLOR_PALETTE, PROTOCOL_COLORS } from './constants';
 import YouAreHereMarker from './YouAreHereMarker';
 import { PostProcessing } from '@web3viz/react-graph';
 
@@ -34,7 +34,7 @@ interface ForceNode extends SimulationNodeDatum {
   radius: number;
   color: string;
   /** For agent nodes: which hub mint they belong to */
-  hubMint?: string;
+  hubTokenAddress?: string;
   /** Source provider that owns this node */
   source?: string;
 }
@@ -100,31 +100,29 @@ class ForceGraphSimulation {
     let changed = false;
 
     // --- Hub nodes from top tokens ---
-    const hubMints = new Set<string>();
+    const hubAddresses = new Set<string>();
     for (let i = 0; i < topTokens.length; i++) {
       const t = topTokens[i];
-      hubMints.add(t.mint);
-      const existing = this.nodeMap.get(t.mint);
-      const maxVol = topTokens[0]?.volumeSol || 1;
-      const scaledRadius = HUB_BASE_RADIUS + ((t.volumeSol / maxVol) * (HUB_MAX_RADIUS - HUB_BASE_RADIUS));
+      hubAddresses.add(t.tokenAddress);
+      const existing = this.nodeMap.get(t.tokenAddress);
+      const maxVol = topTokens[0]?.volume || 1;
+      const scaledRadius = HUB_BASE_RADIUS + ((t.volume / maxVol) * (HUB_MAX_RADIUS - HUB_BASE_RADIUS));
       if (existing) {
         existing.radius = scaledRadius;
         existing.label = t.symbol || t.name;
-        existing.source = t.source;
       } else {
         const angle = (i / Math.max(topTokens.length, 1)) * Math.PI * 2;
         const dist = 15 + Math.random() * 5;
         const node: ForceNode = {
-          id: t.mint,
+          id: t.tokenAddress,
           type: 'hub',
           label: t.symbol || t.name,
           radius: scaledRadius,
-          color: PROTOCOL_COLORS.default,
-          source: t.source,
+          color: CHAIN_COLORS[t.chain ?? ''] || COLOR_PALETTE[i % COLOR_PALETTE.length],
           x: Math.cos(angle) * dist,
           y: Math.sin(angle) * dist,
         };
-        this.nodeMap.set(t.mint, node);
+        this.nodeMap.set(t.tokenAddress, node);
         this.nodes.push(node);
         changed = true;
       }
@@ -136,12 +134,12 @@ class ForceGraphSimulation {
     let added = 0;
 
     for (const edge of traderEdges) {
-      if (!hubMints.has(edge.mint)) continue;
-      const agentId = `agent:${edge.trader}:${edge.mint}`;
+      if (!hubAddresses.has(edge.tokenAddress)) continue;
+      const agentId = `agent:${edge.trader}:${edge.tokenAddress}`;
       if (this.nodeMap.has(agentId)) continue;
       if (added >= budget) break;
 
-      const hub = this.nodeMap.get(edge.mint);
+      const hub = this.nodeMap.get(edge.tokenAddress);
       const angle = Math.random() * Math.PI * 2;
       const dist = 2 + Math.random() * 4;
       const node: ForceNode = {
@@ -150,8 +148,7 @@ class ForceGraphSimulation {
         label: edge.trader.slice(0, 6),
         radius: AGENT_RADIUS,
         color: '#555566',
-        hubMint: edge.mint,
-        source: edge.source,
+        hubTokenAddress: edge.tokenAddress,
         x: (hub?.x ?? 0) + Math.cos(angle) * dist,
         y: (hub?.y ?? 0) + Math.sin(angle) * dist,
       };
@@ -180,12 +177,12 @@ class ForceGraphSimulation {
 
       // Agent-to-hub edges
       for (const node of this.nodes) {
-        if (node.type === 'agent' && node.hubMint && this.nodeMap.has(node.hubMint)) {
+        if (node.type === 'agent' && node.hubTokenAddress && this.nodeMap.has(node.hubTokenAddress)) {
           newEdges.push({
             sourceId: node.id,
-            targetId: node.hubMint,
+            targetId: node.hubTokenAddress,
             source: node.id,
-            target: node.hubMint,
+            target: node.hubTokenAddress,
           });
         }
       }
@@ -445,10 +442,10 @@ const AgentNodes = memo<{
         tempObj.updateMatrix();
         mesh.setMatrixAt(i, tempObj.matrix);
 
-        if (highlightedHubId && node.hubMint === highlightedHubId) {
+        if (highlightedHubId && node.hubTokenAddress === highlightedHubId) {
           tempColor.set('#3d63ff').multiplyScalar(0.8);
         } else if (hasFilter) {
-          if (ac && node.hubMint === activeProtocol) {
+          if (ac && node.hubTokenAddress === activeProtocol) {
             // Agents near active protocol get a tint of its palette color
             tempColor.set(ac).multiplyScalar(0.7);
           } else {
@@ -543,7 +540,7 @@ const Edges = memo<{
       } else {
         isHighlightEdge = !!(highlightedHubId && (
           src.id === highlightedHubId || tgt.id === highlightedHubId ||
-          src.hubMint === highlightedHubId || tgt.hubMint === highlightedHubId
+          src.hubTokenAddress === highlightedHubId || tgt.hubTokenAddress === highlightedHubId
         ));
       }
 
@@ -554,8 +551,8 @@ const Edges = memo<{
       } else {
         let gray: number;
         if (activeProtocol) {
-          const srcRelated = src.id === activeProtocol || src.hubMint === activeProtocol;
-          const tgtRelated = tgt.id === activeProtocol || tgt.hubMint === activeProtocol;
+          const srcRelated = src.id === activeProtocol || src.hubTokenAddress === activeProtocol;
+          const tgtRelated = tgt.id === activeProtocol || tgt.hubTokenAddress === activeProtocol;
           gray = (srcRelated || tgtRelated) ? (isHubEdge ? 0.55 : 0.65) : 0.92;
         } else {
           gray = isHubEdge ? 0.55 : 0.75;
@@ -727,7 +724,7 @@ const NetworkScene = memo<{
   const [hoveredHub, setHoveredHub] = useState<string | null>(null);
 
   const hubIds = useMemo(
-    () => topTokens.map((t) => ({ id: t.mint, label: t.symbol || t.name, source: t.source })),
+    () => topTokens.map((t) => ({ id: t.tokenAddress, label: t.symbol || t.name })),
     [topTokens],
   );
 
@@ -955,7 +952,7 @@ export interface ForceGraphHandle {
   getCanvasElement: () => HTMLCanvasElement | null;
   getHubCount: () => number;
   getHubPosition: (index: number) => [number, number, number] | null;
-  findAgentHub: (address: string) => { hubIndex: number; hubMint: string } | null;
+  findAgentHub: (address: string) => { hubIndex: number; hubTokenAddress: string } | null;
   setOrbitEnabled: (enabled: boolean) => void;
   /** Capture the current 3D view as a PNG data URL via synchronous WebGL render */
   takeSnapshot: () => string | null;
@@ -1010,11 +1007,11 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
         if (node.type !== 'agent') continue;
         const parts = node.id.split(':');
         if (parts.length >= 2 && parts[1].toLowerCase() === lower) {
-          const hubMint = node.hubMint;
-          if (!hubMint) continue;
+          const hubTokenAddress = node.hubTokenAddress;
+          if (!hubTokenAddress) continue;
           const hubs = sim.nodes.filter((n) => n.type === 'hub');
-          const hubIndex = hubs.findIndex((h) => h.id === hubMint);
-          if (hubIndex >= 0) return { hubIndex, hubMint };
+          const hubIndex = hubs.findIndex((h) => h.id === hubTokenAddress);
+          if (hubIndex >= 0) return { hubIndex, hubTokenAddress };
         }
       }
       return null;
@@ -1065,7 +1062,7 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
     },
   }));
 
-  const tokenKey = topTokens.map((t) => `${t.mint}:${t.trades}`).join(',');
+  const tokenKey = topTokens.map((t) => `${t.tokenAddress}:${t.trades}`).join(',');
   const edgeCount = traderEdges.length;
   useEffect(() => {
     sim.update(topTokens, traderEdges);

@@ -127,7 +127,7 @@ export default function InfoPopover({ anchorRef, id, isOpen, onClose }: InfoPopo
             margin: 0,
           }}
         >
-          PumpFun World
+          Web3 World
         </h2>
         <button
           aria-label="Close info popover"
@@ -149,8 +149,8 @@ export default function InfoPopover({ anchorRef, id, isOpen, onClose }: InfoPopo
       </div>
 
       <p style={{ fontSize: 14, fontWeight: 300, lineHeight: 1.6, margin: '0 0 10px 0' }}>
-        This is a live visualization of every token and trade on PumpFun, a real-time map
-        of Solana&apos;s most active token launch platform.
+        A live visualization of blockchain activity across multiple chains and protocols,
+        mapping real-time token launches, trades, and on-chain events.
       </p>
       <p style={{ fontSize: 14, fontWeight: 300, lineHeight: 1.6, margin: '0 0 10px 0' }}>
         Each point represents a wallet actively trading tokens. Larger hubs represent the

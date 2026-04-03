@@ -62,6 +62,7 @@ function AgentsPageInner() {
   const [isPlaying, setIsPlaying] = useState(true);
   const [scrubOffset, setScrubOffset] = useState(0);
   const [feedVisible, setFeedVisible] = useState(true);
+  const [playbackSpeed, setPlaybackSpeed] = useState<1 | 2 | 4>(1);
   const [colorScheme, setColorScheme] = useState<'dark' | 'light'>('dark');
   const [windowWidth, setWindowWidth] = useState(() =>
     typeof window !== 'undefined' ? window.innerWidth : 1440
@@ -101,6 +102,15 @@ function AgentsPageInner() {
     // Camera fit is handled by AgentForceGraph internally
   }, []);
   const handleToggleFeed = useCallback(() => setFeedVisible((v) => !v), []);
+
+  // Step timeline by 5 seconds per arrow press
+  const STEP_MS = 5000;
+  const handleStepBackward = useCallback(() => {
+    setScrubOffset((prev) => prev + STEP_MS);
+  }, []);
+  const handleStepForward = useCallback(() => {
+    setScrubOffset((prev) => Math.max(0, prev - STEP_MS));
+  }, []);
 
   const handleDownloadAgent = useCallback(() => {
     if (!agentGraphRef.current || downloading) return;
@@ -212,6 +222,8 @@ function AgentsPageInner() {
     onFitCamera: handleFitCamera,
     onToggleFeed: handleToggleFeed,
     onCloseInspector: () => setSelectedTaskId(null),
+    onStepBackward: handleStepBackward,
+    onStepForward: handleStepForward,
   });
 
   const BANNER_H = 24;
@@ -278,6 +290,9 @@ function AgentsPageInner() {
           scrubOffset={scrubOffset}
           onScrubChange={setScrubOffset}
           colorScheme={colorScheme}
+          speed={playbackSpeed}
+          onSpeedChange={setPlaybackSpeed}
+          onAgentSelect={handleSelectAgent}
         />
       )}
 

@@ -14,12 +14,12 @@ import { getCategoriesForSource } from '@web3viz/core';
 // ============================================================================
 
 const MOCK_TOKENS = [
-  { mint: 'mock1aaa', name: 'MockDog', symbol: 'MDOG' },
-  { mint: 'mock2bbb', name: 'TestCoin', symbol: 'TEST' },
-  { mint: 'mock3ccc', name: 'AIAgent', symbol: 'AGENT' },
-  { mint: 'mock4ddd', name: 'DeFiYield', symbol: 'DEFI' },
-  { mint: 'mock5eee', name: 'MemeKing', symbol: 'MEME' },
-  { mint: 'mock6fff', name: 'SolBot', symbol: 'SBOT' },
+  { tokenAddress: 'mock1aaa', name: 'MockDog', symbol: 'MDOG' },
+  { tokenAddress: 'mock2bbb', name: 'TestCoin', symbol: 'TEST' },
+  { tokenAddress: 'mock3ccc', name: 'AIAgent', symbol: 'AGENT' },
+  { tokenAddress: 'mock4ddd', name: 'DeFiYield', symbol: 'DEFI' },
+  { tokenAddress: 'mock5eee', name: 'MemeKing', symbol: 'MEME' },
+  { tokenAddress: 'mock6fff', name: 'SolBot', symbol: 'SBOT' },
 ];
 
 const MOCK_WALLETS = [
@@ -38,6 +38,7 @@ let idCounter = 0;
 export class MockProvider implements DataProvider {
   readonly id = 'mock';
   readonly name = 'Mock Provider';
+  readonly chains = ['mock'];
   readonly sourceConfig: SourceConfig = {
     id: 'mock',
     label: 'Mock',
@@ -55,9 +56,9 @@ export class MockProvider implements DataProvider {
   private totalTokens = 0;
   private totalTrades = 0;
   private totalClaims = 0;
-  private totalVolumeSol = 0;
-  private tokenAcc = new Map<string, { name: string; symbol: string; volumeSol: number; trades: number }>();
-  private traderEdges: Array<{ trader: string; mint: string; trades: number; volumeSol: number }> = [];
+  private totalVolume = 0;
+  private tokenAcc = new Map<string, { name: string; symbol: string; volume: number; trades: number }>();
+  private traderEdges: Array<{ trader: string; tokenAddress: string; chain: string; trades: number; volume: number }> = [];
 
   constructor(private intervalMs = 500) {}
 
@@ -90,26 +91,30 @@ export class MockProvider implements DataProvider {
   }
 
   getStats(): DataProviderStats {
-    let topTokens = Array.from(this.tokenAcc.values())
-      .map((token) => ({
-        mint: `mock-${token.name}`,
+    let topTokens = Array.from(this.tokenAcc.entries())
+      .map(([addr, token]) => ({
+        tokenAddress: addr,
         name: token.name,
         symbol: token.symbol,
+        chain: 'mock',
         trades: token.trades,
-        volumeSol: token.volumeSol,
+        volume: token.volume,
+        nativeSymbol: 'SOL',
       }))
-      .sort((a, b) => b.volumeSol - a.volumeSol)
+      .sort((a, b) => b.volume - a.volume)
       .slice(0, 8);
 
     // If no tokens yet, provide a starter token to ensure page loads
     if (topTokens.length === 0) {
       topTokens = [
         {
-          mint: 'mock1aaa',
+          tokenAddress: 'mock1aaa',
           name: 'MockDog',
           symbol: 'MDOG',
+          chain: 'mock',
           trades: 0,
-          volumeSol: 0,
+          volume: 0,
+          nativeSymbol: 'SOL',
         },
       ];
     }
@@ -122,7 +127,7 @@ export class MockProvider implements DataProvider {
       },
       totalTransactions: this.totalTrades + this.totalClaims,
       totalAgents: 0,
-      totalVolumeSol: this.totalVolumeSol,
+      totalVolume: { mock: this.totalVolume },
       recentEvents: [],
       topTokens,
       traderEdges: this.traderEdges.slice(0, 5000),
@@ -165,34 +170,37 @@ export class MockProvider implements DataProvider {
       const token = randomEl(MOCK_TOKENS);
       const isAgent = token.symbol === 'AGENT' || token.symbol === 'SBOT';
       const wallet = randomEl(MOCK_WALLETS);
-      const mint = token.mint;
+      const tokenAddress = token.tokenAddress;
       this.totalTokens++;
 
       // Track token data
-      if (!this.tokenAcc.has(mint)) {
-        this.tokenAcc.set(mint, { name: token.name, symbol: token.symbol, volumeSol: 0, trades: 0 });
+      if (!this.tokenAcc.has(tokenAddress)) {
+        this.tokenAcc.set(tokenAddress, { name: token.name, symbol: token.symbol, volume: 0, trades: 0 });
       }
 
       this.emitEvent({
         id: `mock-${++idCounter}`,
         category: isAgent ? 'agentLaunches' : 'launches',
-        source: 'mock',
+        providerId: 'mock',
+        chain: 'mock',
         timestamp: Date.now(),
         label: token.symbol,
         address: wallet,
-        mint,
+        tokenAddress,
       });
 
       this.emitRaw({
         type: 'tokenCreate',
         data: {
-          mint,
+          tokenAddress,
           name: token.name,
           symbol: token.symbol,
+          chain: 'solana',
           uri: '',
-          traderPublicKey: wallet,
+          creatorAddress: wallet,
           initialBuy: Math.random() * 1000000,
-          marketCapSol: Math.random() * 100,
+          marketCap: Math.random() * 100,
+          nativeSymbol: 'SOL',
           signature: `sig-${Date.now()}`,
           timestamp: Date.now(),
           isAgent,
@@ -202,52 +210,51 @@ export class MockProvider implements DataProvider {
       const token = randomEl(MOCK_TOKENS);
       const solAmount = Math.random() * 10;
       const wallet = randomEl(MOCK_WALLETS);
-      const mint = token.mint;
+      const tokenAddress = token.tokenAddress;
       this.totalTrades++;
-      this.totalVolumeSol += solAmount;
+      this.totalVolume += solAmount;
 
       // Track token data
-      const tokenData = this.tokenAcc.get(mint) || { name: token.name, symbol: token.symbol, volumeSol: 0, trades: 0 };
+      const tokenData = this.tokenAcc.get(tokenAddress) || { name: token.name, symbol: token.symbol, volume: 0, trades: 0 };
       tokenData.trades++;
-      tokenData.volumeSol += solAmount;
-      this.tokenAcc.set(mint, tokenData);
+      tokenData.volume += solAmount;
+      this.tokenAcc.set(tokenAddress, tokenData);
 
       // Track trader edge
-      const edgeKey = `${wallet}:${mint}`;
-      const edge = this.traderEdges.find((e) => `${e.trader}:${e.mint}` === edgeKey);
+      const edgeKey = `${wallet}:${tokenAddress}`;
+      const edge = this.traderEdges.find((e) => `${e.trader}:${e.tokenAddress}` === edgeKey);
       if (edge) {
         edge.trades++;
-        edge.volumeSol += solAmount;
+        edge.volume += solAmount;
       } else {
-        this.traderEdges.push({ trader: wallet, mint, trades: 1, volumeSol: solAmount });
+        this.traderEdges.push({ trader: wallet, tokenAddress, chain: 'mock', trades: 1, volume: solAmount });
       }
 
       this.emitEvent({
         id: `mock-${++idCounter}`,
         category: 'trades',
-        source: 'mock',
+        providerId: 'mock',
+        chain: 'mock',
         timestamp: Date.now(),
         label: token.symbol,
         amount: solAmount,
         address: wallet,
-        mint,
+        tokenAddress,
         meta: { txType: Math.random() > 0.5 ? 'buy' : 'sell' },
       });
 
       this.emitRaw({
         type: 'trade',
         data: {
-          mint: token.mint,
+          tokenAddress,
+          chain: 'solana',
           signature: `sig-${Date.now()}`,
-          traderPublicKey: wallet,
+          traderAddress: wallet,
           txType: Math.random() > 0.5 ? 'buy' : 'sell',
           tokenAmount: Math.random() * 100000,
-          solAmount: solAmount * 1e9,
-          newTokenBalance: Math.random() * 500000,
-          bondingCurveKey: 'bonding-curve-mock',
-          vTokensInBondingCurve: Math.random() * 10000000,
-          vSolInBondingCurve: Math.random() * 1000,
-          marketCapSol: Math.random() * 200,
+          nativeAmount: solAmount * 1e9,
+          nativeSymbol: 'SOL',
+          marketCap: Math.random() * 200,
           timestamp: Date.now(),
           name: token.name,
           symbol: token.symbol,
@@ -258,12 +265,13 @@ export class MockProvider implements DataProvider {
       const solAmount = Math.random() * 5;
       const wallet = randomEl(MOCK_WALLETS);
       this.totalClaims++;
-      this.totalVolumeSol += solAmount;
+      this.totalVolume += solAmount;
 
       this.emitEvent({
         id: `mock-${++idCounter}`,
         category: 'claimsWallet',
-        source: 'mock',
+        providerId: 'mock',
+        chain: 'mock',
         timestamp: Date.now(),
         label: 'Wallet Claim',
         address: wallet,
@@ -273,15 +281,13 @@ export class MockProvider implements DataProvider {
       this.emitRaw({
         type: 'claim',
         data: {
-          wallet,
-          mint: token.mint,
-          solAmount,
-          tokenAmount: Math.random() * 100000,
           signature: `sig-${Date.now()}`,
+          chain: 'solana',
           slot: Math.floor(Math.random() * 300000000),
           timestamp: Date.now(),
           claimType: 'wallet',
           programId: 'mock-program',
+          claimer: wallet,
           isFirstClaim: false,
         },
       });

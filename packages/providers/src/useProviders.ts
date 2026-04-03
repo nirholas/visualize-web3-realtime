@@ -11,6 +11,7 @@ import type {
   SourceConfig,
   TopToken,
   TraderEdge,
+  RawEvent,
 } from '@web3viz/core';
 
 // ============================================================================
@@ -250,13 +251,12 @@ export function useProviders(options: UseProvidersOptions): UseProvidersReturn {
   const stats = useMemo<MergedStats>(() => {
     const bySource: Record<string, DataProviderStats> = {};
     const mergedCounts: Record<string, number> = {};
-    let totalVolumeSol = 0;
     const totalVolume: Record<string, number> = {};
     let totalTransactions = 0;
     let totalAgents = 0;
     const allTopTokens: TopToken[] = [];
     const allTraderEdges: TraderEdge[] = [];
-    const allRawEvents = [];
+    const allRawEvents: RawEvent[] = [];
 
     for (const provider of providers) {
       if (!enabledProviders.has(provider.id)) continue;
@@ -267,15 +267,9 @@ export function useProviders(options: UseProvidersOptions): UseProvidersReturn {
         mergedCounts[key] = (mergedCounts[key] || 0) + value;
       }
 
-      totalVolumeSol += providerStats.totalVolumeSol ?? 0;
-
-      // Merge per-chain volume map; fall back to totalVolumeSol under the provider id
-      if (providerStats.totalVolume && Object.keys(providerStats.totalVolume).length > 0) {
-        for (const [chain, vol] of Object.entries(providerStats.totalVolume)) {
-          totalVolume[chain] = (totalVolume[chain] || 0) + vol;
-        }
-      } else if (providerStats.totalVolumeSol) {
-        totalVolume[provider.id] = (totalVolume[provider.id] || 0) + providerStats.totalVolumeSol;
+      // Merge per-chain volume map
+      for (const [chain, vol] of Object.entries(providerStats.totalVolume || {})) {
+        totalVolume[chain] = (totalVolume[chain] || 0) + vol;
       }
 
       totalTransactions += providerStats.totalTransactions;
@@ -286,11 +280,10 @@ export function useProviders(options: UseProvidersOptions): UseProvidersReturn {
     }
 
     // Sort and trim top tokens
-    allTopTokens.sort((a, b) => b.volumeSol - a.volumeSol);
+    allTopTokens.sort((a, b) => b.volume - a.volume);
 
     return {
       counts: mergedCounts,
-      totalVolumeSol,
       totalVolume,
       totalTransactions,
       totalAgents,
@@ -308,7 +301,7 @@ export function useProviders(options: UseProvidersOptions): UseProvidersReturn {
       allEvents.filter(
         (e) =>
           enabledCategories.has(e.category) &&
-          enabledProviders.has(e.providerId ?? e.source ?? ''),
+          enabledProviders.has(e.providerId),
       ),
     [allEvents, enabledCategories, enabledProviders],
   );

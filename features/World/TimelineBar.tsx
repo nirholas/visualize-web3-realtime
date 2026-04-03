@@ -225,7 +225,7 @@ const TimelineBar = memo<TimelineBarProps>(
               whiteSpace: 'nowrap',
             }}
           >
-            PumpFun Visualizer
+            Web3 Visualizer
           </div>
 
           {/* Info button */}

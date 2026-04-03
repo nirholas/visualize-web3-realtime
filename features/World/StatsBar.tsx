@@ -251,9 +251,33 @@ AddressSearch.displayName = 'AddressSearch';
 // Stats Bar (exported)
 // ---------------------------------------------------------------------------
 
+/** Chain symbol map for volume display */
+const CHAIN_SYMBOLS: Record<string, { prefix: string; suffix: string }> = {
+  solana: { prefix: '', suffix: ' SOL' },
+  ethereum: { prefix: '', suffix: ' ETH' },
+  base: { prefix: '', suffix: ' ETH' },
+  cex: { prefix: '$', suffix: '' },
+};
+
+function formatVolumeParts(totalVolume: Record<string, number>): string {
+  const parts: string[] = [];
+  for (const [chain, vol] of Object.entries(totalVolume)) {
+    if (vol === 0) continue;
+    const sym = CHAIN_SYMBOLS[chain] || { prefix: '', suffix: ` ${chain}` };
+    const formatted = vol >= 1_000_000
+      ? `${(vol / 1_000_000).toFixed(1)}M`
+      : vol >= 1_000
+        ? `${(vol / 1_000).toFixed(1)}K`
+        : vol.toLocaleString();
+    parts.push(`${sym.prefix}${formatted}${sym.suffix}`);
+  }
+  return parts.join(' · ') || '0';
+}
+
 export interface StatsBarProps {
   totalTokens: number;
-  totalVolumeSol: number;
+  /** Per-chain volume breakdown */
+  totalVolume: Record<string, number>;
   totalTrades: number;
   /** The currently highlighted address (null = none) */
   highlightedAddress?: string | null;
@@ -267,7 +291,7 @@ export interface StatsBarProps {
 
 export default memo<StatsBarProps>(function StatsBar({
   totalTokens,
-  totalVolumeSol,
+  totalVolume,
   totalTrades,
   highlightedAddress,
   onAddressSearch,
@@ -322,7 +346,43 @@ export default memo<StatsBarProps>(function StatsBar({
       }}
     >
       <BottomStatPill label="Total Tokens" value={totalTokens} />
-      <BottomStatPill label="Volume" value={totalVolumeSol} prefix="◎ " />
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
+          padding: '6px 16px',
+          background: '#ffffff',
+          border: '1px solid #e8e8e8',
+          borderRadius: 8,
+          minWidth: 100,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+        }}
+      >
+        <span
+          style={{
+            fontSize: 10,
+            fontWeight: 400,
+            color: '#666',
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            lineHeight: 1,
+          }}
+        >
+          Volume
+        </span>
+        <span
+          style={{
+            fontSize: 14,
+            fontWeight: 500,
+            color: '#161616',
+            lineHeight: 1.4,
+            fontVariantNumeric: 'tabular-nums',
+          }}
+        >
+          {formatVolumeParts(totalVolume)}
+        </span>
+      </div>
       <BottomStatPill label="Transactions" value={totalTrades} />
 
       {/* Separator */}

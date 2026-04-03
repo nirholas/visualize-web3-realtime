@@ -4,10 +4,23 @@ import { AnimatePresence, m } from 'framer-motion';
 import { memo, useEffect, useRef, useState } from 'react';
 
 import type { DataProviderEvent, CategoryConfig } from '@web3viz/core';
+import { CHAIN_COLORS } from './constants';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+function formatAmount(amount: number, symbol?: string): string {
+  const s = symbol || '';
+  const prefix = s === 'USD' || s === '$' ? '$' : '';
+  const suffix = prefix ? '' : s ? ` ${s}` : '';
+
+  if (amount < 0.001) return `${prefix}<0.001${suffix}`;
+  if (amount >= 1_000_000) return `${prefix}${(amount / 1_000_000).toFixed(1)}M${suffix}`;
+  if (amount >= 1000) return `${prefix}${(amount / 1000).toFixed(1)}k${suffix}`;
+  if (amount >= 1) return `${prefix}${amount.toFixed(2)}${suffix}`;
+  return `${prefix}${amount.toFixed(3)}${suffix}`;
+}
 
 function timeAgo(ts: number): string {
   const diff = Date.now() - ts;
@@ -32,7 +45,12 @@ const EventCard = memo<EventCardProps>(({ event, isNew, categoryMap }) => {
   const cfg = categoryMap.get(event.category);
   const color = cfg?.color || '#9090b8';
   const typeLabel = cfg?.label || event.category;
-  const amount = event.amount != null ? `${event.amount.toFixed(3)} SOL` : '';
+  const amount = event.amount != null
+    ? formatAmount(event.amount, event.nativeSymbol)
+    : event.amountUsd != null
+      ? formatAmount(event.amountUsd, 'USD')
+      : '';
+  const chainColor = CHAIN_COLORS[event.chain ?? 'unknown'] || CHAIN_COLORS.unknown;
 
   return (
     <m.div
@@ -65,6 +83,11 @@ const EventCard = memo<EventCardProps>(({ event, isNew, categoryMap }) => {
           flexShrink: 0,
         }}
       />
+      {event.chain && (
+        <span style={{ fontSize: 9, color: chainColor, opacity: 0.7, flexShrink: 0 }}>
+          {event.chain.toUpperCase().slice(0, 3)}
+        </span>
+      )}
       <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {event.label}
       </span>

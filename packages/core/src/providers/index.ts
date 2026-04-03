@@ -46,6 +46,7 @@ export interface ConnectionState {
  * class MyChainProvider implements DataProvider {
  *   readonly id = 'mychain';
  *   readonly name = 'My Chain';
+ *   readonly chains = ['mychain'];
  *   readonly sourceConfig = { id: 'mychain', label: 'My Chain', color: '#ff0', icon: '⬡' };
  *   connect() { ... }
  *   disconnect() { ... }
@@ -63,6 +64,9 @@ export interface DataProvider {
 
   /** Human-readable name */
   readonly name: string;
+
+  /** Chain(s) this provider covers */
+  readonly chains: string[];
 
   /** Source configuration (color, icon, description) for UI rendering */
   readonly sourceConfig: SourceConfig;
@@ -149,6 +153,8 @@ export function onRegistryChange(callback: () => void): () => void {
 export interface CreateProviderConfig {
   id: string;
   name: string;
+  /** Chain(s) this provider covers */
+  chains: string[];
   sourceConfig: SourceConfig;
   categories: CategoryConfig[];
   connect: () => void;
@@ -166,6 +172,7 @@ export function createProvider(config: CreateProviderConfig): DataProvider {
   return {
     id: config.id,
     name: config.name,
+    chains: config.chains,
     sourceConfig: config.sourceConfig,
     categories: config.categories,
     connect: config.connect,

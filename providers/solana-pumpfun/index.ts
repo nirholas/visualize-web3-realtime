@@ -27,6 +27,7 @@ import { SolanaClaimsWebSocket } from './claims-ws';
 class PumpFunProvider implements DataProvider {
   readonly id = 'solana-pumpfun';
   readonly name = 'Solana (PumpFun)';
+  readonly chains = ['solana'];
   readonly sourceConfig: SourceConfig = {
     id: 'pumpfun',
     label: 'PumpFun',
@@ -128,7 +129,9 @@ class PumpFunProvider implements DataProvider {
 
     // Update volume
     if (event.amount) {
-      this.stats.totalVolume['solana'] = (this.stats.totalVolume['solana'] || 0) + event.amount;
+      const vol = this.stats.totalVolume ?? {};
+    vol['solana'] = (vol['solana'] || 0) + event.amount;
+    this.stats.totalVolume = vol;
     }
 
     this.stats.totalTransactions++;

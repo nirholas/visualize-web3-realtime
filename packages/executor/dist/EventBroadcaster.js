@@ -6,9 +6,17 @@ export class EventBroadcaster {
     recentEvents = [];
     constructor(port) {
         this.port = port;
-        this.wss = new WebSocketServer({ port });
+        // Will be initialized in start() with either a provided httpServer or a new one
+        this.wss = null;
     }
-    start(getSnapshot) {
+    start(getSnapshot, httpServer) {
+        // Create WebSocketServer on either provided httpServer or standalone on port
+        if (httpServer) {
+            this.wss = new WebSocketServer({ server: httpServer });
+        }
+        else {
+            this.wss = new WebSocketServer({ port: this.port });
+        }
         this.wss.on('connection', (ws) => {
             this.clients.add(ws);
             // Send snapshot on connect

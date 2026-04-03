@@ -41,6 +41,19 @@ export class ExecutorServer {
       if (this.recentEvents.length > 500) this.recentEvents = this.recentEvents.slice(-500);
       this.broadcaster.broadcast(event);
       this.stateStore.saveEvent(event);
+
+      // Sync task completion/failure back to the queue
+      if (event.type === 'task:completed' && event.taskId) {
+        this.queue.complete(event.taskId, String(event.payload.result ?? ''));
+        const tasks = this.queue.getAll();
+        const task = tasks.find((t) => t.taskId === event.taskId);
+        if (task) this.stateStore.saveTask(task);
+      } else if (event.type === 'task:failed' && event.taskId) {
+        this.queue.fail(event.taskId, String(event.payload.error ?? 'Unknown error'));
+        const tasks = this.queue.getAll();
+        const task = tasks.find((t) => t.taskId === event.taskId);
+        if (task) this.stateStore.saveTask(task);
+      }
     });
 
     this.setupHealthChecks();
@@ -198,6 +211,34 @@ export class ExecutorServer {
         timestamp: Date.now(),
       };
     });
+
+    this.health.addCheck('memory', () => {
+      const usage = process.memoryUsage();
+      const heapMB = Math.round(usage.heapUsed / 1024 / 1024);
+      const threshold = 512; // MB
+      return {
+        name: 'memory',
+        status: heapMB > threshold ? 'warn' : 'pass',
+        message: `Heap: ${heapMB}MB`,
+        timestamp: Date.now(),
+      };
+    });
+
+    this.health.addCheck('event_rate', () => {
+      const recentCount = this.recentEvents.length;
+      const now = Date.now();
+      // Check if events have flowed in the last 2 minutes (only warn if agents are active)
+      const twoMinAgo = now - 120_000;
+      const recentEventsInWindow = this.recentEvents.filter((e) => e.timestamp > twoMinAgo).length;
+      const agentCount = this.agentManager.getAgentCount();
+      const stuck = agentCount > 0 && recentEventsInWindow === 0 && this.running && (now - this.startedAt > 120_000);
+      return {
+        name: 'event_rate',
+        status: stuck ? 'warn' : 'pass',
+        message: `${recentEventsInWindow} events in last 2min (total buffered: ${recentCount})`,
+        timestamp: now,
+      };
+    });
   }
 
   async start(): Promise<void> {
@@ -208,6 +249,20 @@ export class ExecutorServer {
 
     // Initialize state store metadata
     this.stateStore.setMeta('start_time', String(this.startedAt));
+
+    // Restore persisted tasks from previous run
+    const restoredTasks = this.stateStore.loadActiveTasks();
+    for (const task of restoredTasks) {
+      // Re-enqueue tasks that were queued or in-progress (stalled) before crash
+      this.queue.enqueue(
+        { description: task.description, priority: task.priority, requiredRole: undefined },
+        '',
+      );
+      console.log(`[ExecutorServer] Restored task: ${task.taskId} (${task.status})`);
+    }
+
+    // Load recent events for snapshot
+    this.recentEvents = this.stateStore.loadRecentEvents(50);
 
     // Start HTTP server (shared by both REST API and WebSocket)
     this.httpServer = createServer((req, res) => {

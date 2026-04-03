@@ -9,6 +9,8 @@ import { agentThemeTokens } from '@/packages/ui/src/tokens/agent-colors';
 // Types
 // ---------------------------------------------------------------------------
 
+type PlaybackSpeed = 1 | 2 | 4;
+
 interface AgentTimelineProps {
   events: AgentEvent[];
   agents: Map<string, AgentIdentity>;
@@ -20,6 +22,11 @@ interface AgentTimelineProps {
   /** Visible time window in ms (default: 2 min) */
   windowMs?: number;
   colorScheme?: 'dark' | 'light';
+  /** Playback speed multiplier for replaying past events */
+  speed?: PlaybackSpeed;
+  onSpeedChange?: (speed: PlaybackSpeed) => void;
+  /** Called when a task block is clicked, with the agentId */
+  onAgentSelect?: (agentId: string) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -39,6 +46,8 @@ function formatTime(ms: number): string {
 // Canvas timeline
 // ---------------------------------------------------------------------------
 
+const SPEED_OPTIONS: PlaybackSpeed[] = [1, 2, 4];
+
 const AgentTimeline = memo<AgentTimelineProps>(({
   events,
   agents,
@@ -48,12 +57,24 @@ const AgentTimeline = memo<AgentTimelineProps>(({
   onScrubChange,
   windowMs = WINDOW_MS,
   colorScheme = 'dark',
+  speed = 1,
+  onSpeedChange,
+  onAgentSelect,
 }) => {
   const tokens = agentThemeTokens[colorScheme];
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
   const isLive = scrubOffset === 0;
+
+  // Store rendered spans for click-to-select
+  const renderedSpansRef = useRef<Array<{
+    agentId: string;
+    x1: number;
+    x2: number;
+    y: number;
+    h: number;
+  }>>([]);
 
   // --- Draw timeline ---
   useEffect(() => {
@@ -122,7 +143,8 @@ const AgentTimeline = memo<AgentTimelineProps>(({
       taskSpans.push({ ...open, endMs: now, status: 'active' });
     }
 
-    // Draw spans
+    // Draw spans and store hit-boxes for click detection
+    const hitBoxes: typeof renderedSpansRef.current = [];
     for (const span of taskSpans) {
       if (span.endMs < windowStart || span.startMs > windowEnd) continue;
       const x1 = ((span.startMs - windowStart) / windowMs) * width;
@@ -135,9 +157,17 @@ const AgentTimeline = memo<AgentTimelineProps>(({
           ? '#34d399'
           : '#f87171';
 
+      const rx = Math.max(0, x1);
+      const rw = Math.max(2, x2 - x1);
       ctx.fillStyle = color + 'cc';
-      ctx.fillRect(Math.max(0, x1), y, Math.max(2, x2 - x1), rowH - 1);
+      ctx.fillRect(rx, y, rw, rowH - 1);
+
+      const agent = agentList[span.agentIdx];
+      if (agent) {
+        hitBoxes.push({ agentId: agent.agentId, x1: rx, x2: rx + rw, y, h: rowH - 1 });
+      }
     }
+    renderedSpansRef.current = hitBoxes;
 
     // Scrubber line
     if (!isLive) {
@@ -157,11 +187,23 @@ const AgentTimeline = memo<AgentTimelineProps>(({
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
     const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // Check if click landed on a task block → select that agent
+    if (onAgentSelect) {
+      for (const span of renderedSpansRef.current) {
+        if (x >= span.x1 && x <= span.x2 && y >= span.y && y <= span.y + span.h) {
+          onAgentSelect(span.agentId);
+          break;
+        }
+      }
+    }
+
     const frac = Math.max(0, Math.min(1, x / rect.width));
     const timeFromLeft = frac * windowMs;
     // frac=1 → live (0 offset); frac=0 → windowMs ago
     onScrubChange(Math.round(windowMs - timeFromLeft));
-  }, [onScrubChange, windowMs]);
+  }, [onScrubChange, windowMs, onAgentSelect]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isDraggingRef.current) return;
@@ -233,6 +275,31 @@ const AgentTimeline = memo<AgentTimelineProps>(({
       >
         {isPlaying ? '❚❚' : '▶'}
       </button>
+
+      {/* Speed control */}
+      {onSpeedChange && (
+        <button
+          onClick={() => {
+            const idx = SPEED_OPTIONS.indexOf(speed);
+            const next = SPEED_OPTIONS[(idx + 1) % SPEED_OPTIONS.length];
+            onSpeedChange(next);
+          }}
+          style={{
+            background: 'none',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 4,
+            color: speed > 1 ? '#c084fc' : '#9ca3af',
+            cursor: 'pointer',
+            fontFamily: 'inherit',
+            fontSize: 9,
+            padding: '2px 6px',
+            minWidth: 28,
+            textAlign: 'center',
+          }}
+        >
+          {speed}x
+        </button>
+      )}
 
       {/* Live indicator */}
       {isLive && (

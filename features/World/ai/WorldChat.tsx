@@ -166,18 +166,18 @@ export const WorldChat = memo<WorldChatProps>(function WorldChat({
         onClick={() => setIsOpen(true)}
         style={{
           alignItems: 'center',
-          background: 'rgba(0, 0, 0, 0.75)',
-          backdropFilter: 'blur(8px)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          background: '#ffffff',
+          border: '1px solid #e8e8e8',
           borderRadius: 12,
-          bottom: 16,
-          color: '#e0e0e0',
+          bottom: 130,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          color: '#666',
           cursor: 'pointer',
           display: 'flex',
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: 11,
           gap: 6,
-          left: 16,
+          left: 12,
           letterSpacing: '0.06em',
           padding: '8px 14px',
           position: 'absolute',
@@ -197,14 +197,15 @@ export const WorldChat = memo<WorldChatProps>(function WorldChat({
   return (
     <div
       style={{
-        background: 'rgba(0, 0, 0, 0.8)',
+        background: 'rgba(255, 255, 255, 0.95)',
         backdropFilter: 'blur(12px)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
+        border: '1px solid #e8e8e8',
         borderRadius: 12,
-        bottom: 16,
+        bottom: 130,
+        boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
         display: 'flex',
         flexDirection: 'column',
-        left: 16,
+        left: 12,
         overflow: 'hidden',
         position: 'absolute',
         width: 320,
@@ -215,7 +216,7 @@ export const WorldChat = memo<WorldChatProps>(function WorldChat({
       <div
         style={{
           alignItems: 'center',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          borderBottom: '1px solid #e8e8e8',
           display: 'flex',
           justifyContent: 'space-between',
           padding: '10px 12px',
@@ -223,7 +224,7 @@ export const WorldChat = memo<WorldChatProps>(function WorldChat({
       >
         <span
           style={{
-            color: '#c0c0c0',
+            color: '#666',
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 10,
             letterSpacing: '0.1em',
@@ -237,7 +238,7 @@ export const WorldChat = memo<WorldChatProps>(function WorldChat({
           style={{
             background: 'none',
             border: 'none',
-            color: '#888',
+            color: '#999',
             cursor: 'pointer',
             fontSize: 16,
             lineHeight: 1,
@@ -262,7 +263,7 @@ export const WorldChat = memo<WorldChatProps>(function WorldChat({
         {messages.length === 0 && !isStreaming && (
           <div
             style={{
-              color: '#666',
+              color: '#999',
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: 11,
               lineHeight: 1.5,
@@ -282,7 +283,7 @@ export const WorldChat = memo<WorldChatProps>(function WorldChat({
           >
             <span
               style={{
-                color: '#666',
+                color: '#999',
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: 9,
                 letterSpacing: '0.06em',
@@ -293,7 +294,7 @@ export const WorldChat = memo<WorldChatProps>(function WorldChat({
             </span>{' '}
             <span
               style={{
-                color: msg.role === 'user' ? '#7b9eff' : '#d0d0d0',
+                color: msg.role === 'user' ? '#3d63ff' : '#161616',
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: 12,
                 lineHeight: 1.4,
@@ -307,7 +308,7 @@ export const WorldChat = memo<WorldChatProps>(function WorldChat({
         {isStreaming && (
           <div
             style={{
-              color: '#888',
+              color: '#999',
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: 11,
             }}
@@ -321,9 +322,9 @@ export const WorldChat = memo<WorldChatProps>(function WorldChat({
       {error && !isStreaming && (
         <div
           style={{
-            background: 'rgba(239, 68, 68, 0.15)',
-            borderTop: '1px solid rgba(239, 68, 68, 0.2)',
-            color: '#f87171',
+            background: 'rgba(239, 68, 68, 0.08)',
+            borderTop: '1px solid rgba(239, 68, 68, 0.15)',
+            color: '#dc2626',
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 10,
             padding: '4px 12px',
@@ -337,7 +338,7 @@ export const WorldChat = memo<WorldChatProps>(function WorldChat({
       <form
         onSubmit={handleSubmit}
         style={{
-          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+          borderTop: '1px solid #e8e8e8',
           display: 'flex',
           padding: '8px 12px',
         }}
@@ -349,7 +350,7 @@ export const WorldChat = memo<WorldChatProps>(function WorldChat({
           style={{
             background: 'transparent',
             border: 'none',
-            color: '#fff',
+            color: '#161616',
             flex: 1,
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 12,
@@ -362,7 +363,7 @@ export const WorldChat = memo<WorldChatProps>(function WorldChat({
           style={{
             background: 'none',
             border: 'none',
-            color: isStreaming || !input.trim() ? '#555' : '#7b9eff',
+            color: isStreaming || !input.trim() ? '#ccc' : '#3d63ff',
             cursor: isStreaming || !input.trim() ? 'default' : 'pointer',
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 11,
