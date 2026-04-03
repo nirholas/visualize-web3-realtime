@@ -1,54 +1,60 @@
 # Provider Plugin System — Task Execution Order
 
-Run these tasks sequentially in new Claude Code chats. Each task builds on the previous. These tasks refactor the app from hardcoded PumpFun hooks into a general-purpose provider plugin system where any data source can be added with minimal code.
+Run these tasks **sequentially** in new Claude Code chats. Each task builds on the previous.
 
 ## What We're Building
 
-A plugin architecture where data providers (PumpFun, Base, Ethereum, CEX, etc.) are self-contained modules that implement the `DataProvider` interface from `@web3viz/core`. Each provider declares its own categories, manages its own connections, and emits unified events. The UI is fully provider-agnostic — it renders whatever providers are registered.
+A general-purpose plugin architecture where data providers (PumpFun, Base, Ethereum, CEX, etc.) are self-contained classes implementing the `DataProvider` interface from `@web3viz/core`. Each provider declares its own categories, manages its own WebSocket/API connections, and emits unified events. The UI renders whatever providers are registered — no hardcoding.
 
 ## Current State
 
-- `@web3viz/core` already has `DataProvider` interface, registry, source/category configs
-- `@web3viz/providers` has React hooks (`usePumpFun`, `usePumpFunClaims`) + a `MockProvider` class
-- The hooks don't implement the `DataProvider` interface — they're consumed directly by `useDataProvider`
-- `useDataProvider` hardcodes PumpFun + claims aggregation
-- UI components (`ProtocolFilterSidebar`, `LiveFeed`, `StatsBar`) are semi-hardcoded to PumpFun categories
-- Source configs already exist for: pumpfun, ethereum, base, agents, erc8004, cex
+- `@web3viz/core` has `DataProvider` interface, registry, source/category configs for 6 providers
+- `@web3viz/providers` has React hooks (`usePumpFun`, `usePumpFunClaims`) + `MockProvider` class + `useDataProvider` aggregator
+- `hooks/` has root-level duplicates + stub provider hooks for all 6 sources
+- `app/world/page.tsx` uses `hooks/useDataProvider` which hardcodes PumpFun
+- The `DataProvider` class interface exists but only `MockProvider` implements it
+- Real data flows through React hooks, not through the class interface
 
-## Architecture Target
+## Target Architecture
 
 ```
-Provider Classes (implement DataProvider)
-    │
-    ├── PumpFunProvider (launches, agent launches, trades, claims)
-    ├── BaseProvider (future)
+DataProvider classes (imperative, framework-agnostic)
+    ├── PumpFunProvider  (launches, agent launches, trades, claims)
+    ├── MockProvider     (dev/testing)
+    ├── BaseProvider     (future)
     ├── EthereumProvider (future)
     └── ...
-    │
-    ▼
-Provider Registry (@web3viz/core)
-    │
-    ▼
-useProviders() hook — aggregates all registered providers
-    │
-    ▼
-UI Components (provider-agnostic, driven by registry)
-    ├── ProtocolFilterSidebar (grouped by provider)
+         │
+         ▼
+    useProviders() hook  ← bridges classes into React
+         │
+         ▼
+    UI (provider-agnostic)
+    ├── ProtocolFilterSidebar (grouped by source)
     ├── LiveFeed (unified events)
-    ├── StatsBar (aggregated stats)
+    ├── StatsBar (aggregated)
     └── ForceGraph (nodes from all providers)
 ```
 
-## Task Order
+## Tasks
 
-### Phase 1: PumpFun Provider Class
-1. `21-pumpfun-provider-class.md` — Consolidate usePumpFun + usePumpFunClaims into a single PumpFunProvider class that implements DataProvider
+| # | File | Summary |
+|---|------|---------|
+| 21 | `21-pumpfun-provider-class.md` | Create `PumpFunProvider` class implementing `DataProvider` — consolidates usePumpFun + usePumpFunClaims into one imperative class with both WebSocket connections |
+| 22 | `22-use-providers-hook.md` | Create `useProviders()` hook — bridges `DataProvider[]` into React, manages lifecycle, aggregates events/stats, category filtering |
+| 23 | `23-provider-agnostic-ui.md` | Wire UI to new system — page uses `useProviders`, sidebar groups by source, LiveFeed accepts unified events, delete old hooks |
+| 24 | `24-provider-verification.md` | End-to-end verification — fix all type/build errors, prove MockProvider works as 2nd source, clean dead code, full QA checklist |
 
-### Phase 2: Provider Hook & Registration
-2. `22-use-providers-hook.md` — Create useProviders() hook that consumes registered DataProvider instances, replacing useDataProvider
+## Adding a New Provider (after these tasks)
 
-### Phase 3: Provider-Agnostic UI
-3. `23-provider-agnostic-ui.md` — Update ProtocolFilterSidebar, LiveFeed, StatsBar, and world/page.tsx to be driven by provider registry
+```ts
+// app/world/providers.ts
+import { PumpFunProvider } from '@web3viz/providers';
+import { MyChainProvider } from './my-chain-provider';
 
-### Phase 4: Verification & Polish
-4. `24-provider-verification.md` — End-to-end verification, fix type errors, ensure MockProvider works as second provider in sidebar
+export const providers = [
+  new PumpFunProvider(),
+  new MyChainProvider({ wsUrl: 'wss://...' }),
+];
+// That's it. MyChainProvider's categories appear in sidebar automatically.
+```
