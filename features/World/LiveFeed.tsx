@@ -54,13 +54,14 @@ const UnifiedCard = memo<UnifiedCardProps>(({ event, isNew }) => {
         display: 'flex',
         gap: 6,
         alignItems: 'center',
-        padding: '3px 10px',
-        fontFamily: 'monospace',
+        padding: '4px 12px',
+        fontFamily: "'IBM Plex Mono', monospace",
         fontSize: 11,
-        color: 'rgb(176 176 200 / 70%)',
-        background: 'rgb(176 176 200 / 4%)',
-        border: '1px solid rgb(176 176 200 / 6%)',
-        borderRadius: 4,
+        color: '#4a4a4a',
+        background: '#ffffff',
+        border: '1px solid #e8e8e8',
+        borderRadius: 6,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
       }}
     >
       <span
@@ -80,7 +81,7 @@ const UnifiedCard = memo<UnifiedCardProps>(({ event, isNew }) => {
         style={{
           flexShrink: 0,
           fontSize: 9,
-          color: color + '80',
+          color: color,
           textTransform: 'uppercase',
           letterSpacing: '0.04em',
           maxWidth: 80,
@@ -92,9 +93,9 @@ const UnifiedCard = memo<UnifiedCardProps>(({ event, isNew }) => {
         {typeLabel}
       </span>
       {amount && (
-        <span style={{ flexShrink: 0, color }}>{amount}</span>
+        <span style={{ flexShrink: 0, color, fontWeight: 500 }}>{amount}</span>
       )}
-      <span style={{ flexShrink: 0, fontSize: 9, color: 'rgb(176 176 200 / 30%)' }}>
+      <span style={{ flexShrink: 0, fontSize: 9, color: '#999' }}>>
         {timeAgo(event.timestamp)}
       </span>
     </m.div>
@@ -137,13 +138,14 @@ const EventCard = memo<EventCardProps>(({ event, isNew }) => {
         display: 'flex',
         gap: 6,
         alignItems: 'center',
-        padding: '3px 10px',
-        fontFamily: 'monospace',
+        padding: '4px 12px',
+        fontFamily: "'IBM Plex Mono', monospace",
         fontSize: 11,
-        color: 'rgb(176 176 200 / 70%)',
-        background: 'rgb(176 176 200 / 4%)',
-        border: '1px solid rgb(176 176 200 / 6%)',
-        borderRadius: 4,
+        color: '#4a4a4a',
+        background: '#ffffff',
+        border: '1px solid #e8e8e8',
+        borderRadius: 6,
+        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
       }}
     >
       <span
@@ -163,7 +165,7 @@ const EventCard = memo<EventCardProps>(({ event, isNew }) => {
         style={{
           flexShrink: 0,
           fontSize: 9,
-          color: 'rgb(176 176 200 / 30%)',
+          color: '#999',
           textTransform: 'uppercase',
           letterSpacing: '0.04em',
         }}
@@ -171,9 +173,9 @@ const EventCard = memo<EventCardProps>(({ event, isNew }) => {
         {typeLabel}
       </span>
       {amount && (
-        <span style={{ flexShrink: 0, color: isBuy ? '#22c55e' : '#ef4444' }}>{amount}</span>
+        <span style={{ flexShrink: 0, color: isBuy ? '#22c55e' : '#ef4444', fontWeight: 500 }}>{amount}</span>
       )}
-      <span style={{ flexShrink: 0, fontSize: 9, color: 'rgb(176 176 200 / 30%)' }}>
+      <span style={{ flexShrink: 0, fontSize: 9, color: '#999' }}>
         {timeAgo(timestamp)}
       </span>
     </m.div>
@@ -248,10 +250,10 @@ const LiveFeed = memo<LiveFeedProps>(({ events, unifiedEvents }) => {
           gap: 6,
           alignItems: 'center',
           padding: '2px 0',
-          fontFamily: 'monospace',
+          fontFamily: "'IBM Plex Mono', monospace",
           fontSize: 10,
           fontWeight: 600,
-          color: 'rgb(176 176 200 / 40%)',
+          color: '#999',
           textTransform: 'uppercase',
           letterSpacing: 1,
         }}

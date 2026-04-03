@@ -2,19 +2,14 @@
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { CATEGORY_CONFIGS, type PumpFunCategory } from '@/hooks/useDataProvider';
-
 // ============================================================================
 // Types
 // ============================================================================
 
 export interface EmbedConfig {
   bg: string;
-  nodeColor: string;
-  userColor: string;
   width: number;
   height: number;
-  protocols: PumpFunCategory[];
   title: string;
 }
 
@@ -49,7 +44,6 @@ const SIZE_PRESETS = [
 ] as const;
 
 const BG_SWATCHES = ['#ffffff', '#08080f', '#1a1a2e', '#3a3a3a', '#fdf6e3', '#282a36'];
-const NODE_SWATCHES = ['#1a1a1a', '#7b8eea', '#89c57f', '#d18b4e', '#ce715f', '#8165ee'];
 
 // ============================================================================
 // Build embed URL from config
@@ -58,12 +52,7 @@ const NODE_SWATCHES = ['#1a1a1a', '#7b8eea', '#89c57f', '#d18b4e', '#ce715f', '#
 function buildEmbedUrl(config: EmbedConfig): string {
   const params = new URLSearchParams();
   if (config.bg !== '#ffffff') params.set('bg', config.bg);
-  if (config.nodeColor !== '#1a1a1a') params.set('nodeColor', config.nodeColor);
-  if (config.userColor !== '#1a1a1a') params.set('userColor', config.userColor);
   if (config.title !== 'PumpFun · Live') params.set('title', config.title);
-  if (config.protocols.length > 0 && config.protocols.length < CATEGORY_CONFIGS.length) {
-    params.set('protocols', config.protocols.join(','));
-  }
   const qs = params.toString();
   return `/embed${qs ? `?${qs}` : ''}`;
 }
@@ -164,10 +153,7 @@ const EmbedConfigurator = memo<EmbedConfiguratorProps>(({ onClose }) => {
   const [config, setConfig] = useState<EmbedConfig>({
     bg: '#ffffff',
     height: 400,
-    nodeColor: '#1a1a1a',
-    protocols: [],
     title: 'PumpFun · Live',
-    userColor: '#1a1a1a',
     width: 600,
   });
   const [snippetType, setSnippetType] = useState<SnippetType>('iframe');
@@ -184,18 +170,6 @@ const EmbedConfigurator = memo<EmbedConfiguratorProps>(({ onClose }) => {
     (patch: Partial<EmbedConfig>) => setConfig((prev) => ({ ...prev, ...patch })),
     [],
   );
-
-  const toggleProtocol = useCallback((id: PumpFunCategory) => {
-    setConfig((prev) => {
-      const has = prev.protocols.includes(id);
-      return {
-        ...prev,
-        protocols: has
-          ? prev.protocols.filter((p) => p !== id)
-          : [...prev.protocols, id],
-      };
-    });
-  }, []);
 
   const snippet = useMemo(() => {
     if (!baseUrl) return '';
@@ -368,42 +342,6 @@ const EmbedConfigurator = memo<EmbedConfiguratorProps>(({ onClose }) => {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <SwatchRow swatches={BG_SWATCHES} value={config.bg} onChange={(bg) => update({ bg })} />
                 <HexInput value={config.bg} onChange={(bg) => update({ bg })} />
-              </div>
-            </div>
-            <div>
-              <label style={labelStyle}>Node Color</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <SwatchRow swatches={NODE_SWATCHES} value={config.nodeColor} onChange={(nodeColor) => update({ nodeColor })} />
-                <HexInput value={config.nodeColor} onChange={(nodeColor) => update({ nodeColor })} />
-              </div>
-            </div>
-
-            {/* Protocols */}
-            <div>
-              <label style={labelStyle}>Protocols {config.protocols.length === 0 && <span style={{ color: '#999', fontWeight: 300 }}>(all)</span>}</label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                {CATEGORY_CONFIGS.map((cfg) => {
-                  const active = config.protocols.includes(cfg.id);
-                  return (
-                    <button
-                      key={cfg.id}
-                      onClick={() => toggleProtocol(cfg.id)}
-                      style={{
-                        background: active ? cfg.color : '#f5f5f5',
-                        border: `1px solid ${active ? cfg.color : '#e0e0e0'}`,
-                        borderRadius: 4,
-                        color: active ? '#fff' : '#666',
-                        cursor: 'pointer',
-                        fontSize: 9,
-                        padding: '3px 8px',
-                        textTransform: 'uppercase',
-                      }}
-                      type="button"
-                    >
-                      {cfg.icon} {cfg.label}
-                    </button>
-                  );
-                })}
               </div>
             </div>
 

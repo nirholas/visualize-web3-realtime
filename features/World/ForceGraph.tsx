@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, memo, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
+import React, { forwardRef, memo, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html, MapControls } from '@react-three/drei';
 import type { MapControls as MapControlsImpl } from 'three-stdlib';
@@ -204,7 +204,6 @@ class ForceGraphSimulation {
 /** InstancedMesh for hub nodes (large spheres) */
 const HubNodes = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
   const meshRef = useRef<THREE.InstancedMesh>(null);
-  const labelGroupRef = useRef<THREE.Group>(null);
   const tempObj = useMemo(() => new THREE.Object3D(), []);
   const tempColor = useMemo(() => new THREE.Color(), []);
   // Sphere geometry shared for hubs
@@ -426,8 +425,6 @@ Ground.displayName = 'Ground';
 // ---------------------------------------------------------------------------
 // Scene: assembles all 3D sub-components + camera
 // ---------------------------------------------------------------------------
-
-import React from 'react';
 
 const NetworkScene = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
   // Tick the d3-force simulation each frame

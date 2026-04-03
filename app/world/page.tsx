@@ -14,18 +14,21 @@ import {
   type PumpFunCategory,
 } from '@/hooks/useDataProvider';
 import LiveFeed from '@/features/World/LiveFeed';
+import TimelineBar from '@/features/World/TimelineBar';
 import StartJourney from '@/features/World/StartJourney';
 import StatsBar from '@/features/World/StatsBar';
 import { useJourney } from '@/features/World/useJourney';
+import EmbedConfigurator from '@/features/World/EmbedConfigurator';
 import { captureCanvas, downloadBlob, timestampedFilename } from '@/features/World/utils/screenshot';
 import { buildShareUrl, buildShareText, parseShareParams, shareOnX, shareOnLinkedIn } from '@/features/World/utils/shareUrl';
 import type { ForceGraphHandle } from '@/features/World/ForceGraph';
 
 // Lazy-load the 3D force graph to avoid SSR issues with Three.js
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ForceGraph = dynamic(() => import('@/features/World/ForceGraph'), {
   ssr: false,
   loading: () => <div style={{ width: '100%', height: '100%', background: '#ffffff' }} />,
-}) as React.ComponentType<import('@/features/World/ForceGraph').ForceGraphProps & { ref?: React.Ref<ForceGraphHandle> }>;
+}) as any;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -105,7 +108,9 @@ ConnectionDot.displayName = 'ConnectionDot';
 // ---------------------------------------------------------------------------
 
 export default function WorldPage() {
-  const [paused, setPaused] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [timeFilter, setTimeFilter] = useState<number | null>(null);
+  const isLive = timeFilter === null;
   const [infoOpen, setInfoOpen] = useState(false);
   const [userAddress, setUserAddress] = useState('');
   const [highlightedAddress, setHighlightedAddress] = useState<string | null>(null);
@@ -113,6 +118,7 @@ export default function WorldPage() {
   const [activeProtocol, setActiveProtocol] = useState<PumpFunCategory | null>(null);
   const [searchToast, setSearchToast] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
+  const [embedOpen, setEmbedOpen] = useState(false);
   const [shareColors, setShareColors] = useState<ShareColors>({
     background: '#ffffff',
     protocol: '#1a1a1a',
@@ -124,7 +130,95 @@ export default function WorldPage() {
   const [downloading, setDownloading] = useState<'world' | 'snapshot' | null>(null);
 
   const { stats, enabledCategories, connected } =
-    useDataProvider({ paused });
+    useDataProvider({ paused: !isPlaying });
+
+  // -- Timeline timestamp accumulation --
+  const [timelineTimestamps, setTimelineTimestamps] = useState<number[]>([]);
+  const seenEventIdsRef = useRef(new Set<string>());
+
+  useEffect(() => {
+    const newTs: number[] = [];
+    for (const evt of stats.recentEvents) {
+      if (!seenEventIdsRef.current.has(evt.id)) {
+        seenEventIdsRef.current.add(evt.id);
+        newTs.push(evt.timestamp);
+      }
+    }
+    if (newTs.length > 0) {
+      setTimelineTimestamps((prev) => {
+        const next = [...prev, ...newTs];
+        return next.length > 5000 ? next.slice(-5000) : next;
+      });
+    }
+  }, [stats.recentEvents]);
+
+  // -- Time range for auto-advance --
+  const timeRange = useMemo(() => {
+    if (timelineTimestamps.length === 0) return { min: 0, max: 0 };
+    let min = Infinity;
+    let max = -Infinity;
+    for (const ts of timelineTimestamps) {
+      if (ts < min) min = ts;
+      if (ts > max) max = ts;
+    }
+    return { min, max };
+  }, [timelineTimestamps]);
+
+  const timeRangeRef = useRef(timeRange);
+  timeRangeRef.current = timeRange;
+
+  // -- Playback auto-advance --
+  useEffect(() => {
+    if (!isPlaying || isLive) return;
+    const interval = setInterval(() => {
+      const { min: tMin, max: tMax } = timeRangeRef.current;
+      const range = tMax - tMin;
+      if (range === 0) return;
+      const step = range / 200;
+      setTimeFilter((prev) => {
+        if (prev === null) return null;
+        const next = prev + step;
+        if (next >= tMax) return null; // reached live
+        return next;
+      });
+    }, 50);
+    return () => clearInterval(interval);
+  }, [isPlaying, isLive]);
+
+  // -- Timeline handlers --
+  const handleTogglePlay = useCallback(() => {
+    setIsPlaying((p) => !p);
+  }, []);
+
+  const handleTimeChange = useCallback((ts: number | null) => {
+    setTimeFilter(ts);
+    if (ts !== null) {
+      setIsPlaying(false);
+    }
+  }, []);
+
+  // -- Time-filtered data for ForceGraph --
+  const displayTopTokens = useMemo(() => {
+    if (timeFilter === null) return stats.topTokens;
+    const { min, max } = timeRange;
+    const range = max - min;
+    if (range === 0) return stats.topTokens;
+    const frac = Math.max(0, Math.min(1, (timeFilter - min) / range));
+    const count = Math.max(1, Math.ceil(stats.topTokens.length * frac));
+    return stats.topTokens.slice(0, count);
+  }, [stats.topTokens, timeFilter, timeRange]);
+
+  const displayTraderEdges = useMemo(() => {
+    if (timeFilter === null) return stats.traderEdges;
+    const visibleMints = new Set(displayTopTokens.map((t) => t.mint));
+    return stats.traderEdges.filter((e) => visibleMints.has(e.mint));
+  }, [stats.traderEdges, displayTopTokens, timeFilter]);
+
+  // -- Time-filtered events for LiveFeed --
+  const displayRawEvents = useMemo(() => {
+    if (timeFilter === null) return stats.rawPumpFunEvents;
+    return stats.rawPumpFunEvents.filter((e) => e.data.timestamp <= timeFilter);
+  }, [stats.rawPumpFunEvents, timeFilter]);
 
   // Protocol filter sidebar: toggle highlight (single select)
   const handleProtocolToggle = useCallback((id: PumpFunCategory) => {
@@ -271,20 +365,33 @@ export default function WorldPage() {
 
   const { isComplete, isRunning, overlay, skipJourney, startJourney } = useJourney({
     enabledCategories,
-    networkRef: { current: null },
+    graphRef,
     stats,
     userAddress,
   });
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: '#ffffff' }}>
-      {/* 3D Force Graph — full screen */}
-      <ForceGraph
-        ref={graphRef}
-        topTokens={stats.topTokens}
-        traderEdges={stats.traderEdges}
-        height="100%"
+      {/* Timeline scrubber — top bar */}
+      <TimelineBar
+        eventTimestamps={timelineTimestamps}
+        isLive={isLive}
+        isPlaying={isPlaying}
+        onInfoClick={() => setInfoOpen((prev) => !prev)}
+        onTimeChange={handleTimeChange}
+        onTogglePlay={handleTogglePlay}
+        timeFilter={timeFilter}
       />
+
+      {/* 3D Force Graph — full screen, offset for timeline bar */}
+      <div style={{ position: 'absolute', top: 48, left: 0, right: 0, bottom: 0 }}>
+        <ForceGraph
+          ref={graphRef}
+          topTokens={displayTopTokens}
+          traderEdges={displayTraderEdges}
+          height="100%"
+        />
+      </div>
 
       <JourneyOverlay
         description={overlay.description}
@@ -324,7 +431,7 @@ export default function WorldPage() {
           gap: 8,
           left: '50%',
           position: 'absolute',
-          top: 12,
+          top: 60,
           transform: 'translateX(-50%)',
           zIndex: 40,
         }}
@@ -378,7 +485,7 @@ export default function WorldPage() {
       <div
         style={{
           position: 'absolute',
-          top: 12,
+          top: 60,
           left: 12,
           zIndex: 20,
           display: 'flex',
@@ -398,29 +505,7 @@ export default function WorldPage() {
         counts={stats.counts}
       />
 
-      {/* Pause toggle — top right of bottom bar */}
-      <button
-        onClick={() => setPaused((p) => !p)}
-        style={{
-          position: 'absolute',
-          bottom: 68,
-          left: 12,
-          zIndex: 20,
-          padding: '4px 12px',
-          fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: 10,
-          color: '#666',
-          background: '#ffffff',
-          border: '1px solid #e8e8e8',
-          borderRadius: 6,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-          cursor: 'pointer',
-          letterSpacing: '0.06em',
-          textTransform: 'uppercase',
-        }}
-      >
-        {paused ? '\u25B6 Resume' : '\u23F8 Pause'}
-      </button>
+
 
       {/* Bottom stats bar */}
       <Suspense fallback={null}>
@@ -435,7 +520,7 @@ export default function WorldPage() {
       </Suspense>
 
       {/* Live trade feed — bottom right */}
-      <LiveFeed events={stats.rawPumpFunEvents} />
+      <LiveFeed events={displayRawEvents} />
 
       <StartJourney
         disabled={isRunning}
@@ -466,6 +551,38 @@ export default function WorldPage() {
           />
         </>
       )}
+
+      {/* Embed widget configurator */}
+      {embedOpen && (
+        <EmbedConfigurator onClose={() => setEmbedOpen(false)} />
+      )}
+
+      {/* Embed button — bottom left, above pause */}
+      <button
+        onClick={() => setEmbedOpen(true)}
+        style={{
+          alignItems: 'center',
+          background: '#ffffff',
+          border: '1px solid #e8e8e8',
+          borderRadius: 6,
+          bottom: 92,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          color: '#666',
+          cursor: 'pointer',
+          display: 'flex',
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: 10,
+          gap: 4,
+          left: 12,
+          letterSpacing: '0.06em',
+          padding: '4px 12px',
+          position: 'absolute',
+          textTransform: 'uppercase',
+          zIndex: 20,
+        }}
+      >
+        {'</>'}  Embed
+      </button>
     </div>
   );
 }
