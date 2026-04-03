@@ -59,7 +59,8 @@ export class ExecutorServer {
       req.on('end', () => {
         try {
           const parsed = body ? JSON.parse(body) : {};
-          resolve(typeof parsed === 'object' && parsed !== null ? parsed : {});
+          const result: Record<string, unknown> = typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>) : {};
+          resolve(result);
         } catch {
           resolve({});
         }
@@ -114,14 +115,14 @@ export class ExecutorServer {
       }
     } else if (path === '/api/tasks' && method === 'POST') {
       this.parseRequestBody(req)
-        .then((body) => {
+        .then((body: Record<string, unknown>) => {
           const definition: TaskDefinition = {
             description: String(body.description || 'Unnamed task'),
             priority: typeof body.priority === 'number' ? body.priority : undefined,
             requiredRole: typeof body.requiredRole === 'string' ? body.requiredRole : undefined,
             timeout: typeof body.timeout === 'number' ? body.timeout : undefined,
             retryCount: typeof body.retryCount === 'number' ? body.retryCount : undefined,
-            metadata: typeof body.metadata === 'object' ? body.metadata : undefined,
+            metadata: typeof body.metadata === 'object' && body.metadata !== null ? (body.metadata as Record<string, unknown>) : undefined,
           };
           const taskId = this.enqueueTask(definition);
           res.writeHead(201);
@@ -136,7 +137,7 @@ export class ExecutorServer {
       res.end(JSON.stringify({ error: 'Task cancellation not yet implemented' }));
     } else if (path === '/api/agents/spawn' && method === 'POST') {
       this.parseRequestBody(req)
-        .then((body) => {
+        .then((body: Record<string, unknown>) => {
           this.agentManager.spawnAgent({ role: String(body.role || 'coder'), name: String(body.name || '') })
             .then((agent) => {
               this.stateStore.saveAgent(agent);

@@ -15,7 +15,7 @@ export class EventBroadcaster {
   start(
     getSnapshot: () => { agents: AgentIdentity[]; tasks: AgentTask[]; recentEvents: AgentEvent[] },
   ): void {
-    this.wss.on('connection', (ws) => {
+    this.wss.on('connection', (ws: any) => {
       this.clients.add(ws);
 
       // Send snapshot on connect
