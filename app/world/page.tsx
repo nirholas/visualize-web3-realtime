@@ -108,6 +108,98 @@ const ConnectionDot = memo<{ connected: boolean; label: string }>(({ connected, 
 ConnectionDot.displayName = 'ConnectionDot';
 
 // ---------------------------------------------------------------------------
+// Welcome overlay — shown when no providers are active
+// ---------------------------------------------------------------------------
+
+const WelcomeOverlay = memo<{ visible: boolean }>(({ visible }) => (
+  <div
+    style={{
+      alignItems: 'center',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 16,
+      left: '50%',
+      opacity: visible ? 1 : 0,
+      pointerEvents: visible ? 'auto' : 'none',
+      position: 'absolute',
+      top: '42%',
+      transform: 'translate(-50%, -50%)',
+      transition: 'opacity 600ms ease',
+      zIndex: 30,
+    }}
+  >
+    <span
+      style={{
+        color: '#161616',
+        fontFamily: "'IBM Plex Mono', monospace",
+        fontSize: 16,
+        fontWeight: 500,
+        letterSpacing: '0.12em',
+        textTransform: 'uppercase',
+      }}
+    >
+      Web3 Realtime
+    </span>
+    <span
+      style={{
+        color: '#999',
+        fontFamily: "'IBM Plex Mono', monospace",
+        fontSize: 12,
+        letterSpacing: '0.04em',
+        maxWidth: 320,
+        textAlign: 'center',
+      }}
+    >
+      Enable a data source from the sidebar to begin visualizing live blockchain activity.
+    </span>
+    <div
+      style={{
+        alignItems: 'center',
+        display: 'flex',
+        gap: 6,
+        marginTop: 4,
+      }}
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ opacity: 0.4 }}>
+        <path d="M10 3L5 8L10 13" stroke="#999" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+      <span
+        style={{
+          color: '#bbb',
+          fontFamily: "'IBM Plex Mono', monospace",
+          fontSize: 10,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+        }}
+      >
+        toggle providers
+      </span>
+    </div>
+  </div>
+));
+WelcomeOverlay.displayName = 'WelcomeOverlay';
+
+// ---------------------------------------------------------------------------
+// Fade wrapper — generic opacity transition container
+// ---------------------------------------------------------------------------
+
+const FadeIn = memo<{ visible: boolean; children: React.ReactNode; zIndex?: number }>(
+  ({ visible, children, zIndex }) => (
+    <div
+      style={{
+        opacity: visible ? 1 : 0,
+        pointerEvents: visible ? 'auto' : 'none',
+        transition: 'opacity 400ms ease',
+        ...(zIndex != null ? { position: 'relative' as const, zIndex } : {}),
+      }}
+    >
+      {children}
+    </div>
+  ),
+);
+FadeIn.displayName = 'FadeIn';
+
+// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 
@@ -149,6 +241,8 @@ export default function WorldPage() {
       setIsPlaying(true);
     }
   }, [rawToggleProvider, enabledProviders]);
+
+  const hasActiveProvider = enabledProviders.size > 0;
 
   // Mark canvas ready once first data arrives
   useEffect(() => {
@@ -414,21 +508,32 @@ export default function WorldPage() {
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: '#ffffff' }}>
       {/* Loading screen — only show when a provider is enabled */}
-      {enabledProviders.size > 0 && <LoadingScreen ready={canvasReady} />}
+      {hasActiveProvider && <LoadingScreen ready={canvasReady} />}
 
-      {/* Timeline scrubber — top bar */}
-      <TimelineBar
-        eventTimestamps={timelineTimestamps}
-        isLive={isLive}
-        isPlaying={isPlaying}
-        onInfoClick={() => setInfoOpen((prev) => !prev)}
-        onTimeChange={handleTimeChange}
-        onTogglePlay={handleTogglePlay}
-        timeFilter={timeFilter}
-      />
+      {/* Welcome overlay — visible until a provider is enabled */}
+      <WelcomeOverlay visible={!hasActiveProvider} />
+
+      {/* Timeline scrubber — top bar (fade in when active) */}
+      <div
+        style={{
+          opacity: hasActiveProvider ? 1 : 0,
+          pointerEvents: hasActiveProvider ? 'auto' : 'none',
+          transition: 'opacity 500ms ease',
+        }}
+      >
+        <TimelineBar
+          eventTimestamps={timelineTimestamps}
+          isLive={isLive}
+          isPlaying={isPlaying}
+          onInfoClick={() => setInfoOpen((prev) => !prev)}
+          onTimeChange={handleTimeChange}
+          onTogglePlay={handleTogglePlay}
+          timeFilter={timeFilter}
+        />
+      </div>
 
       {/* 3D Force Graph — full screen, offset for timeline bar */}
-      <div style={{ position: 'absolute', top: 48, left: 0, right: 0, bottom: 0 }}>
+      <div style={{ position: 'absolute', top: hasActiveProvider ? 48 : 0, left: 0, right: 0, bottom: 0, transition: 'top 500ms ease' }}>
         <ForceGraph
           ref={graphRef}
           topTokens={displayTopTokens}
@@ -440,6 +545,7 @@ export default function WorldPage() {
           onDismissHighlight={handleDismissHighlight}
           height="100%"
           shareColors={shareOpen ? shareColors : undefined}
+          idle={!hasActiveProvider}
         />
       </div>
 
@@ -474,6 +580,7 @@ export default function WorldPage() {
         </div>
       )}
 
+      {/* Header — always visible */}
       <div
         style={{
           alignItems: 'center',
@@ -481,8 +588,9 @@ export default function WorldPage() {
           gap: 8,
           left: '50%',
           position: 'absolute',
-          top: 60,
+          top: hasActiveProvider ? 60 : 16,
           transform: 'translateX(-50%)',
+          transition: 'top 500ms ease',
           zIndex: 40,
         }}
       >
@@ -547,25 +655,29 @@ export default function WorldPage() {
         </div>
       </div>
 
-      {/* Connection status — top left */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 60,
-          left: 12,
-          zIndex: 20,
-          display: 'flex',
-          gap: 4,
-          alignItems: 'center',
-          flexWrap: 'wrap',
-        }}
-      >
-        {Object.entries(connections).map(([providerId, conns]) =>
-          conns.map(conn => (
-            <ConnectionDot key={`${providerId}-${conn.name}`} connected={conn.connected} label={providerId.toUpperCase().slice(0, 2)} />
-          ))
-        )}
-      </div>
+      {/* Connection status — top left (only when active) */}
+      {hasActiveProvider && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 60,
+            left: 12,
+            zIndex: 20,
+            display: 'flex',
+            gap: 4,
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            opacity: hasActiveProvider ? 1 : 0,
+            transition: 'opacity 400ms ease',
+          }}
+        >
+          {Object.entries(connections).map(([providerId, conns]) =>
+            conns.map(conn => (
+              <ConnectionDot key={`${providerId}-${conn.name}`} connected={conn.connected} label={providerId.toUpperCase().slice(0, 2)} />
+            ))
+          )}
+        </div>
+      )}
 
       {/* Category filter sidebar — left */}
       <ProtocolFilterSidebar
@@ -577,31 +689,37 @@ export default function WorldPage() {
         onToggleProvider={toggleProvider}
       />
 
-      {/* Bottom stats bar */}
-      <Suspense fallback={null}>
-        <StatsBar
-          totalTokens={(stats.counts.launches ?? 0) + (stats.counts.agentLaunches ?? 0)}
-          totalVolumeSol={Math.round(totalVolume)}
-          totalTrades={stats.totalTransactions}
-          highlightedAddress={highlightedAddress}
-          onAddressSearch={handleAddressSearch}
-          onDismissHighlight={handleDismissHighlight}
-          searchError={searchError}
+      {/* Bottom stats bar (fade in when active) */}
+      {hasActiveProvider && (
+        <Suspense fallback={null}>
+          <StatsBar
+            totalTokens={(stats.counts.launches ?? 0) + (stats.counts.agentLaunches ?? 0)}
+            totalVolumeSol={Math.round(totalVolume)}
+            totalTrades={stats.totalTransactions}
+            highlightedAddress={highlightedAddress}
+            onAddressSearch={handleAddressSearch}
+            onDismissHighlight={handleDismissHighlight}
+            searchError={searchError}
+          />
+        </Suspense>
+      )}
+
+      {/* Live trade feed — bottom right (fade in when active) */}
+      {hasActiveProvider && (
+        <LiveFeed events={displayFilteredEvents} categories={categories} />
+      )}
+
+      {hasActiveProvider && (
+        <StartJourney
+          disabled={isRunning}
+          isRunning={isRunning}
+          onClick={startJourney}
+          restarted={isComplete}
         />
-      </Suspense>
-
-      {/* Live trade feed — bottom right */}
-      <LiveFeed events={displayFilteredEvents} categories={categories} />
-
-      <StartJourney
-        disabled={isRunning}
-        isRunning={isRunning}
-        onClick={startJourney}
-        restarted={isComplete}
-      />
+      )}
 
       {/* Share trigger button — bottom right, next to Start Journey */}
-      {!shareOpen && (
+      {hasActiveProvider && !shareOpen && (
         <button
           onClick={handleOpenShare}
           style={{
@@ -659,31 +777,33 @@ export default function WorldPage() {
       )}
 
       {/* Embed button — bottom left, above pause */}
-      <button
-        onClick={() => setEmbedOpen(true)}
-        style={{
-          alignItems: 'center',
-          background: '#ffffff',
-          border: '1px solid #e8e8e8',
-          borderRadius: 6,
-          bottom: 92,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-          color: '#666',
-          cursor: 'pointer',
-          display: 'flex',
-          fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: 10,
-          gap: 4,
-          left: 12,
-          letterSpacing: '0.06em',
-          padding: '4px 12px',
-          position: 'absolute',
-          textTransform: 'uppercase',
-          zIndex: 20,
-        }}
-      >
-        {'</>'}  Embed
-      </button>
+      {hasActiveProvider && (
+        <button
+          onClick={() => setEmbedOpen(true)}
+          style={{
+            alignItems: 'center',
+            background: '#ffffff',
+            border: '1px solid #e8e8e8',
+            borderRadius: 6,
+            bottom: 92,
+            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+            color: '#666',
+            cursor: 'pointer',
+            display: 'flex',
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 10,
+            gap: 4,
+            left: 12,
+            letterSpacing: '0.06em',
+            padding: '4px 12px',
+            position: 'absolute',
+            textTransform: 'uppercase',
+            zIndex: 20,
+          }}
+        >
+          {'</>'}  Embed
+        </button>
+      )}
     </div>
   );
 }

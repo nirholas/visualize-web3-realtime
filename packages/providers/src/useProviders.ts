@@ -251,6 +251,7 @@ export function useProviders(options: UseProvidersOptions): UseProvidersReturn {
     const bySource: Record<string, DataProviderStats> = {};
     const mergedCounts: Record<string, number> = {};
     let totalVolumeSol = 0;
+    const totalVolume: Record<string, number> = {};
     let totalTransactions = 0;
     let totalAgents = 0;
     const allTopTokens: TopToken[] = [];
@@ -267,6 +268,16 @@ export function useProviders(options: UseProvidersOptions): UseProvidersReturn {
       }
 
       totalVolumeSol += providerStats.totalVolumeSol ?? 0;
+
+      // Merge per-chain volume map; fall back to totalVolumeSol under the provider id
+      if (providerStats.totalVolume && Object.keys(providerStats.totalVolume).length > 0) {
+        for (const [chain, vol] of Object.entries(providerStats.totalVolume)) {
+          totalVolume[chain] = (totalVolume[chain] || 0) + vol;
+        }
+      } else if (providerStats.totalVolumeSol) {
+        totalVolume[provider.id] = (totalVolume[provider.id] || 0) + providerStats.totalVolumeSol;
+      }
+
       totalTransactions += providerStats.totalTransactions;
       totalAgents += providerStats.totalAgents;
       allTopTokens.push(...(providerStats.topTokens || []));
@@ -280,6 +291,7 @@ export function useProviders(options: UseProvidersOptions): UseProvidersReturn {
     return {
       counts: mergedCounts,
       totalVolumeSol,
+      totalVolume,
       totalTransactions,
       totalAgents,
       recentEvents: allEvents,

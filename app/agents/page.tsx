@@ -67,12 +67,13 @@ function AgentsPageInner() {
     typeof window !== 'undefined' ? window.innerWidth : 1440
   );
   const [downloading, setDownloading] = useState<boolean>(false);
+  const [demoActive, setDemoActive] = useState(false);
 
   const { stats, agents, flows, executorState, agentStats, connected, events } = useAgentProvider({
     mock: process.env.NEXT_PUBLIC_AGENT_MOCK !== 'false',
     url: process.env.NEXT_PUBLIC_SPERAXOS_WS_URL,
     apiKey: process.env.NEXT_PUBLIC_SPERAXOS_API_KEY,
-    enabled: true,
+    enabled: demoActive,
   });
 
   const handleSelectAgent = useCallback((agentId: string | null) => {
@@ -245,8 +246,8 @@ function AgentsPageInner() {
         background: themeTokens.background,
       }}
     >
-      {/* Loading screen — shown until first agent data arrives */}
-      <AgentLoadingScreen ready={pageReady} />
+      {/* Loading screen — shown until first agent data arrives (only when demo is active) */}
+      {demoActive && <AgentLoadingScreen ready={pageReady} />}
 
       {/* Agent sidebar — left (full height) */}
       {!isMobile && (
@@ -527,6 +528,63 @@ function AgentsPageInner() {
           recentEvents={recentAgentEvents}
           onClose={() => setSelectedTaskId(null)}
         />
+      )}
+
+      {/* Dormant state — shown when no demo/connection is active */}
+      {!demoActive && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 50,
+            background: themeTokens.background,
+          }}
+        >
+          <span
+            style={{
+              color: themeTokens.muted,
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 11,
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              marginBottom: 8,
+            }}
+          >
+            Agent Executor
+          </span>
+          <span
+            style={{
+              color: themeTokens.muted,
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 10,
+              opacity: 0.6,
+              marginBottom: 24,
+            }}
+          >
+            No agent executor connected. Run a demo to preview the visualization.
+          </span>
+          <button
+            onClick={() => setDemoActive(true)}
+            style={{
+              background: 'transparent',
+              border: `1px solid ${themeTokens.agentHubActive}`,
+              borderRadius: 6,
+              color: themeTokens.agentHubActive,
+              cursor: 'pointer',
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 11,
+              letterSpacing: '0.08em',
+              padding: '10px 28px',
+              textTransform: 'uppercase',
+            }}
+          >
+            Run Demo
+          </button>
+        </div>
       )}
     </div>
   );

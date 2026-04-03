@@ -52,6 +52,13 @@ const HUB_BASE_RADIUS = 0.8;
 const HUB_MAX_RADIUS = 3.0;
 const AGENT_RADIUS = 0.06;
 
+// Idle ambient constants
+const IDLE_NODE_COUNT = 40;
+const IDLE_SPEED = 0.08;
+const IDLE_RADIUS_MIN = 0.15;
+const IDLE_RADIUS_MAX = 0.5;
+const IDLE_SPREAD = 30;
+
 // ---------------------------------------------------------------------------
 // Force simulation manager (runs outside React render cycle)
 // ---------------------------------------------------------------------------
@@ -577,6 +584,94 @@ const Ground = memo(() => (
 Ground.displayName = 'Ground';
 
 // ---------------------------------------------------------------------------
+// Idle ambient scene — gentle drifting orbs when no data is active
+// ---------------------------------------------------------------------------
+
+interface IdleNode {
+  x: number;
+  z: number;
+  vx: number;
+  vz: number;
+  radius: number;
+  gray: number; // 0..1 lightness
+}
+
+function createIdleNodes(): IdleNode[] {
+  const nodes: IdleNode[] = [];
+  for (let i = 0; i < IDLE_NODE_COUNT; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const dist = Math.random() * IDLE_SPREAD;
+    nodes.push({
+      x: Math.cos(angle) * dist,
+      z: Math.sin(angle) * dist,
+      vx: (Math.random() - 0.5) * IDLE_SPEED,
+      vz: (Math.random() - 0.5) * IDLE_SPEED,
+      radius: IDLE_RADIUS_MIN + Math.random() * (IDLE_RADIUS_MAX - IDLE_RADIUS_MIN),
+      gray: 0.78 + Math.random() * 0.12,
+    });
+  }
+  return nodes;
+}
+
+const IdleAmbientScene = memo(() => {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const nodesRef = useRef<IdleNode[]>(createIdleNodes());
+  const tempObj = useMemo(() => new THREE.Object3D(), []);
+  const tempColor = useMemo(() => new THREE.Color(), []);
+  const geometry = useMemo(() => new THREE.SphereGeometry(1, 16, 16), []);
+  const material = useMemo(
+    () => new THREE.MeshStandardMaterial({ roughness: 0.7, metalness: 0, transparent: true, opacity: 0.45 }),
+    [],
+  );
+
+  useFrame((_, delta) => {
+    const mesh = meshRef.current;
+    if (!mesh) return;
+
+    const nodes = nodesRef.current;
+    mesh.count = nodes.length;
+
+    for (let i = 0; i < nodes.length; i++) {
+      const n = nodes[i];
+      // Drift
+      n.x += n.vx * delta * 60;
+      n.z += n.vz * delta * 60;
+      // Soft boundary: gently pull back toward center
+      const dist = Math.sqrt(n.x * n.x + n.z * n.z);
+      if (dist > IDLE_SPREAD) {
+        const pull = 0.001 * (dist - IDLE_SPREAD);
+        n.vx -= (n.x / dist) * pull;
+        n.vz -= (n.z / dist) * pull;
+      }
+      // Damping
+      n.vx *= 0.998;
+      n.vz *= 0.998;
+
+      tempObj.position.set(n.x, 0, n.z);
+      tempObj.scale.setScalar(n.radius);
+      tempObj.updateMatrix();
+      mesh.setMatrixAt(i, tempObj.matrix);
+
+      tempColor.setRGB(n.gray, n.gray, n.gray);
+      mesh.setColorAt(i, tempColor);
+    }
+
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  });
+
+  return (
+    <>
+      <ambientLight intensity={0.7} />
+      <directionalLight position={[20, 40, 20]} intensity={0.4} />
+      <instancedMesh ref={meshRef} args={[geometry, material, IDLE_NODE_COUNT]} frustumCulled={false} />
+      <Ground />
+    </>
+  );
+});
+IdleAmbientScene.displayName = 'IdleAmbientScene';
+
+// ---------------------------------------------------------------------------
 // Scene: assembles all 3D sub-components + camera
 // ---------------------------------------------------------------------------
 
@@ -801,6 +896,8 @@ export interface ForceGraphProps {
   onDismissHighlight?: () => void;
   height?: string | number;
   shareColors?: ShareColors;
+  /** When true, show gentle ambient drifting nodes instead of real data */
+  idle?: boolean;
 }
 
 export interface ForceGraphHandle {
@@ -816,7 +913,7 @@ export interface ForceGraphHandle {
 }
 
 const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function ForceGraph(
-  { topTokens, traderEdges, activeProtocol = null, highlightedHubIndex = null, highlightedAddress = null, onSelectProtocol, onDismissHighlight, height = '100%', shareColors },
+  { topTokens, traderEdges, activeProtocol = null, highlightedHubIndex = null, highlightedAddress = null, onSelectProtocol, onDismissHighlight, height = '100%', shareColors, idle = false },
   ref,
 ) {
   const simRef = useRef<ForceGraphSimulation | null>(null);
@@ -967,16 +1064,20 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
         dpr={[1, 1.5]}
       >
         <CameraSetup apiRef={cameraApiRef} />
-        <NetworkScene
-          sim={sim}
-          topTokens={topTokens}
-          activeProtocol={activeProtocol ?? null}
-          highlightedHubIndex={highlightedHubIndex}
-          highlightedAddress={highlightedAddress}
-          onSelectProtocol={onSelectProtocol ?? (() => {})}
-          onDismissHighlight={onDismissHighlight}
-          shareColors={shareColors}
-        />
+        {idle ? (
+          <IdleAmbientScene />
+        ) : (
+          <NetworkScene
+            sim={sim}
+            topTokens={topTokens}
+            activeProtocol={activeProtocol ?? null}
+            highlightedHubIndex={highlightedHubIndex}
+            highlightedAddress={highlightedAddress}
+            onSelectProtocol={onSelectProtocol ?? (() => {})}
+            onDismissHighlight={onDismissHighlight}
+            shareColors={shareColors}
+          />
+        )}
       </Canvas>
     </div>
   );
