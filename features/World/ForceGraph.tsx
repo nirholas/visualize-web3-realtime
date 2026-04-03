@@ -245,9 +245,9 @@ function HubNodeMesh({
 }) {
   const groupRef = useRef<THREE.Group>(null!);
   const meshRef = useRef<THREE.Mesh>(null!);
-  const materialRef = useRef<THREE.MeshPhysicalMaterial>(null!);
+  const materialRef = useRef<THREE.MeshStandardMaterial>(null!);
   const ringRef = useRef<THREE.Mesh>(null!);
-  const ringMaterialRef = useRef<THREE.MeshPhysicalMaterial>(null!);
+  const ringMaterialRef = useRef<THREE.MeshStandardMaterial>(null!);
   const targetColor = useRef(new THREE.Color(PROTOCOL_COLORS.default));
   const targetOpacity = useRef(1);
   const targetRingOpacity = useRef(0);
@@ -303,6 +303,7 @@ function HubNodeMesh({
 
     const lerpFactor = 1 - Math.exp(-10 * delta);
     materialRef.current.color.lerp(targetColor.current, lerpFactor);
+    materialRef.current.emissive.lerp(targetColor.current, lerpFactor);
     materialRef.current.opacity += (targetOpacity.current - materialRef.current.opacity) * lerpFactor;
 
     // Animate ring opacity for agent hubs
@@ -326,18 +327,17 @@ function HubNodeMesh({
         }}
       >
         <sphereGeometry args={[1, 32, 32]} />
-        <meshPhysicalMaterial
+        <meshStandardMaterial
           ref={materialRef}
           color={PROTOCOL_COLORS.default}
           transparent
           opacity={1}
-          roughness={0.25}
-          metalness={0.05}
-          clearcoat={0.3}
-          clearcoatRoughness={0.4}
-          emissive="#ffffff"
-          emissiveIntensity={0.1}
+          roughness={0.3}
+          metalness={0.1}
+          emissive={PROTOCOL_COLORS.default}
+          emissiveIntensity={2.0}
           envMapIntensity={1.2}
+          toneMapped={false}
         />
       </mesh>
       {isAgentHub && (
@@ -347,17 +347,16 @@ function HubNodeMesh({
           scale={1.4}
         >
           <torusGeometry args={[1, 0.12, 8, 32]} />
-          <meshPhysicalMaterial
+          <meshStandardMaterial
             ref={ringMaterialRef}
             color={AGENT_COLOR_PALETTE[paletteIndex % AGENT_COLOR_PALETTE.length]}
             transparent
             opacity={0}
-            roughness={0.25}
-            metalness={0.25}
-            clearcoat={0.3}
-            clearcoatRoughness={0.4}
+            roughness={0.3}
+            metalness={0.1}
             emissive={AGENT_COLOR_PALETTE[paletteIndex % AGENT_COLOR_PALETTE.length]}
-            emissiveIntensity={0.3}
+            emissiveIntensity={2.5}
+            toneMapped={false}
           />
         </mesh>
       )}
@@ -387,14 +386,13 @@ const AgentNodes = memo<{
   const dimColor = useMemo(() => new THREE.Color('#cccccc'), []);
   const geometry = useMemo(() => new THREE.SphereGeometry(1, 8, 8), []);
   const material = useMemo(
-    () => new THREE.MeshPhysicalMaterial({
-      roughness: 0.6,
+    () => new THREE.MeshStandardMaterial({
+      roughness: 0.4,
       metalness: 0.0,
-      clearcoat: 0.15,
-      clearcoatRoughness: 0.6,
       emissive: new THREE.Color('#ffffff'),
-      emissiveIntensity: 0.03,
+      emissiveIntensity: 1.5,
       transparent: true,
+      toneMapped: false,
     }),
     [],
   );
@@ -550,8 +548,9 @@ const Edges = memo<{
       }
 
       if (isHighlightEdge) {
-        cA.array[idx] = 0.24; cA.array[idx + 1] = 0.39; cA.array[idx + 2] = 1.0;
-        cA.array[idx + 3] = 0.24; cA.array[idx + 4] = 0.39; cA.array[idx + 5] = 1.0;
+        // Bright values > 1.0 trigger selective bloom via toneMapped={false}
+        cA.array[idx] = 0.48; cA.array[idx + 1] = 0.78; cA.array[idx + 2] = 2.0;
+        cA.array[idx + 3] = 0.48; cA.array[idx + 4] = 0.78; cA.array[idx + 5] = 2.0;
       } else {
         let gray: number;
         if (activeProtocol) {
@@ -574,7 +573,7 @@ const Edges = memo<{
   return (
     <lineSegments ref={lineRef}>
       <bufferGeometry />
-      <lineBasicMaterial vertexColors transparent opacity={0.35} />
+      <lineBasicMaterial vertexColors transparent opacity={0.45} toneMapped={false} />
     </lineSegments>
   );
 });
@@ -642,13 +641,14 @@ const IdleAmbientScene = memo(() => {
   const tempColor = useMemo(() => new THREE.Color(), []);
   const geometry = useMemo(() => new THREE.SphereGeometry(1, 16, 16), []);
   const material = useMemo(
-    () => new THREE.MeshPhysicalMaterial({
-      roughness: 0.6,
+    () => new THREE.MeshStandardMaterial({
+      roughness: 0.4,
       metalness: 0.0,
-      clearcoat: 0.15,
-      clearcoatRoughness: 0.6,
+      emissive: new THREE.Color('#888888'),
+      emissiveIntensity: 0.8,
       transparent: true,
       opacity: 0.65,
+      toneMapped: false,
     }),
     [],
   );

@@ -16,8 +16,8 @@ export interface PostProcessingProps {
 
 const PostProcessing = memo<PostProcessingProps>(({
   enabled = true,
-  bloomIntensity = 0.4,
-  bloomThreshold = 0.85,
+  bloomIntensity = 0.8,
+  bloomThreshold = 1.0,
   aoIntensity = 0.5,
 }) => {
   if (!enabled) return null;
@@ -35,11 +35,11 @@ const PostProcessing = memo<PostProcessingProps>(({
         halfRes
       />
 
-      {/* Bloom — selective glow on bright/emissive elements */}
+      {/* Selective bloom — only emissive materials with toneMapped={false} exceed threshold */}
       <Bloom
         intensity={bloomIntensity}
         luminanceThreshold={bloomThreshold}
-        luminanceSmoothing={0.3}
+        luminanceSmoothing={0.2}
         mipmapBlur
       />
     </EffectComposer>

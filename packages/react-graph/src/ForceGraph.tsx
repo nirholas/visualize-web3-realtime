@@ -62,14 +62,13 @@ const HubNodes = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
   const tempColor = useMemo(() => new THREE.Color(), []);
   const geometry = useMemo(() => new THREE.SphereGeometry(1, 32, 32), []);
   const material = useMemo(
-    () => new THREE.MeshPhysicalMaterial({
-      roughness: 0.25,
-      metalness: 0.05,
-      clearcoat: 0.3,
-      clearcoatRoughness: 0.4,
+    () => new THREE.MeshStandardMaterial({
+      roughness: 0.3,
+      metalness: 0.1,
       emissive: new THREE.Color('#ffffff'),
-      emissiveIntensity: 0.1,
+      emissiveIntensity: 2.0,
       envMapIntensity: 1.2,
+      toneMapped: false,
     }),
     [],
   );
@@ -154,13 +153,12 @@ const AgentNodes = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
   const tempColor = useMemo(() => new THREE.Color(), []);
   const geometry = useMemo(() => new THREE.SphereGeometry(1, 8, 8), []);
   const material = useMemo(
-    () => new THREE.MeshPhysicalMaterial({
-      roughness: 0.6,
+    () => new THREE.MeshStandardMaterial({
+      roughness: 0.4,
       metalness: 0.0,
-      clearcoat: 0.15,
-      clearcoatRoughness: 0.6,
       emissive: new THREE.Color('#ffffff'),
-      emissiveIntensity: 0.03,
+      emissiveIntensity: 1.5,
+      toneMapped: false,
     }),
     [],
   );
@@ -257,7 +255,7 @@ const Edges = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
   return (
     <lineSegments ref={lineRef}>
       <bufferGeometry />
-      <lineBasicMaterial vertexColors transparent opacity={0.25} />
+      <lineBasicMaterial vertexColors transparent opacity={0.45} toneMapped={false} />
     </lineSegments>
   );
 });
