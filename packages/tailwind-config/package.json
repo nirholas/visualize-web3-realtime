@@ -1,0 +1,11 @@
+{
+  "name": "@web3viz/tailwind-config",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "main": "tailwind.config.ts",
+  "files": ["tailwind.config.ts"],
+  "devDependencies": {
+    "tailwindcss": "^3.4.0"
+  }
+}

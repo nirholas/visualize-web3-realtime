@@ -2,7 +2,7 @@
 
 import React, { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Html, MapControls } from '@react-three/drei';
+import { MapControls } from '@react-three/drei';
 import type { MapControls as MapControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
 import {
@@ -199,126 +199,146 @@ class ForceGraphSimulation {
 // Three.js sub-components
 // ---------------------------------------------------------------------------
 
-/** InstancedMesh for hub nodes (large spheres) */
-const HubNodes = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
-  const meshRef = useRef<THREE.InstancedMesh>(null);
-  const tempObj = useMemo(() => new THREE.Object3D(), []);
-  const tempColor = useMemo(() => new THREE.Color(), []);
-  // Sphere geometry shared for hubs
-  const geometry = useMemo(() => new THREE.SphereGeometry(1, 32, 32), []);
-  const material = useMemo(
-    () => new THREE.MeshStandardMaterial({ roughness: 0.4, metalness: 0.1 }),
-    [],
-  );
+/** Individual hub node mesh — hover detection + protocol color transitions */
+function HubNodeMesh({
+  sim,
+  nodeId,
+  paletteIndex,
+  isActive,
+  isHovered,
+  onPointerOver,
+  onPointerOut,
+  onClick,
+}: {
+  sim: ForceGraphSimulation;
+  nodeId: string;
+  paletteIndex: number;
+  isActive: boolean;
+  isHovered: boolean;
+  onPointerOver: () => void;
+  onPointerOut: () => void;
+  onClick: () => void;
+}) {
+  const groupRef = useRef<THREE.Group>(null!);
+  const meshRef = useRef<THREE.Mesh>(null!);
+  const materialRef = useRef<THREE.MeshStandardMaterial>(null!);
+  const targetColor = useRef(new THREE.Color(PROTOCOL_COLORS.default));
+  const radiusRef = useRef(HUB_BASE_RADIUS);
 
-  useFrame(() => {
-    const mesh = meshRef.current;
-    if (!mesh) return;
+  useEffect(() => {
+    targetColor.current.set(
+      isActive
+        ? COLOR_PALETTE[paletteIndex % COLOR_PALETTE.length]
+        : PROTOCOL_COLORS.default,
+    );
+  }, [isActive, paletteIndex]);
 
-    const hubs = sim.nodes.filter((n) => n.type === 'hub');
-    mesh.count = hubs.length;
-
-    for (let i = 0; i < hubs.length; i++) {
-      const node = hubs[i];
-      tempObj.position.set(node.x ?? 0, 0, node.y ?? 0);
-      tempObj.scale.setScalar(node.radius);
-      tempObj.updateMatrix();
-      mesh.setMatrixAt(i, tempObj.matrix);
-      tempColor.set(node.color);
-      mesh.setColorAt(i, tempColor);
-    }
-    mesh.instanceMatrix.needsUpdate = true;
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  });
-
-  return (
-    <instancedMesh ref={meshRef} args={[geometry, material, 20]} frustumCulled={false}>
-      {/* Colors set per-instance in useFrame */}
-    </instancedMesh>
-  );
-});
-HubNodes.displayName = 'HubNodes';
-
-/** Floating HTML labels for hub nodes */
-const HubLabels = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
-  const groupRef = useRef<THREE.Group>(null);
-  const labelsRef = useRef<{ id: string; label: string; x: number; z: number; radius: number }[]>([]);
-
-  useFrame(() => {
-    const hubs = sim.nodes.filter((n) => n.type === 'hub');
-    labelsRef.current = hubs.map((h) => ({
-      id: h.id,
-      label: h.label,
-      x: h.x ?? 0,
-      z: h.y ?? 0,
-      radius: h.radius,
-    }));
-  });
-
-  // Re-render labels at a lower rate via a state update
-  const [labels, setLabels] = React.useState<typeof labelsRef.current>([]);
-  useFrame(() => {
-    // Throttle to ~10fps for label positions
-    if (Math.random() < 0.15) {
-      setLabels([...labelsRef.current]);
-    }
+  useFrame((_, delta) => {
+    const node = sim.nodeMap.get(nodeId);
+    if (!node || !groupRef.current || !meshRef.current || !materialRef.current) return;
+    groupRef.current.position.set(node.x ?? 0, 0, node.y ?? 0);
+    meshRef.current.scale.setScalar(node.radius);
+    radiusRef.current = node.radius;
+    // Smooth ~300 ms color lerp (framerate-independent exponential approach)
+    materialRef.current.color.lerp(targetColor.current, 1 - Math.exp(-10 * delta));
   });
 
   return (
     <group ref={groupRef}>
-      {labels.map((l) => (
-        <ProtocolLabel
-          key={l.id}
-          name={l.label}
-          visible
-          position={[l.x, l.radius + 0.8, l.z]}
+      <mesh
+        ref={meshRef}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          onPointerOver();
+        }}
+        onPointerOut={onPointerOut}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
+      >
+        <sphereGeometry args={[1, 32, 32]} />
+        <meshStandardMaterial
+          ref={materialRef}
+          color={PROTOCOL_COLORS.default}
+          roughness={0.4}
+          metalness={0.1}
         />
-      ))}
+      </mesh>
+      {isHovered && (
+        <ProtocolLabel
+          name={sim.nodeMap.get(nodeId)?.label ?? 'UNKNOWN'}
+          position={[0, radiusRef.current + 1, 0]}
+          visible
+        />
+      )}
     </group>
   );
-});
-HubLabels.displayName = 'HubLabels';
+}
 
-/** InstancedMesh for agent nodes (tiny spheres) */
-const AgentNodes = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
-  const meshRef = useRef<THREE.InstancedMesh>(null);
-  const tempObj = useMemo(() => new THREE.Object3D(), []);
-  const tempColor = useMemo(() => new THREE.Color(), []);
-  const geometry = useMemo(() => new THREE.SphereGeometry(1, 8, 8), []);
-  const material = useMemo(
-    () => new THREE.MeshStandardMaterial({ roughness: 0.8, metalness: 0 }),
-    [],
-  );
+/** InstancedMesh for agent nodes with active-protocol tinting */
+const AgentNodes = memo<{ sim: ForceGraphSimulation; activeProtocol: string | null }>(
+  ({ sim, activeProtocol }) => {
+    const meshRef = useRef<THREE.InstancedMesh>(null);
+    const tempObj = useMemo(() => new THREE.Object3D(), []);
+    const tempColor = useMemo(() => new THREE.Color(), []);
+    const geometry = useMemo(() => new THREE.SphereGeometry(1, 8, 8), []);
+    const material = useMemo(
+      () => new THREE.MeshStandardMaterial({ roughness: 0.8, metalness: 0 }),
+      [],
+    );
 
-  useFrame(() => {
-    const mesh = meshRef.current;
-    if (!mesh) return;
+    // Cache the active hub's brand color
+    const activeColorRef = useRef<string | null>(null);
+    useEffect(() => {
+      if (!activeProtocol) {
+        activeColorRef.current = null;
+        return;
+      }
+      const hubs = sim.nodes.filter((n) => n.type === 'hub');
+      const idx = hubs.findIndex((h) => h.id === activeProtocol);
+      activeColorRef.current =
+        idx >= 0 ? COLOR_PALETTE[idx % COLOR_PALETTE.length] : null;
+    }, [activeProtocol, sim]);
 
-    const agents = sim.nodes.filter((n) => n.type === 'agent');
-    const count = Math.min(agents.length, MAX_AGENT_NODES);
-    mesh.count = count;
+    useFrame(() => {
+      const mesh = meshRef.current;
+      if (!mesh) return;
 
-    for (let i = 0; i < count; i++) {
-      const node = agents[i];
-      tempObj.position.set(node.x ?? 0, 0, node.y ?? 0);
-      tempObj.scale.setScalar(node.radius);
-      tempObj.updateMatrix();
-      mesh.setMatrixAt(i, tempObj.matrix);
-      tempColor.set(node.color);
-      mesh.setColorAt(i, tempColor);
-    }
-    mesh.instanceMatrix.needsUpdate = true;
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  });
+      const agents = sim.nodes.filter((n) => n.type === 'agent');
+      const count = Math.min(agents.length, MAX_AGENT_NODES);
+      mesh.count = count;
 
-  return (
-    <instancedMesh
-      ref={meshRef}
-      args={[geometry, material, MAX_AGENT_NODES]}
-      frustumCulled={false}
-    />
-  );
-});
+      const ac = activeColorRef.current;
+
+      for (let i = 0; i < count; i++) {
+        const node = agents[i];
+        tempObj.position.set(node.x ?? 0, 0, node.y ?? 0);
+        tempObj.scale.setScalar(node.radius);
+        tempObj.updateMatrix();
+        mesh.setMatrixAt(i, tempObj.matrix);
+
+        // Tint agents connected to the active protocol hub
+        if (ac && node.hubMint === activeProtocol) {
+          tempColor.set(ac).multiplyScalar(0.7);
+        } else {
+          tempColor.set(node.color);
+        }
+        mesh.setColorAt(i, tempColor);
+      }
+      mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    });
+
+    return (
+      <instancedMesh
+        ref={meshRef}
+        args={[geometry, material, MAX_AGENT_NODES]}
+        frustumCulled={false}
+      />
+    );
+  },
+);
 AgentNodes.displayName = 'AgentNodes';
 
 /** Batch-rendered edges via LineSegments */
@@ -407,7 +427,19 @@ Ground.displayName = 'Ground';
 // Scene: assembles all 3D sub-components + camera
 // ---------------------------------------------------------------------------
 
-const NetworkScene = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
+const NetworkScene = memo<{
+  sim: ForceGraphSimulation;
+  topTokens: TopToken[];
+  activeProtocol: string | null;
+  onSelectProtocol: (mint: string | null) => void;
+}>(({ sim, topTokens, activeProtocol, onSelectProtocol }) => {
+  const [hoveredHub, setHoveredHub] = useState<string | null>(null);
+
+  const hubIds = useMemo(
+    () => topTokens.map((t) => ({ id: t.mint, label: t.symbol || t.name })),
+    [topTokens],
+  );
+
   // Tick the d3-force simulation each frame
   useFrame(() => {
     sim.tick();
@@ -421,9 +453,22 @@ const NetworkScene = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
 
       {/* Graph elements */}
       <Edges sim={sim} />
-      <HubNodes sim={sim} />
-      <AgentNodes sim={sim} />
-      <HubLabels sim={sim} />
+      {hubIds.map((hub, i) => (
+        <HubNodeMesh
+          key={hub.id}
+          sim={sim}
+          nodeId={hub.id}
+          paletteIndex={i}
+          isActive={activeProtocol === hub.id}
+          isHovered={hoveredHub === hub.id}
+          onPointerOver={() => setHoveredHub(hub.id)}
+          onPointerOut={() => setHoveredHub(null)}
+          onClick={() =>
+            onSelectProtocol(activeProtocol === hub.id ? null : hub.id)
+          }
+        />
+      ))}
+      <AgentNodes sim={sim} activeProtocol={activeProtocol} />
       <Ground />
     </>
   );

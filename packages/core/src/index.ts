@@ -1,0 +1,60 @@
+// ============================================================================
+// @web3viz/core — Main entry point
+//
+// Re-exports everything from sub-modules for convenient access.
+//
+// Usage:
+//   import { ForceGraphSimulation, CATEGORIES, type TopToken } from '@web3viz/core';
+//
+// Or use deep imports:
+//   import { ForceGraphSimulation } from '@web3viz/core/engine';
+//   import type { TopToken } from '@web3viz/core/types';
+// ============================================================================
+
+// Types
+export type {
+  Token,
+  Trade,
+  TopToken,
+  TraderEdge,
+  Claim,
+  RawEvent,
+  DataProviderEvent,
+  GraphNode,
+  GraphEdge,
+  DataProviderStats,
+  ShareColors,
+  EmbedConfig,
+  Vec3,
+  CameraAnimationRequest,
+  GraphHandle,
+} from './types';
+
+// Engine
+export { ForceGraphSimulation, type ForceGraphConfig } from './engine/ForceGraphSimulation';
+export { SpatialHash } from './engine/SpatialHash';
+
+// Categories
+export {
+  CATEGORIES,
+  CATEGORY_CONFIGS,
+  CATEGORY_CONFIG_MAP,
+  createCategory,
+  mergeCategories,
+  buildCategoryMap,
+  type BuiltInCategory,
+  type CategoryConfig,
+} from './categories';
+
+// Providers
+export {
+  type DataProvider,
+  type DataProviderOptions,
+  type ConnectionState,
+  registerProvider,
+  getProvider,
+  getAllProviders,
+  unregisterProvider,
+  createProvider,
+  type CreateProviderConfig,
+} from './providers';

@@ -505,8 +505,6 @@ export default function WorldPage() {
         counts={stats.counts}
       />
 
-
-
       {/* Bottom stats bar */}
       <Suspense fallback={null}>
         <StatsBar
