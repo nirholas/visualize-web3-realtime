@@ -16,7 +16,9 @@
   "dependencies": {
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^8.18.0",
+    "@react-three/postprocessing": "^2.19.1",
     "@web3viz/core": "*",
+    "postprocessing": "^6.39.0",
     "three": "^0.169.0"
   },
   "peerDependencies": {

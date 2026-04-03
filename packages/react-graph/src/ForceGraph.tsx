@@ -10,10 +10,11 @@ import React, {
   useState,
 } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Html, MapControls } from '@react-three/drei';
+import { ContactShadows, Environment, Html, MapControls } from '@react-three/drei';
 import type { MapControls as MapControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
 import { ForceGraphSimulation, type ForceGraphConfig, type TopToken, type TraderEdge, type GraphHandle } from '@web3viz/core';
+import PostProcessing, { type PostProcessingProps } from './PostProcessing';
 
 // ============================================================================
 // Constants
@@ -45,6 +46,10 @@ export interface ForceGraphProps {
   cameraPosition?: [number, number, number];
   /** Label styles */
   labelStyle?: React.CSSProperties;
+  /** Whether to show soft contact shadows beneath objects (default true) */
+  showShadows?: boolean;
+  /** Post-processing configuration */
+  postProcessing?: PostProcessingProps;
 }
 
 // ============================================================================
@@ -57,7 +62,15 @@ const HubNodes = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
   const tempColor = useMemo(() => new THREE.Color(), []);
   const geometry = useMemo(() => new THREE.SphereGeometry(1, 32, 32), []);
   const material = useMemo(
-    () => new THREE.MeshStandardMaterial({ roughness: 0.4, metalness: 0.1 }),
+    () => new THREE.MeshPhysicalMaterial({
+      roughness: 0.25,
+      metalness: 0.05,
+      clearcoat: 0.3,
+      clearcoatRoughness: 0.4,
+      emissive: new THREE.Color('#ffffff'),
+      emissiveIntensity: 0.1,
+      envMapIntensity: 1.2,
+    }),
     [],
   );
 
@@ -141,7 +154,14 @@ const AgentNodes = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
   const tempColor = useMemo(() => new THREE.Color(), []);
   const geometry = useMemo(() => new THREE.SphereGeometry(1, 8, 8), []);
   const material = useMemo(
-    () => new THREE.MeshStandardMaterial({ roughness: 0.8, metalness: 0 }),
+    () => new THREE.MeshPhysicalMaterial({
+      roughness: 0.6,
+      metalness: 0.0,
+      clearcoat: 0.15,
+      clearcoatRoughness: 0.6,
+      emissive: new THREE.Color('#ffffff'),
+      emissiveIntensity: 0.03,
+    }),
     [],
   );
 
@@ -246,7 +266,13 @@ Edges.displayName = 'Edges';
 const Ground = memo<{ color?: string }>(({ color = '#f8f8fa' }) => (
   <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]} receiveShadow>
     <planeGeometry args={[200, 200]} />
-    <meshStandardMaterial color={color} />
+    <meshPhysicalMaterial
+      color={color}
+      roughness={0.85}
+      metalness={0.0}
+      clearcoat={0.05}
+      clearcoatRoughness={0.9}
+    />
   </mesh>
 ));
 Ground.displayName = 'Ground';
@@ -259,20 +285,36 @@ const NetworkScene = memo<{
   sim: ForceGraphSimulation;
   showLabels: boolean;
   showGround: boolean;
+  showShadows: boolean;
   groundColor: string;
   labelStyle?: React.CSSProperties;
-}>(({ sim, showLabels, showGround, groundColor, labelStyle }) => {
+}>(({ sim, showLabels, showGround, showShadows, groundColor, labelStyle }) => {
   useFrame(() => { sim.tick(); });
 
   return (
     <>
-      <ambientLight intensity={0.7} />
-      <directionalLight position={[20, 40, 20]} intensity={0.6} />
+      <Environment preset="studio" environmentIntensity={0.4} background={false} />
+      <directionalLight position={[20, 40, 20]} intensity={0.3} />
       <Edges sim={sim} />
       <HubNodes sim={sim} />
       <AgentNodes sim={sim} />
       {showLabels && <HubLabels sim={sim} labelStyle={labelStyle} />}
-      {showGround && <Ground color={groundColor} />}
+      {showGround && (
+        <>
+          <Ground color={groundColor} />
+          {showShadows && (
+            <ContactShadows
+              position={[0, -0.49, 0]}
+              scale={100}
+              blur={2.5}
+              far={4}
+              opacity={0.35}
+              resolution={256}
+              color="#000000"
+            />
+          )}
+        </>
+      )}
     </>
   );
 });
@@ -369,6 +411,27 @@ const CameraSetup = memo<{
 CameraSetup.displayName = 'CameraSetup';
 
 // ============================================================================
+// Snapshot helper — captures R3F context for synchronous WebGL screenshots
+// ============================================================================
+
+const SnapshotHelper = memo<{ snapshotRef: React.MutableRefObject<(() => string | null) | null> }>(
+  ({ snapshotRef }) => {
+    const { gl, scene, camera } = useThree();
+
+    useEffect(() => {
+      snapshotRef.current = () => {
+        gl.render(scene, camera);
+        return gl.domElement.toDataURL('image/png', 1.0);
+      };
+      return () => { snapshotRef.current = null; };
+    }, [gl, scene, camera, snapshotRef]);
+
+    return null;
+  },
+);
+SnapshotHelper.displayName = 'SnapshotHelper';
+
+// ============================================================================
 // Main ForceGraph component
 // ============================================================================
 
@@ -382,15 +445,18 @@ const ForceGraph = forwardRef<GraphHandle, ForceGraphProps>(function ForceGraph(
     simulationConfig,
     showLabels = true,
     showGround = true,
+    showShadows = true,
     fov = 45,
     cameraPosition = [0, 55, 12],
     labelStyle,
+    postProcessing,
   },
   ref,
 ) {
   const simRef = useRef<ForceGraphSimulation | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const cameraApiRef = useRef<CameraApi | null>(null);
+  const snapshotRef = useRef<(() => string | null) | null>(null);
 
   if (!simRef.current) {
     simRef.current = new ForceGraphSimulation(simulationConfig);
@@ -422,6 +488,9 @@ const ForceGraph = forwardRef<GraphHandle, ForceGraphProps>(function ForceGraph(
     setOrbitEnabled: (enabled) => {
       cameraApiRef.current?.setOrbitEnabled(enabled);
     },
+    takeSnapshot: () => {
+      return snapshotRef.current?.() ?? null;
+    },
   }));
 
   const tokenKey = topTokens.map((t) => `${t.mint}:${t.trades}`).join(',');
@@ -440,17 +509,25 @@ const ForceGraph = forwardRef<GraphHandle, ForceGraphProps>(function ForceGraph(
       <Canvas
         camera={{ fov, near: 0.1, far: 500, position: cameraPosition }}
         style={{ background }}
-        gl={{ antialias: true, alpha: false, preserveDrawingBuffer: true }}
+        gl={{ antialias: false, alpha: false }}
         dpr={[1, 1.5]}
+        onCreated={({ gl }) => {
+          gl.toneMapping = THREE.ACESFilmicToneMapping;
+          gl.toneMappingExposure = 1.0;
+          gl.outputColorSpace = THREE.SRGBColorSpace;
+        }}
       >
         <CameraSetup apiRef={cameraApiRef} initialPosition={cameraPosition} />
+        <SnapshotHelper snapshotRef={snapshotRef} />
         <NetworkScene
           sim={sim}
           showLabels={showLabels}
           showGround={showGround}
+          showShadows={showShadows}
           groundColor={groundColor}
           labelStyle={labelStyle}
         />
+        <PostProcessing {...postProcessing} />
       </Canvas>
     </div>
   );

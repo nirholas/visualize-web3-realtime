@@ -1,6 +1,12 @@
 // @web3viz/utils — Shared utility functions
 export {
-  captureCanvas,
+  captureWebGLSnapshot,
+  downloadWebGLSnapshot,
+  snapshotToBlob,
+  type SnapshotOptions,
+} from './webglSnapshot';
+
+export {
   downloadBlob,
   timestampedFilename,
 } from './screenshot';

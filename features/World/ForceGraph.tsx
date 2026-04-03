@@ -1,8 +1,8 @@
 'use client';
 
-import React, { forwardRef, memo, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import React, { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { MapControls } from '@react-three/drei';
+import { ContactShadows, Environment, MapControls } from '@react-three/drei';
 import type { MapControls as MapControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
 import {
@@ -21,6 +21,7 @@ import type { ShareColors } from './SharePanel';
 import { ProtocolLabel } from './ProtocolLabel';
 import { COLOR_PALETTE, PROTOCOL_COLORS } from './constants';
 import YouAreHereMarker from './YouAreHereMarker';
+import { PostProcessing } from '@web3viz/react-graph';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -244,9 +245,9 @@ function HubNodeMesh({
 }) {
   const groupRef = useRef<THREE.Group>(null!);
   const meshRef = useRef<THREE.Mesh>(null!);
-  const materialRef = useRef<THREE.MeshStandardMaterial>(null!);
+  const materialRef = useRef<THREE.MeshPhysicalMaterial>(null!);
   const ringRef = useRef<THREE.Mesh>(null!);
-  const ringMaterialRef = useRef<THREE.MeshStandardMaterial>(null!);
+  const ringMaterialRef = useRef<THREE.MeshPhysicalMaterial>(null!);
   const targetColor = useRef(new THREE.Color(PROTOCOL_COLORS.default));
   const targetOpacity = useRef(1);
   const targetRingOpacity = useRef(0);
@@ -325,13 +326,18 @@ function HubNodeMesh({
         }}
       >
         <sphereGeometry args={[1, 32, 32]} />
-        <meshStandardMaterial
+        <meshPhysicalMaterial
           ref={materialRef}
           color={PROTOCOL_COLORS.default}
           transparent
           opacity={1}
-          roughness={0.4}
-          metalness={0.1}
+          roughness={0.25}
+          metalness={0.05}
+          clearcoat={0.3}
+          clearcoatRoughness={0.4}
+          emissive="#ffffff"
+          emissiveIntensity={0.1}
+          envMapIntensity={1.2}
         />
       </mesh>
       {isAgentHub && (
@@ -341,13 +347,15 @@ function HubNodeMesh({
           scale={1.4}
         >
           <torusGeometry args={[1, 0.12, 8, 32]} />
-          <meshStandardMaterial
+          <meshPhysicalMaterial
             ref={ringMaterialRef}
             color={AGENT_COLOR_PALETTE[paletteIndex % AGENT_COLOR_PALETTE.length]}
             transparent
             opacity={0}
-            roughness={0.3}
-            metalness={0.2}
+            roughness={0.25}
+            metalness={0.25}
+            clearcoat={0.3}
+            clearcoatRoughness={0.4}
             emissive={AGENT_COLOR_PALETTE[paletteIndex % AGENT_COLOR_PALETTE.length]}
             emissiveIntensity={0.3}
           />
@@ -379,7 +387,15 @@ const AgentNodes = memo<{
   const dimColor = useMemo(() => new THREE.Color('#cccccc'), []);
   const geometry = useMemo(() => new THREE.SphereGeometry(1, 8, 8), []);
   const material = useMemo(
-    () => new THREE.MeshStandardMaterial({ roughness: 0.8, metalness: 0, transparent: true }),
+    () => new THREE.MeshPhysicalMaterial({
+      roughness: 0.6,
+      metalness: 0.0,
+      clearcoat: 0.15,
+      clearcoatRoughness: 0.6,
+      emissive: new THREE.Color('#ffffff'),
+      emissiveIntensity: 0.03,
+      transparent: true,
+    }),
     [],
   );
 
@@ -578,7 +594,13 @@ SceneBackground.displayName = 'SceneBackground';
 const Ground = memo(() => (
   <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]} receiveShadow>
     <planeGeometry args={[200, 200]} />
-    <meshStandardMaterial color="#eeeef0" />
+    <meshPhysicalMaterial
+      color="#eeeef0"
+      roughness={0.85}
+      metalness={0.0}
+      clearcoat={0.05}
+      clearcoatRoughness={0.9}
+    />
   </mesh>
 ));
 Ground.displayName = 'Ground';
@@ -620,7 +642,14 @@ const IdleAmbientScene = memo(() => {
   const tempColor = useMemo(() => new THREE.Color(), []);
   const geometry = useMemo(() => new THREE.SphereGeometry(1, 16, 16), []);
   const material = useMemo(
-    () => new THREE.MeshStandardMaterial({ roughness: 0.7, metalness: 0, transparent: true, opacity: 0.65 }),
+    () => new THREE.MeshPhysicalMaterial({
+      roughness: 0.6,
+      metalness: 0.0,
+      clearcoat: 0.15,
+      clearcoatRoughness: 0.6,
+      transparent: true,
+      opacity: 0.65,
+    }),
     [],
   );
 
@@ -662,10 +691,19 @@ const IdleAmbientScene = memo(() => {
 
   return (
     <>
-      <ambientLight intensity={0.7} />
-      <directionalLight position={[20, 40, 20]} intensity={0.4} />
+      <Environment preset="studio" environmentIntensity={0.4} background={false} />
+      <directionalLight position={[20, 40, 20]} intensity={0.3} />
       <instancedMesh ref={meshRef} args={[geometry, material, IDLE_NODE_COUNT]} frustumCulled={false} />
       <Ground />
+      <ContactShadows
+        position={[0, -0.49, 0]}
+        scale={100}
+        blur={2.5}
+        far={4}
+        opacity={0.35}
+        resolution={256}
+        color="#000000"
+      />
     </>
   );
 });
@@ -739,8 +777,8 @@ const NetworkScene = memo<{
     <>
       {shareColors && <SceneBackground color={shareColors.background} />}
 
-      <ambientLight intensity={0.7} />
-      <directionalLight position={[20, 40, 20]} intensity={0.6} />
+      <Environment preset="studio" environmentIntensity={0.4} background={false} />
+      <directionalLight position={[20, 40, 20]} intensity={0.3} />
 
       <Edges
         sim={sim}
@@ -774,6 +812,15 @@ const NetworkScene = memo<{
         colorOverride={shareColors?.user}
       />
       <Ground />
+      <ContactShadows
+        position={[0, -0.49, 0]}
+        scale={100}
+        blur={2.5}
+        far={4}
+        opacity={0.35}
+        resolution={256}
+        color="#000000"
+      />
       {/* Show YouAreHereMarker above the searched agent node */}
       {highlightedAddress && onDismissHighlight && (
         <YouAreHereMarker
@@ -910,7 +957,30 @@ export interface ForceGraphHandle {
   getHubPosition: (index: number) => [number, number, number] | null;
   findAgentHub: (address: string) => { hubIndex: number; hubMint: string } | null;
   setOrbitEnabled: (enabled: boolean) => void;
+  /** Capture the current 3D view as a PNG data URL via synchronous WebGL render */
+  takeSnapshot: () => string | null;
 }
+
+/**
+ * Invisible R3F child that captures the Three.js context for snapshot capture.
+ * Must live inside <Canvas> to access useThree().
+ */
+const SnapshotHelper = memo<{ snapshotRef: React.MutableRefObject<(() => string | null) | null> }>(
+  ({ snapshotRef }) => {
+    const { gl, scene, camera } = useThree();
+
+    useEffect(() => {
+      snapshotRef.current = () => {
+        gl.render(scene, camera);
+        return gl.domElement.toDataURL('image/png', 1.0);
+      };
+      return () => { snapshotRef.current = null; };
+    }, [gl, scene, camera, snapshotRef]);
+
+    return null;
+  },
+);
+SnapshotHelper.displayName = 'SnapshotHelper';
 
 const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function ForceGraph(
   { topTokens, traderEdges, activeProtocol = null, highlightedHubIndex = null, highlightedAddress = null, onSelectProtocol, onDismissHighlight, height = '100%', shareColors, idle = false },
@@ -919,6 +989,7 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
   const simRef = useRef<ForceGraphSimulation | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const cameraApiRef = useRef<CameraApi | null>(null);
+  const snapshotRef = useRef<(() => string | null) | null>(null);
 
   if (!simRef.current) {
     simRef.current = new ForceGraphSimulation();
@@ -988,6 +1059,9 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
     },
     setOrbitEnabled: (enabled) => {
       cameraApiRef.current?.setOrbitEnabled(enabled);
+    },
+    takeSnapshot: () => {
+      return snapshotRef.current?.() ?? null;
     },
   }));
 
@@ -1060,10 +1134,16 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
       <Canvas
         camera={{ fov: 45, near: 0.1, far: 500, position: [0, 55, 12] }}
         style={{ background: shareColors?.background ?? '#ffffff' }}
-        gl={{ antialias: true, alpha: false, preserveDrawingBuffer: true }}
+        gl={{ antialias: false, alpha: false }}
         dpr={[1, 1.5]}
+        onCreated={({ gl }) => {
+          gl.toneMapping = THREE.ACESFilmicToneMapping;
+          gl.toneMappingExposure = 1.0;
+          gl.outputColorSpace = THREE.SRGBColorSpace;
+        }}
       >
         <CameraSetup apiRef={cameraApiRef} />
+        <SnapshotHelper snapshotRef={snapshotRef} />
         {idle ? (
           <IdleAmbientScene />
         ) : (
@@ -1078,6 +1158,7 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
             shareColors={shareColors}
           />
         )}
+        <PostProcessing />
       </Canvas>
     </div>
   );

@@ -1,0 +1,10 @@
+{
+  "name": "@web3viz/mcp",
+  "version": "0.0.1",
+  "private": true,
+  "main": "src/gizaServer.ts",
+  "types": "src/gizaServer.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}

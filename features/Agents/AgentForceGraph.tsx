@@ -130,6 +130,8 @@ export interface AgentForceGraphHandle {
   getCanvasElement: () => HTMLCanvasElement | null;
   focusAgent: (agentId: string, durationMs?: number) => Promise<void>;
   getAgentCount: () => number;
+  /** Capture the current 3D view as a PNG data URL via synchronous WebGL render */
+  takeSnapshot: () => string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -144,6 +146,27 @@ const SceneBackground = memo<{ color: string }>(({ color }) => {
   return null;
 });
 SceneBackground.displayName = 'SceneBackground';
+
+// ---------------------------------------------------------------------------
+// Snapshot helper — captures R3F context for synchronous WebGL screenshots
+// ---------------------------------------------------------------------------
+
+const SnapshotHelper = memo<{ snapshotRef: React.MutableRefObject<(() => string | null) | null> }>(
+  ({ snapshotRef }) => {
+    const { gl, scene, camera } = useThree();
+
+    useEffect(() => {
+      snapshotRef.current = () => {
+        gl.render(scene, camera);
+        return gl.domElement.toDataURL('image/png', 1.0);
+      };
+      return () => { snapshotRef.current = null; };
+    }, [gl, scene, camera, snapshotRef]);
+
+    return null;
+  },
+);
+SnapshotHelper.displayName = 'SnapshotHelper';
 
 // ---------------------------------------------------------------------------
 // Ground plane
@@ -757,6 +780,7 @@ const AgentForceGraphInner = forwardRef<AgentForceGraphHandle, AgentForceGraphPr
   ) {
     const containerRef = useRef<HTMLDivElement>(null);
     const cameraApiRef = useRef<CameraApi | null>(null);
+    const snapshotRef = useRef<(() => string | null) | null>(null);
 
     // Maintain hub and task state from props
     const [hubs, setHubs] = useState<AgentHubState[]>([]);
@@ -916,6 +940,9 @@ const AgentForceGraphInner = forwardRef<AgentForceGraphHandle, AgentForceGraphPr
         );
       },
       getAgentCount: () => hubs.length,
+      takeSnapshot: () => {
+        return snapshotRef.current?.() ?? null;
+      },
     }));
 
     const [webglSupported, setWebglSupported] = useState(true);
@@ -974,10 +1001,11 @@ const AgentForceGraphInner = forwardRef<AgentForceGraphHandle, AgentForceGraphPr
         <Canvas
           camera={{ fov: 45, near: 0.1, far: 500, position: [0, 40, 20] }}
           style={{ background: shareColors?.background ?? backgroundColor }}
-          gl={{ antialias: true, alpha: false, preserveDrawingBuffer: true }}
+          gl={{ antialias: true, alpha: false }}
           dpr={[1, 1.5]}
         >
           <CameraSetup apiRef={cameraApiRef} />
+          <SnapshotHelper snapshotRef={snapshotRef} />
           <NetworkScene
             hubs={hubs}
             tasks={tasks}

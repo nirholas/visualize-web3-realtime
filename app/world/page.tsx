@@ -18,9 +18,10 @@ import StartJourney from '@/features/World/StartJourney';
 import StatsBar from '@/features/World/StatsBar';
 import { useJourney } from '@/features/World/useJourney';
 import EmbedConfigurator from '@/features/World/EmbedConfigurator';
-import { captureCanvas, downloadBlob, timestampedFilename } from '@/features/World/utils/screenshot';
+import { timestampedFilename } from '@/features/World/utils/screenshot';
 import { buildShareUrl, buildShareText, parseShareParams, shareOnX, shareOnLinkedIn } from '@/features/World/utils/shareUrl';
 import type { ForceGraphHandle } from '@/features/World/ForceGraph';
+import { WorldChat } from '@/features/World/ai/WorldChat';
 
 // Lazy-load the 3D force graph to avoid SSR issues with Three.js
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -440,30 +441,24 @@ export default function WorldPage() {
   const handleOpenShare = useCallback(() => setShareOpen(true), []);
   const handleCloseShare = useCallback(() => setShareOpen(false), []);
 
-  // --- Download World (raw canvas) ---
-  const handleDownloadWorld = useCallback(async () => {
-    const canvas = graphRef.current?.getCanvasElement();
-    if (!canvas) return;
-    setDownloading('world');
-    try {
-      const blob = await captureCanvas(canvas);
-      downloadBlob(blob, timestampedFilename('pumpfun-world'));
-    } finally {
-      setDownloading(null);
-    }
+  // --- Download World (raw WebGL canvas) ---
+  const handleDownloadWorld = useCallback(() => {
+    const dataURL = graphRef.current?.takeSnapshot();
+    if (!dataURL) return;
+    const link = document.createElement('a');
+    link.download = timestampedFilename('pumpfun-world');
+    link.href = dataURL;
+    link.click();
   }, []);
 
-  // --- Download Snapshot (canvas + overlay) ---
-  const handleDownloadSnapshot = useCallback(async () => {
-    const canvas = graphRef.current?.getCanvasElement();
-    if (!canvas) return;
-    setDownloading('snapshot');
-    try {
-      const blob = await captureCanvas(canvas, overlayRef.current ?? undefined);
-      downloadBlob(blob, timestampedFilename('pumpfun-snapshot'));
-    } finally {
-      setDownloading(null);
-    }
+  // --- Download Snapshot (WebGL canvas capture) ---
+  const handleDownloadSnapshot = useCallback(() => {
+    const dataURL = graphRef.current?.takeSnapshot();
+    if (!dataURL) return;
+    const link = document.createElement('a');
+    link.download = timestampedFilename('pumpfun-snapshot');
+    link.href = dataURL;
+    link.click();
   }, []);
 
   // --- Share on X ---
@@ -504,6 +499,19 @@ export default function WorldPage() {
 
   // Get first two connection entries for display
   const connectionEntries = useMemo(() => Object.entries(connections), [connections]);
+
+  // --- AI Chat handlers ---
+  const handleChatFilterChange = useCallback((filters: { protocols?: string[]; timeRange?: string }) => {
+    if (filters.protocols && filters.protocols.length > 0) {
+      setActiveHubMint(filters.protocols[0]);
+    }
+  }, []);
+
+  const chatStats = useMemo(() => ({
+    totalEvents: stats.totalTransactions,
+    totalVolume: Math.round(totalVolume),
+    connections: connectionEntries.length,
+  }), [stats.totalTransactions, totalVolume, connectionEntries.length]);
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: '#ffffff' }}>
@@ -774,6 +782,16 @@ export default function WorldPage() {
       {/* Embed widget configurator */}
       {embedOpen && (
         <EmbedConfigurator onClose={() => setEmbedOpen(false)} />
+      )}
+
+      {/* AI Chat interface — bottom left */}
+      {hasActiveProvider && (
+        <WorldChat
+          graphRef={graphRef}
+          onColorChange={setShareColors}
+          onFilterChange={handleChatFilterChange}
+          stats={chatStats}
+        />
       )}
 
       {/* Embed button — bottom left, above pause */}

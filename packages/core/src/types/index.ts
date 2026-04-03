@@ -287,4 +287,6 @@ export interface GraphHandle {
   getCanvasElement: () => HTMLCanvasElement | null;
   getHubCount: () => number;
   setOrbitEnabled: (enabled: boolean) => void;
+  /** Capture the current 3D view as a PNG data URL via synchronous WebGL render */
+  takeSnapshot: () => string | null;
 }

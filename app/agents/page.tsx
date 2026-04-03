@@ -16,7 +16,7 @@ import ExecutorBanner from '@/features/Agents/ExecutorBanner';
 import AgentLoadingScreen from '@/features/Agents/AgentLoadingScreen';
 import { TaskInspectorPanel } from '@/features/Agents/TaskInspector';
 import { agentThemeTokens } from '@/packages/ui/src/tokens/agent-colors';
-import { captureCanvas, downloadBlob, timestampedFilename } from '@/features/World/utils/screenshot';
+import { timestampedFilename } from '@/features/World/utils/screenshot';
 
 // Lazy-load the 3D force graph (Three.js not SSR-safe)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -102,19 +102,14 @@ function AgentsPageInner() {
   }, []);
   const handleToggleFeed = useCallback(() => setFeedVisible((v) => !v), []);
 
-  const handleDownloadAgent = useCallback(async () => {
+  const handleDownloadAgent = useCallback(() => {
     if (!agentGraphRef.current || downloading) return;
-    setDownloading(true);
-    try {
-      const canvas = agentGraphRef.current.getCanvasElement();
-      if (!canvas) return;
-      const blob = await captureCanvas(canvas);
-      downloadBlob(blob, timestampedFilename('agent-world'));
-    } catch (err) {
-      console.error('Failed to download screenshot:', err);
-    } finally {
-      setDownloading(false);
-    }
+    const dataURL = agentGraphRef.current.takeSnapshot();
+    if (!dataURL) return;
+    const link = document.createElement('a');
+    link.download = timestampedFilename('agent-world');
+    link.href = dataURL;
+    link.click();
   }, [downloading]);
 
   // Mark page ready once first agent data arrives
