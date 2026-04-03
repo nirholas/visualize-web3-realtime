@@ -8,19 +8,8 @@ This page is the agent equivalent of `app/world/page.tsx`. It follows the same l
 ## Reference: World Page Layout
 
 The existing `/world` page layout (for reference):
-```
-┌─────────────────────────────────────────────────┐
-│ TimelineBar (top)                               │
-├──────┬──────────────────────────────────────────┤
-│      │                                          │
-│ Side │         3D ForceGraph Canvas              │
-│ bar  │                                          │
-│      │                                          │
-│      │                                          │
-├──────┴─────────────────────────────┬────────────┤
-│ StatsBar (bottom-left)             │ LiveFeed   │
-└────────────────────────────────────┴────────────┘
-```
+
+![World Page Layout](../public/diagrams/world-page-layout.svg)
 
 The `/agents` page should follow the same pattern but with agent-specific components.
 
@@ -28,19 +17,7 @@ The `/agents` page should follow the same pattern but with agent-specific compon
 
 ### 1. Agent Page Route (`app/agents/page.tsx` — NEW)
 
-```
-┌─────────────────────────────────────────────────┐
-│ AgentTimelineBar (top) — task flow timeline      │
-├──────┬──────────────────────────────────────────┤
-│      │                                          │
-│Agent │      AgentForceGraph Canvas               │
-│Side  │                                          │
-│bar   │                                          │
-│      │                                          │
-├──────┴─────────────────────────────┬────────────┤
-│ AgentStatsBar (bottom-left)        │AgentFeed   │
-└────────────────────────────────────┴────────────┘
-```
+![Agent Page Layout](../public/diagrams/agent-page-layout.svg)
 
 The page should:
 - Use `useAgentProvider({ mock: true })` to get agent data (mock for now)
@@ -53,36 +30,7 @@ The page should:
 
 Left sidebar showing active agents and their status. Similar to `features/World/ProtocolFilterSidebar.tsx` but for agents:
 
-```
-┌──────────────────┐
-│ AGENTS           │
-│                  │
-│ ● CodeReviewer   │ (active - purple dot)
-│   3 tasks · 42   │
-│                  │
-│ ● Researcher     │ (active - blue dot)
-│   1 task · 18    │
-│                  │
-│ ○ Planner        │ (idle - gray dot)
-│   0 tasks · 0    │
-│                  │
-│──────────────────│
-│ TOOLS            │
-│                  │
-│ ▣ filesystem (24)│ (toggleable filter)
-│ ▣ search (18)    │
-│ ▣ terminal (12)  │
-│ ▣ network (6)    │
-│ ▣ code (8)       │
-│ ▣ reasoning (3)  │
-│                  │
-│──────────────────│
-│ EXECUTOR         │
-│ ● Running        │ (green dot)
-│ Uptime: 2d 14h   │
-│ Tasks: 142       │
-└──────────────────┘
-```
+![Agent Sidebar](../public/diagrams/agent-sidebar.svg)
 
 Features:
 - Click an agent → sets `activeAgentId`, zooms camera to that agent hub
@@ -96,11 +44,7 @@ Features:
 
 Bottom stats bar showing real-time agent metrics. Similar to `features/World/StatsBar.tsx`:
 
-```
-┌───────────────────────────────────────────────────────────────┐
-│ AGENTS: 3  │  TASKS: 7  │  TOOLS/MIN: 12  │  COMPLETED: 142  │  ERRORS: 3  │
-└───────────────────────────────────────────────────────────────┘
-```
+![Agent Stats Bar](../public/diagrams/agent-stats-bar.svg)
 
 Stats to show:
 - Active agents count
@@ -116,31 +60,7 @@ Each stat should have a label + value with the category color. Values update in 
 
 Right-side scrolling feed of agent events, similar to `features/World/LiveFeed.tsx`:
 
-```
-┌──────────────────────────┐
-│ AGENT ACTIVITY           │
-│                          │
-│ ⚡ CodeReviewer           │
-│   tool:read_file         │
-│   src/index.ts           │
-│                  0.2s ago│
-│                          │
-│ ▶ Researcher              │
-│   task:started           │
-│   "Analyze API docs"     │
-│                  1.4s ago│
-│                          │
-│ ✓ CodeReviewer           │
-│   task:completed         │
-│   "Review PR #42"        │
-│                  5.2s ago│
-│                          │
-│ ⬡ Planner                │
-│   agent:spawn            │
-│   role: planner          │
-│                  8.1s ago│
-└──────────────────────────┘
-```
+![Agent Live Feed](../public/diagrams/agent-live-feed.svg)
 
 Features:
 - Auto-scrolls to newest events

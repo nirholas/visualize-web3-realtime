@@ -46,7 +46,7 @@ const CategoryButton = memo<CategoryButtonProps>(({ category, isActive, onClick 
       title={category.label}
       style={{
         alignItems: 'center',
-        background: isActive ? category.color : '#e8e8e8',
+        background: isActive ? category.color : '#c0c0c8',
         border: isActive ? `2px solid ${category.color}` : '2px solid transparent',
         borderRadius: '50%',
         boxShadow: isActive
@@ -54,7 +54,7 @@ const CategoryButton = memo<CategoryButtonProps>(({ category, isActive, onClick 
           : hovered
           ? '0 2px 8px rgba(0,0,0,0.18)'
           : 'none',
-        color: isActive ? '#fff' : '#333',
+        color: isActive ? '#fff' : '#222',
         cursor: 'pointer',
         display: 'flex',
         fontFamily: "'IBM Plex Mono', monospace",
@@ -100,7 +100,7 @@ const ProviderToggle = memo<ProviderToggleProps>(({ source, active, onClick }) =
       title={active ? `Hide ${source.label}` : `Show ${source.label}`}
       style={{
         alignItems: 'center',
-        background: active ? source.color : '#e8e8e8',
+        background: active ? source.color : '#c0c0c8',
         border: active ? `2px solid ${source.color}` : '2px solid transparent',
         borderRadius: '50%',
         boxShadow: active
@@ -108,7 +108,7 @@ const ProviderToggle = memo<ProviderToggleProps>(({ source, active, onClick }) =
           : hovered
           ? '0 2px 8px rgba(0,0,0,0.18)'
           : 'none',
-        color: active ? '#fff' : '#333',
+        color: active ? '#fff' : '#222',
         cursor: 'pointer',
         display: 'flex',
         fontSize: 14,

@@ -578,7 +578,7 @@ SceneBackground.displayName = 'SceneBackground';
 const Ground = memo(() => (
   <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]} receiveShadow>
     <planeGeometry args={[200, 200]} />
-    <meshStandardMaterial color="#f8f8fa" />
+    <meshStandardMaterial color="#eeeef0" />
   </mesh>
 ));
 Ground.displayName = 'Ground';
@@ -607,7 +607,7 @@ function createIdleNodes(): IdleNode[] {
       vx: (Math.random() - 0.5) * IDLE_SPEED,
       vz: (Math.random() - 0.5) * IDLE_SPEED,
       radius: IDLE_RADIUS_MIN + Math.random() * (IDLE_RADIUS_MAX - IDLE_RADIUS_MIN),
-      gray: 0.78 + Math.random() * 0.12,
+      gray: 0.25 + Math.random() * 0.2,
     });
   }
   return nodes;
@@ -620,7 +620,7 @@ const IdleAmbientScene = memo(() => {
   const tempColor = useMemo(() => new THREE.Color(), []);
   const geometry = useMemo(() => new THREE.SphereGeometry(1, 16, 16), []);
   const material = useMemo(
-    () => new THREE.MeshStandardMaterial({ roughness: 0.7, metalness: 0, transparent: true, opacity: 0.45 }),
+    () => new THREE.MeshStandardMaterial({ roughness: 0.7, metalness: 0, transparent: true, opacity: 0.65 }),
     [],
   );
 

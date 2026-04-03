@@ -142,7 +142,7 @@ const WelcomeOverlay = memo<{ visible: boolean }>(({ visible }) => (
     </span>
     <span
       style={{
-        color: '#999',
+        color: '#555',
         fontFamily: "'IBM Plex Mono', monospace",
         fontSize: 12,
         letterSpacing: '0.04em',
@@ -161,11 +161,11 @@ const WelcomeOverlay = memo<{ visible: boolean }>(({ visible }) => (
       }}
     >
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ opacity: 0.4 }}>
-        <path d="M10 3L5 8L10 13" stroke="#999" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M10 3L5 8L10 13" stroke="#666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
       <span
         style={{
-          color: '#bbb',
+          color: '#666',
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: 10,
           letterSpacing: '0.06em',
@@ -596,7 +596,7 @@ export default function WorldPage() {
       >
         <span
           style={{
-            color: '#999',
+            color: '#444',
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 11,
             letterSpacing: '0.1em',

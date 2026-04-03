@@ -13,21 +13,7 @@ This executor:
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────┐
-│                EXECUTOR SERVER               │
-│                                             │
-│  ┌─────────┐  ┌──────────┐  ┌───────────┐  │
-│  │ Task    │  │ Agent    │  │ WebSocket │  │
-│  │ Queue   │──│ Manager  │──│ Broadcast │──── → Frontend
-│  └─────────┘  └──────────┘  └───────────┘  │
-│       │            │              │         │
-│  ┌─────────┐  ┌──────────┐  ┌───────────┐  │
-│  │ State   │  │ SperaxOS │  │ Health    │  │
-│  │ Store   │  │ Client   │  │ Monitor   │  │
-│  └─────────┘  └──────────┘  └───────────┘  │
-└─────────────────────────────────────────────┘
-```
+![Executor Architecture](../public/diagrams/executor-architecture.svg)
 
 ## What to Build
 

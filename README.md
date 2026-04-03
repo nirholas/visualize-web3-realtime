@@ -81,15 +81,7 @@ web3viz is a modular monorepo. Use the pieces you need:
 
 ### Dependency graph
 
-```
-@web3viz/core          ← zero dependencies, pure TypeScript
-    ↑
-@web3viz/providers     ← implements DataProvider interface
-@web3viz/react-graph   ← React Three Fiber + d3-force
-@web3viz/ui            ← React + Tailwind + CSS custom properties
-@web3viz/utils         ← tiny helpers
-@web3viz/executor      ← Node.js server (SQLite + WebSocket)
-```
+![Dependency Graph](public/diagrams/dependency-graph.svg)
 
 ---
 
@@ -270,29 +262,7 @@ const { start, skip, currentStep } = useJourney({
 
 ## Architecture
 
-```
-                    ┌─────────────────────────────────────┐
-                    │         Your Data Source(s)          │
-                    │  WebSocket · REST · gRPC · Kafka     │
-                    └──────────────┬──────────────────────┘
-                                   │
-                    ┌──────────────▼──────────────────────┐
-                    │     DataProvider (implements)         │
-                    │  connect() · emit() · getStats()     │
-                    └──────────────┬──────────────────────┘
-                                   │
-               registerProvider()  │  onEvent(callback)
-                                   │
-          ┌────────────────────────▼─────────────────────────┐
-          │              Provider Registry                     │
-          │   getAllProviders() · getEnabledProviders()        │
-          └───────┬──────────────┬──────────────┬────────────┘
-                  │              │              │
-         ┌────────▼───┐  ┌──────▼─────┐  ┌────▼────────┐
-         │ ForceGraph  │  │  StatsBar  │  │  LiveFeed   │
-         │ (3D scene)  │  │ (counters) │  │ (event log) │
-         └─────────────┘  └────────────┘  └─────────────┘
-```
+![Provider Architecture](public/diagrams/provider-architecture.svg)
 
 ### Monorepo Structure
 

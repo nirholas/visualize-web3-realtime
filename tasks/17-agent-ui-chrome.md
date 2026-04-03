@@ -9,14 +9,7 @@ After Tasks 14-16, we have the agent force graph and page. Now we add the rich U
 
 A horizontal timeline at the top of the `/agents` page showing agent task activity over time. Different from the World timeline (which shows dates) — this shows task flows:
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│ ◀ 2m ago                    NOW ▶│  ▶ ❚❚  │  2x │  🔴 LIVE │
-│                                  │        │     │          │
-│ ████░░░░████████░░████████████░░░████████████████████████░░ │
-│ CR   idle  CR task  R task    CR task      R + P tasks      │
-└─────────────────────────────────────────────────────────────┘
-```
+![Agent Timeline Bar](../public/diagrams/agent-timeline.svg)
 
 Features:
 - Horizontal bar showing the last N minutes of agent activity
@@ -39,47 +32,7 @@ A slide-out panel (right side) that shows detailed information about a selected 
 - Clicking a task in the live feed
 - Clicking a task block in the timeline
 
-```
-┌──────────────────────────────┐
-│ TASK: Review PR #42      ✕  │
-│                              │
-│ Agent: CodeReviewer          │
-│ Status: ● In Progress        │
-│ Started: 2m 14s ago          │
-│ Duration: 2m 14s (running)   │
-│                              │
-│ ─── TOOL CALLS (7) ──────── │
-│                              │
-│ 1. read_file                 │
-│    src/index.ts              │
-│    ✓ 0.3s                    │
-│                              │
-│ 2. grep_search               │
-│    "handleSubmit"            │
-│    ✓ 0.1s                    │
-│                              │
-│ 3. read_file                 │
-│    src/components/Form.tsx   │
-│    ✓ 0.4s                    │
-│                              │
-│ 4. run_in_terminal           │
-│    npx tsc --noEmit          │
-│    ⏳ running...              │
-│                              │
-│ ─── SUB-AGENTS (1) ──────── │
-│                              │
-│ └─ TypeChecker (coder)       │
-│    1 task · 3 tool calls     │
-│                              │
-│ ─── REASONING ────────────── │
-│                              │
-│ "The form component has a    │
-│  race condition in the       │
-│  submit handler. Need to     │
-│  check if the TypeScript     │
-│  types allow concurrent..."  │
-└──────────────────────────────┘
-```
+![Task Inspector Panel](../public/diagrams/task-inspector.svg)
 
 Features:
 - Slide-in from right (300px wide) with backdrop blur
@@ -113,22 +66,7 @@ Visual:
 
 A thin banner at the very top of the `/agents` page showing executor health:
 
-```
-When healthy:
-┌─────────────────────────────────────────────────┐
-│ ● EXECUTOR RUNNING · 3 agents · uptime 2d 14h  │
-└─────────────────────────────────────────────────┘
-
-When degraded:
-┌─────────────────────────────────────────────────┐
-│ ⚠ EXECUTOR SLOW · last heartbeat 45s ago        │
-└─────────────────────────────────────────────────┘
-
-When down:
-┌─────────────────────────────────────────────────┐
-│ ✗ EXECUTOR OFFLINE · last seen 2m ago           │
-└─────────────────────────────────────────────────┘
-```
+![Executor Status Banners](../public/diagrams/executor-status.svg)
 
 Features:
 - Green/yellow/red background based on health

@@ -173,13 +173,7 @@ Reuse the same visual style as `features/World/ProtocolLabel.tsx`:
 - Below: active task count, tool calls count
 - Small downward caret
 
-```
-┌─────────────────────┐
-│ CODEREVIEWER         │
-│ coder · 3 tasks · 42│
-└──────────┬──────────┘
-           ▼
-```
+![Agent Label](../public/diagrams/agent-label.svg)
 
 ### 4. Task Inspector Tooltip (`features/Agents/TaskInspector.tsx` — NEW)
 

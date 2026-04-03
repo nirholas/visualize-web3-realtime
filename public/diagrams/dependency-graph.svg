@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 240" width="520" height="240">
+  <style>
+    @keyframes flowUp { 0%{stroke-dashoffset:0} 100%{stroke-dashoffset:-14} }
+    text { font-family: 'IBM Plex Mono', monospace; }
+    .pkg { fill:#181825; stroke-width:1.2; rx:6; }
+    .label { fill:#e2e8f0; font-size:10px; font-weight:bold; }
+    .desc { fill:#94a3b8; font-size:8.5px; }
+    .arrow { stroke-width:1; fill:none; stroke-dasharray:4,3; animation: flowUp 0.7s linear infinite; }
+  </style>
+
+  <rect width="520" height="240" rx="10" fill="#0f0f1a"/>
+
+  <!-- Core (top center) -->
+  <rect class="pkg" style="stroke:#a78bfa" x="170" y="15" width="180" height="38"/>
+  <text class="label" style="fill:#a78bfa" x="198" y="32">@web3viz/core</text>
+  <text class="desc" x="180" y="46">zero deps, pure TypeScript</text>
+
+  <!-- Arrows up to core -->
+  <line class="arrow" style="stroke:#34d399" x1="100" y1="80" x2="230" y2="53"/>
+  <line class="arrow" style="stroke:#f472b6" x1="260" y1="80" x2="260" y2="53"/>
+  <line class="arrow" style="stroke:#60a5fa" x1="360" y1="80" x2="290" y2="53"/>
+  <line class="arrow" style="stroke:#fbbf24" x1="440" y1="110" x2="320" y2="53"/>
+
+  <!-- providers -->
+  <rect class="pkg" style="stroke:#34d399" x="20" y="80" width="170" height="38"/>
+  <text class="label" style="fill:#34d399" x="36" y="97">@web3viz/providers</text>
+  <text class="desc" x="28" y="112">DataProvider interface</text>
+
+  <!-- react-graph -->
+  <rect class="pkg" style="stroke:#f472b6" x="205" y="80" width="170" height="38"/>
+  <text class="label" style="fill:#f472b6" x="213" y="97">@web3viz/react-graph</text>
+  <text class="desc" x="213" y="112">R3F + d3-force</text>
+
+  <!-- ui -->
+  <rect class="pkg" style="stroke:#60a5fa" x="20" y="145" width="170" height="38"/>
+  <text class="label" style="fill:#60a5fa" x="62" y="162">@web3viz/ui</text>
+  <text class="desc" x="28" y="177">React + Tailwind + CSS vars</text>
+
+  <!-- utils -->
+  <rect class="pkg" style="stroke:#fbbf24" x="205" y="145" width="170" height="38"/>
+  <text class="label" style="fill:#fbbf24" x="240" y="162">@web3viz/utils</text>
+  <text class="desc" x="240" y="177">tiny helpers</text>
+
+  <!-- executor -->
+  <rect class="pkg" style="stroke:#f87171" x="390" y="80" width="120" height="38"/>
+  <text class="label" style="fill:#f87171" x="395" y="97">@web3viz/</text>
+  <text class="label" style="fill:#f87171" x="395" y="112">executor</text>
+
+  <text class="desc" x="390" y="135">Node.js + SQLite + WS</text>
+  <line class="arrow" style="stroke:#f87171" x1="420" y1="80" x2="310" y2="53"/>
+</svg>

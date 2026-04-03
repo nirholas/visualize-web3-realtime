@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 440" width="680" height="440">
+  <style>
+    @keyframes pulse { 0%,100%{opacity:.6} 50%{opacity:1} }
+    @keyframes flowDown { 0%{stroke-dashoffset:20} 100%{stroke-dashoffset:0} }
+    text { font-family: 'IBM Plex Mono', monospace; }
+    .box { fill:#181825; stroke:#a78bfa; stroke-width:1.5; rx:8; }
+    .box2 { fill:#181825; stroke:#60a5fa; stroke-width:1.2; rx:6; }
+    .label { fill:#e2e8f0; font-size:11px; }
+    .label-sm { fill:#94a3b8; font-size:9.5px; }
+    .label-fn { fill:#fbbf24; font-size:10px; }
+    .arrow { stroke:#a78bfa; stroke-width:1.5; fill:none; stroke-dasharray:6,4; animation: flowDown 0.6s linear infinite; }
+    .arrow2 { stroke:#60a5fa; stroke-width:1.2; fill:none; stroke-dasharray:5,3; animation: flowDown 0.7s linear infinite; }
+    .pulse { animation: pulse 2s ease-in-out infinite; }
+  </style>
+
+  <rect width="680" height="440" rx="12" fill="#0f0f1a"/>
+
+  <!-- Data Source -->
+  <rect class="box" x="170" y="20" width="340" height="55"/>
+  <text class="label" x="240" y="44" font-weight="bold">Your Data Source(s)</text>
+  <text class="label-sm" x="215" y="62">WebSocket · REST · gRPC · Kafka</text>
+
+  <line class="arrow" x1="340" y1="75" x2="340" y2="110"/>
+
+  <!-- DataProvider -->
+  <rect class="box" style="stroke:#34d399" x="170" y="110" width="340" height="55"/>
+  <text class="label" x="236" y="134" font-weight="bold" style="fill:#34d399">DataProvider (implements)</text>
+  <text class="label-sm" x="222" y="152">connect() · emit() · getStats()</text>
+  <circle class="pulse" fill="#34d399" cx="188" cy="131" r="4"/>
+
+  <line class="arrow" style="stroke:#34d399" x1="340" y1="165" x2="340" y2="210"/>
+
+  <!-- Side labels -->
+  <text class="label-fn" x="145" y="192">registerProvider()</text>
+  <text class="label-fn" x="380" y="192">onEvent(callback)</text>
+
+  <!-- Provider Registry -->
+  <rect class="box" style="stroke:#fbbf24" x="120" y="210" width="440" height="55"/>
+  <text class="label" x="250" y="234" font-weight="bold" style="fill:#fbbf24">Provider Registry</text>
+  <text class="label-sm" x="180" y="252">getAllProviders() · getEnabledProviders()</text>
+  <circle class="pulse" fill="#fbbf24" cx="138" cy="231" r="4"/>
+
+  <!-- Fan-out arrows -->
+  <line class="arrow2" x1="230" y1="265" x2="150" y2="330"/>
+  <line class="arrow2" x1="340" y1="265" x2="340" y2="330"/>
+  <line class="arrow2" x1="450" y1="265" x2="530" y2="330"/>
+
+  <!-- Output boxes -->
+  <rect class="box2" style="stroke:#f472b6" x="70" y="335" width="160" height="55"/>
+  <text class="label" x="108" y="358" font-weight="bold">ForceGraph</text>
+  <text class="label-sm" x="110" y="375">(3D scene)</text>
+
+  <rect class="box2" style="stroke:#fbbf24" x="260" y="335" width="160" height="55"/>
+  <text class="label" x="305" y="358" font-weight="bold">StatsBar</text>
+  <text class="label-sm" x="300" y="375">(counters)</text>
+
+  <rect class="box2" style="stroke:#34d399" x="450" y="335" width="160" height="55"/>
+  <text class="label" x="494" y="358" font-weight="bold">LiveFeed</text>
+  <text class="label-sm" x="487" y="375">(event log)</text>
+</svg>
