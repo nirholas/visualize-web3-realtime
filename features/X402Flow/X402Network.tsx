@@ -107,6 +107,7 @@ export interface CameraMoveRequest {
 export interface X402NetworkHandle {
     animateCameraTo: (request: CameraMoveRequest) => Promise<void>;
     focusHub: (index: number, durationMs?: number) => Promise<void>;
+    getCanvasElement: () => HTMLCanvasElement | null;
     getHubCount: () => number;
     getHubPosition: (index: number) => [number, number, number] | null;
     setOrbitEnabled: (enabled: boolean) => void;
@@ -482,17 +483,17 @@ const NodeLabel = memo<NodeLabelProps>(({ label, position, positionRef, index, c
                 <div
                     style={{
                         alignItems: 'center',
-                        background: 'rgba(0,0,0,0.75)',
+                        background: '#1a1a1a',
                         border: `1px solid ${color}40`,
-                        borderRadius: 6,
-                        color: NETWORK_COLORS.text,
+                        borderRadius: 20,
+                        color: '#ffffff',
                         display: 'flex',
-                        fontFamily: 'monospace',
-                        fontSize: 10,
-                        fontWeight: 600,
+                        fontFamily: "'IBM Plex Mono', monospace",
+                        fontSize: 11,
+                        fontWeight: 500,
                         gap: 4,
-                        letterSpacing: '0.05em',
-                        padding: '3px 8px',
+                        letterSpacing: '0.08em',
+                        padding: '4px 12px',
                         pointerEvents: 'none',
                         textTransform: 'uppercase',
                         whiteSpace: 'nowrap',
@@ -1208,16 +1209,18 @@ const TimelineScrubber = memo<TimelineScrubberProps>(
                     onClick={isPlaying ? onPause : onPlay}
                     style={{
                         alignItems: 'center',
-                        background: NETWORK_COLORS.surface,
+                        background: '#ffffff',
                         border: `1px solid ${NETWORK_COLORS.surfaceBorder}`,
                         borderRadius: 8,
                         color: NETWORK_COLORS.text,
                         cursor: 'pointer',
                         display: 'flex',
                         flexShrink: 0,
+                        fontFamily: "'IBM Plex Mono', monospace",
                         height: 32,
                         justifyContent: 'center',
                         width: 32,
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
                     }}
                 >
                     {isPlaying ? '⏸' : '▶'}
@@ -1259,17 +1262,19 @@ const TimelineScrubber = memo<TimelineScrubberProps>(
                     <div
                         style={{
                             alignItems: 'center',
-                            background: 'rgba(0,0,0,0.6)',
+                            background: '#ffffff',
                             border: `1px solid ${current.color}40`,
-                            borderRadius: 8,
+                            borderRadius: 20,
                             color: current.color,
                             display: 'flex',
                             flexShrink: 0,
-                            fontFamily: 'monospace',
-                            fontSize: 11,
+                            fontFamily: "'IBM Plex Mono', monospace",
+                            fontSize: 12,
+                            fontWeight: 400,
                             gap: 6,
-                            padding: '4px 10px',
+                            padding: '4px 12px',
                             whiteSpace: 'nowrap',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
                         }}
                     >
                         <span>{current.icon}</span>
@@ -1322,9 +1327,10 @@ const StatsHUD = memo<StatsHUDProps>(({ flow, timeline, currentIndex }) => {
             <div
                 style={{
                     color: NETWORK_COLORS.textFaint,
-                    fontFamily: 'monospace',
+                    fontFamily: "'IBM Plex Mono', monospace",
                     fontSize: 10,
                     textTransform: 'uppercase',
+                    letterSpacing: '0.08em',
                 }}
             >
                 {current ? `pump · ${current.stage}` : 'PumpFun Network'}
@@ -1340,7 +1346,7 @@ const StatChip = memo<{ label: string; value: string }>(({ label, value }) => (
         <span
             style={{
                 color: NETWORK_COLORS.textFaint,
-                fontFamily: 'monospace',
+                fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: 10,
                 letterSpacing: '0.05em',
                 textTransform: 'uppercase',
@@ -1351,9 +1357,9 @@ const StatChip = memo<{ label: string; value: string }>(({ label, value }) => (
         <span
             style={{
                 color: NETWORK_COLORS.text,
-                fontFamily: 'monospace',
+                fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: 14,
-                fontWeight: 600,
+                fontWeight: 500,
             }}
         >
             {value}
@@ -1513,13 +1519,13 @@ const SidebarFilters = memo<SidebarFiltersProps>(({ apiEndpoints, hiddenNodes, o
                         onClick={() => onToggle(i + 1)}
                         style={{
                             alignItems: 'center',
-                            background: isHidden ? 'rgba(180, 180, 210, 0.03)' : NETWORK_COLORS.surface,
+                            background: isHidden ? 'rgba(255,255,255,0.6)' : '#ffffff',
                             border: `1px solid ${NETWORK_COLORS.surfaceBorder}`,
                             borderRadius: 10,
                             color: isHidden ? NETWORK_COLORS.textFaint : NETWORK_COLORS.textMuted,
                             cursor: 'pointer',
                             display: 'flex',
-                            fontFamily: 'monospace',
+                            fontFamily: "'IBM Plex Mono', monospace",
                             fontSize: 10,
                             gap: 6,
                             justifyContent: 'center',
@@ -1572,8 +1578,10 @@ const AddressSearch = memo<AddressSearchProps>(({ onSearch, highlightedAddress, 
             <span
                 style={{
                     color: NETWORK_COLORS.textMuted,
-                    fontFamily: 'monospace',
+                    fontFamily: "'IBM Plex Mono', monospace",
                     fontSize: 11,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
                 }}
             >
                 Address
@@ -1583,17 +1591,16 @@ const AddressSearch = memo<AddressSearchProps>(({ onSearch, highlightedAddress, 
                 onKeyDown={(e) => e.key === 'Enter' && onSearch(value)}
                 placeholder="0x..."
                 style={{
-                    background: highlightedAddress
-                        ? `${HIGHLIGHT_COLOR}15`
-                        : 'rgba(180, 180, 210, 0.06)',
-                    border: `1px solid ${highlightedAddress ? `${HIGHLIGHT_COLOR}40` : NETWORK_COLORS.surfaceBorder}`,
-                    borderRadius: 6,
+                    background: '#ffffff',
+                    border: `1px solid ${NETWORK_COLORS.surfaceBorder}`,
+                    borderRadius: 8,
                     color: NETWORK_COLORS.text,
-                    fontFamily: 'monospace',
+                    fontFamily: "'IBM Plex Mono', monospace",
                     fontSize: 12,
                     outline: 'none',
                     padding: '6px 10px',
                     width: 160,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
                 }}
                 value={highlightedAddress ? truncateAddress(highlightedAddress) : value}
             />
@@ -1601,15 +1608,16 @@ const AddressSearch = memo<AddressSearchProps>(({ onSearch, highlightedAddress, 
                 <button
                     onClick={handleDismiss}
                     style={{
-                        background: 'rgba(180, 180, 210, 0.1)',
+                        background: '#ffffff',
                         border: `1px solid ${NETWORK_COLORS.surfaceBorder}`,
-                        borderRadius: 6,
+                        borderRadius: 8,
                         color: NETWORK_COLORS.textMuted,
                         cursor: 'pointer',
-                        fontFamily: 'monospace',
+                        fontFamily: "'IBM Plex Mono', monospace",
                         fontSize: 11,
                         fontWeight: 600,
                         padding: '6px 14px',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
                     }}
                 >
                     ✕
@@ -1620,13 +1628,14 @@ const AddressSearch = memo<AddressSearchProps>(({ onSearch, highlightedAddress, 
                 style={{
                     background: NETWORK_COLORS.accent,
                     border: 'none',
-                    borderRadius: 6,
-                    color: '#000',
+                    borderRadius: 8,
+                    color: '#fff',
                     cursor: 'pointer',
-                    fontFamily: 'monospace',
+                    fontFamily: "'IBM Plex Mono', monospace",
                     fontSize: 11,
                     fontWeight: 600,
                     padding: '6px 14px',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
                 }}
             >
                 Go
@@ -1670,20 +1679,21 @@ const ActionButtons = memo<ActionButtonsProps>(({ onShare, onStartJourney }) => 
                     onMouseLeave={() => setShareHover(false)}
                     style={{
                         alignItems: 'center',
-                        background: shareHover ? NETWORK_COLORS.surfaceBorder : NETWORK_COLORS.surface,
+                        background: shareHover ? '#f5f5f5' : '#ffffff',
                         backdropFilter: 'blur(12px)',
-                        border: `1px solid ${shareHover ? 'rgba(180,180,210,0.22)' : NETWORK_COLORS.surfaceBorder}`,
+                        border: `1px solid ${NETWORK_COLORS.surfaceBorder}`,
                         borderRadius: 8,
                         color: shareHover ? NETWORK_COLORS.text : NETWORK_COLORS.textMuted,
                         cursor: 'pointer',
                         display: 'flex',
-                        fontFamily: 'monospace',
+                        fontFamily: "'IBM Plex Mono', monospace",
                         fontSize: 11,
                         gap: 6,
                         height: 36,
                         letterSpacing: '0.04em',
                         padding: '0 14px',
-                        transition: 'all 0.18s ease',
+                        transition: 'all 150ms ease',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
                     }}
                 >
                     <span style={{ fontSize: 11, opacity: 0.7 }}>&#x25c8;</span> Share
@@ -1707,7 +1717,7 @@ const ActionButtons = memo<ActionButtonsProps>(({ onShare, onStartJourney }) => 
                         color: '#fff',
                         cursor: 'pointer',
                         display: 'flex',
-                        fontFamily: 'monospace',
+                        fontFamily: "'IBM Plex Mono', monospace",
                         fontSize: 12,
                         fontWeight: 600,
                         gap: 6,
@@ -1915,6 +1925,7 @@ const X402Network = memo(forwardRef<X402NetworkHandle, X402NetworkProps>(
         useImperativeHandle(ref, () => ({
             animateCameraTo,
             focusHub,
+            getCanvasElement: () => containerRef.current?.querySelector('canvas') ?? null,
             getHubCount: () => hubPositions.length,
             getHubPosition: (index: number) => {
                 const hub = hubPositions[index];
@@ -1954,7 +1965,7 @@ const X402Network = memo(forwardRef<X402NetworkHandle, X402NetworkProps>(
                         <span
                             style={{
                                 color: NETWORK_COLORS.textFaint,
-                                fontFamily: 'monospace',
+                                fontFamily: "'IBM Plex Mono', monospace",
                                 fontSize: 10,
                                 letterSpacing: '0.08em',
                                 textTransform: 'uppercase',
@@ -1965,7 +1976,7 @@ const X402Network = memo(forwardRef<X402NetworkHandle, X402NetworkProps>(
                         <span
                             style={{
                                 color: NETWORK_COLORS.textFaint,
-                                fontFamily: 'monospace',
+                                fontFamily: "'IBM Plex Mono', monospace",
                                 fontSize: 10,
                                 textTransform: 'uppercase',
                             }}
@@ -2025,7 +2036,7 @@ const X402Network = memo(forwardRef<X402NetworkHandle, X402NetworkProps>(
                         role="button"
                         style={{
                             alignItems: 'center',
-                            background: 'rgba(0,0,0,0.85)',
+                            background: 'rgba(255,255,255,0.92)',
                             cursor: 'pointer',
                             display: 'flex',
                             flexDirection: 'column',
@@ -2037,10 +2048,10 @@ const X402Network = memo(forwardRef<X402NetworkHandle, X402NetworkProps>(
                         }}
                         tabIndex={0}
                     >
-                        <span style={{ color: '#fff', fontFamily: 'monospace', fontSize: 14 }}>
+                        <span style={{ color: '#161616', fontFamily: "'IBM Plex Mono', monospace", fontSize: 14, fontWeight: 500 }}>
                             WebGL context lost
                         </span>
-                        <span style={{ color: 'rgba(255,255,255,0.5)', fontFamily: 'monospace', fontSize: 12 }}>
+                        <span style={{ color: '#666', fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 }}>
                             Click to reload
                         </span>
                     </div>
@@ -2050,7 +2061,7 @@ const X402Network = memo(forwardRef<X402NetworkHandle, X402NetworkProps>(
                 <div
                     style={{
                         alignItems: 'center',
-                        background: 'linear-gradient(transparent, rgba(0,0,0,0.4))',
+                        background: 'linear-gradient(transparent, rgba(255,255,255,0.6))',
                         bottom: 0,
                         display: 'flex',
                         gap: 24,

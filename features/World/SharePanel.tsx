@@ -172,6 +172,44 @@ const ColorControl = memo<ColorControlProps>(({ label, value, swatches, onChange
 ColorControl.displayName = 'ColorControl';
 
 // ============================================================================
+// FooterButton — small button for share/download actions
+// ============================================================================
+
+interface FooterButtonProps {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+}
+
+const FooterButton = memo<FooterButtonProps>(({ label, onClick, disabled = false }) => (
+  <button
+    disabled={disabled}
+    onClick={onClick}
+    style={{
+      alignItems: 'center',
+      background: disabled ? '#e8e8e8' : '#f0f0f0',
+      border: '1px solid #d0d0d0',
+      borderRadius: 6,
+      color: disabled ? '#aaa' : '#333',
+      cursor: disabled ? 'not-allowed' : 'pointer',
+      display: 'flex',
+      fontFamily: "'IBM Plex Mono', monospace",
+      fontSize: 10,
+      gap: 4,
+      letterSpacing: '0.04em',
+      padding: '6px 10px',
+      transition: 'background 0.15s ease, color 0.15s ease',
+      whiteSpace: 'nowrap',
+    }}
+    type="button"
+  >
+    {label}
+  </button>
+));
+
+FooterButton.displayName = 'FooterButton';
+
+// ============================================================================
 // SharePanel
 // ============================================================================
 
@@ -311,6 +349,48 @@ const SharePanel = memo<SharePanelProps>(({
       >
         Close
       </button>
+
+      {/* Spacer to push footer to bottom */}
+      <div style={{ flex: 1, minHeight: 16 }} />
+
+      {/* Share / Download footer */}
+      <div
+        style={{
+          borderTop: '1px solid #e0e0e0',
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 8,
+          justifyContent: 'space-between',
+          paddingTop: 16,
+        }}
+      >
+        {/* Social share */}
+        <div style={{ display: 'flex', gap: 6 }}>
+          {onShareX && (
+            <FooterButton label="Share on X" onClick={onShareX} />
+          )}
+          {onShareLinkedIn && (
+            <FooterButton label="Share on LinkedIn" onClick={onShareLinkedIn} />
+          )}
+        </div>
+        {/* Downloads */}
+        <div style={{ display: 'flex', gap: 6 }}>
+          {onDownloadWorld && (
+            <FooterButton
+              label={downloading === 'world' ? 'Exporting…' : 'Download World'}
+              disabled={downloading !== null}
+              onClick={onDownloadWorld}
+            />
+          )}
+          {onDownloadSnapshot && (
+            <FooterButton
+              label={downloading === 'snapshot' ? 'Exporting…' : 'Download Snapshot'}
+              disabled={downloading !== null}
+              onClick={onDownloadSnapshot}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 });

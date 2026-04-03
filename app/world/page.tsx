@@ -5,6 +5,7 @@ import { memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 
 import InfoPopover from '@/features/World/InfoPopover';
 import JourneyOverlay from '@/features/World/JourneyOverlay';
+import ProtocolFilterSidebar from '@/features/World/ProtocolFilterSidebar';
 import ShareOverlay from '@/features/World/ShareOverlay';
 import SharePanel, { type ShareColors } from '@/features/World/SharePanel';
 import {
@@ -16,65 +17,16 @@ import LiveFeed from '@/features/World/LiveFeed';
 import StartJourney from '@/features/World/StartJourney';
 import StatsBar from '@/features/World/StatsBar';
 import { useJourney } from '@/features/World/useJourney';
-import type { X402NetworkHandle } from '@/features/X402Flow/X402Network';
-import type { X402FlowTrace } from '@/features/X402Flow/types';
 
-// Lazy-load the 3D network to avoid SSR issues with Three.js
-const X402Network = dynamic(() => import('@/features/X402Flow/X402Network'), {
+// Lazy-load the 3D force graph to avoid SSR issues with Three.js
+const ForceGraph = dynamic(() => import('@/features/World/ForceGraph'), {
   ssr: false,
   loading: () => <div style={{ width: '100%', height: '100%', background: '#ffffff' }} />,
-}) as any;
+});
 
 // ---------------------------------------------------------------------------
-// Map provider data → X402FlowTrace for the network visualization
+// Helpers
 // ---------------------------------------------------------------------------
-
-function buildCategoryFlow(
-  stats: ReturnType<typeof useDataProvider>['stats'],
-  enabledCategories: Set<PumpFunCategory>,
-): X402FlowTrace {
-  const now = Date.now();
-
-  // Each enabled category becomes an API call / hub node
-  const enabledConfigs = CATEGORY_CONFIGS.filter((c) => enabledCategories.has(c.id));
-
-  return {
-    agentAddress: 'pump.fun',
-    agentName: 'PumpFun Network',
-    apiCalls: enabledConfigs.map((cfg, i) => ({
-      amountPaid: String(stats.counts[cfg.id]),
-      duration: 200,
-      id: `cat-${cfg.id}`,
-      paymentRequired: true,
-      responseStatus: 200,
-      url: cfg.label,
-    })),
-    duration: 0,
-    events: enabledConfigs.flatMap((cfg, i) => [
-      {
-        amount: String(stats.counts[cfg.id]),
-        apiUrl: cfg.label,
-        category: cfg.id,
-        sequenceIndex: i * 2,
-        timestamp: now - (enabledConfigs.length - i) * 2000,
-        type: 'api_call_start' as const,
-      },
-      {
-        amount: String(stats.counts[cfg.id]),
-        apiUrl: cfg.label,
-        category: cfg.id,
-        sequenceIndex: i * 2 + 1,
-        timestamp: now - (enabledConfigs.length - i) * 1000,
-        type: 'api_call_complete' as const,
-      },
-    ]),
-    flowId: `pump-categories-${now}`,
-    startedAt: now,
-    status: 'active',
-    totalPaid: String(stats.totalVolumeSol.toFixed(4)),
-    userPrompt: 'PumpFun Live Activity',
-  };
-}
 
 function formatStat(value: number, prefix = ''): string {
   if (value >= 1_000_000_000) return `${prefix}${(value / 1_000_000_000).toFixed(1)}B`;
@@ -155,6 +107,7 @@ export default function WorldPage() {
   const [userAddress, setUserAddress] = useState('');
   const [highlightedAddress, setHighlightedAddress] = useState<string | null>(null);
   const [highlightedHubIndex, setHighlightedHubIndex] = useState<number | null>(null);
+  const [activeProtocol, setActiveProtocol] = useState<PumpFunCategory | null>(null);
   const [searchToast, setSearchToast] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [shareColors, setShareColors] = useState<ShareColors>({
@@ -163,10 +116,46 @@ export default function WorldPage() {
     user: '#1a1a1a',
   });
   const infoButtonRef = useRef<HTMLButtonElement>(null);
-  const networkRef = useRef<X402NetworkHandle | null>(null);
 
-  const { stats, enabledCategories, toggleCategory, connected } =
+  const { stats, enabledCategories, connected } =
     useDataProvider({ paused });
+
+  // Protocol filter sidebar: toggle highlight (single select)
+  const handleProtocolToggle = useCallback((id: PumpFunCategory) => {
+    setActiveProtocol((prev) => {
+      const next = prev === id ? null : id;
+      // Sync to URL
+      const url = new URL(window.location.href);
+      if (next) {
+        url.searchParams.set('protocols', next);
+      } else {
+        url.searchParams.delete('protocols');
+      }
+      window.history.replaceState({}, '', url.toString());
+      return next;
+    });
+  }, []);
+
+  // Compute the hub index for the active protocol filter
+  const protocolFilterHubIndex = useMemo<number | null>(() => {
+    if (!activeProtocol) return null;
+    const enabledConfigs = CATEGORY_CONFIGS.filter((c) => enabledCategories.has(c.id));
+    const idx = enabledConfigs.findIndex((c) => c.id === activeProtocol);
+    return idx >= 0 ? idx : null;
+  }, [activeProtocol, enabledCategories]);
+
+  // Read ?protocols= param on mount to restore filter
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const proto = params.get('protocols');
+    if (proto && CATEGORY_CONFIGS.some((c) => c.id === proto)) {
+      setActiveProtocol(proto as PumpFunCategory);
+    }
+  }, []);
+
+  // Merge address search highlight with protocol filter highlight
+  // Address search takes precedence when active
+  const effectiveHighlightedHubIndex = highlightedHubIndex ?? protocolFilterHubIndex;
 
   // Search for an address in recent events and highlight the corresponding hub
   const handleAddressSearch = useCallback((address: string) => {
@@ -192,16 +181,11 @@ export default function WorldPage() {
     const categoryIdx = enabledConfigs.findIndex((c) => c.id === match.category);
     const hubIndex = categoryIdx >= 0 ? categoryIdx + 1 : 0;
     setHighlightedHubIndex(hubIndex);
-
-    // Animate camera to the hub
-    networkRef.current?.focusHub(hubIndex, 800);
   }, [stats.recentEvents, enabledCategories]);
 
   const handleDismissHighlight = useCallback(() => {
     setHighlightedAddress(null);
     setHighlightedHubIndex(null);
-    // Resume normal orbit by resetting the camera
-    networkRef.current?.setOrbitEnabled(true);
   }, []);
 
   // Clear toast after 3 seconds
@@ -222,60 +206,23 @@ export default function WorldPage() {
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const shareTheme = useMemo(
-    () => ({
-      bg: shareColors.background,
-      nodeColor: shareColors.protocol,
-      userColor: shareColors.user,
-    }),
-    [shareColors],
-  );
-
   const handleOpenShare = useCallback(() => setShareOpen(true), []);
   const handleCloseShare = useCallback(() => setShareOpen(false), []);
 
   const { isComplete, isRunning, overlay, skipJourney, startJourney } = useJourney({
     enabledCategories,
-    networkRef,
+    networkRef: { current: null },
     stats,
     userAddress,
   });
 
-  const flow = useMemo<X402FlowTrace | null>(
-    () =>
-      enabledCategories.size > 0
-        ? buildCategoryFlow(stats, enabledCategories)
-        : null,
-    // Rebuild periodically, not on every event
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [enabledCategories, Math.floor(stats.totalTransactions / 20)],
-  );
-
-  const apiEndpoints = useMemo(
-    () =>
-      CATEGORY_CONFIGS
-        .filter((c) => enabledCategories.has(c.id))
-        .map((c) => c.label),
-    [enabledCategories],
-  );
-
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: '#ffffff' }}>
-      {/* 3D Network — full screen */}
-      <X402Network
-        apiEndpoints={apiEndpoints}
-        categoryColors={CATEGORY_CONFIGS.filter((c) => enabledCategories.has(c.id)).map((c) => c.color)}
-        flow={flow}
+      {/* 3D Force Graph — full screen */}
+      <ForceGraph
+        topTokens={stats.topTokens}
+        traderEdges={stats.traderEdges}
         height="100%"
-        highlightedAddress={highlightedAddress}
-        highlightedHubIndex={highlightedHubIndex}
-        onAddressSearch={handleAddressSearch}
-        onDismissHighlight={handleDismissHighlight}
-        onShare={handleOpenShare}
-        ref={networkRef}
-        stage={stats.totalTransactions > 0 ? 'calling' : 'idle'}
-        theme={shareTheme}
-        title="PumpFun · Live Network"
       />
 
       <JourneyOverlay
@@ -383,58 +330,12 @@ export default function WorldPage() {
       </div>
 
       {/* Category filter sidebar — left */}
-      <div
-        style={{
-          position: 'absolute',
-          left: 12,
-          top: '50%',
-          transform: 'translateY(-50%)',
-          zIndex: 20,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 4,
-        }}
-      >
-        {CATEGORY_CONFIGS.map((cfg) => {
-          const isActive = enabledCategories.has(cfg.id);
-          return (
-            <button
-              key={cfg.id}
-              onClick={() => toggleCategory(cfg.id)}
-              style={{
-                display: 'flex',
-                gap: 6,
-                alignItems: 'center',
-                padding: '5px 10px',
-                fontFamily: 'monospace',
-                fontSize: 10,
-                color: isActive ? cfg.color : '#ccc',
-                background: isActive ? '#ffffff' : 'rgba(255,255,255,0.6)',
-                border: `1px solid ${isActive ? cfg.color + '40' : '#e8e8e8'}`,
-                borderRadius: 10,
-                cursor: 'pointer',
-                transition: 'all 150ms ease',
-                whiteSpace: 'nowrap',
-                letterSpacing: '0.04em',
-                boxShadow: isActive ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
-              }}
-              title={`Toggle ${cfg.label}`}
-            >
-              <span style={{ fontSize: 10, opacity: isActive ? 1 : 0.3 }}>{cfg.icon}</span>
-              {cfg.label}
-              <span
-                style={{
-                  marginLeft: 'auto',
-                  fontSize: 9,
-                  color: isActive ? '#999' : '#ddd',
-                }}
-              >
-                {formatStat(stats.counts[cfg.id])}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      <ProtocolFilterSidebar
+        categories={CATEGORY_CONFIGS}
+        activeProtocol={activeProtocol}
+        onToggle={handleProtocolToggle}
+        counts={stats.counts}
+      />
 
       {/* Pause toggle — top right of bottom bar */}
       <button

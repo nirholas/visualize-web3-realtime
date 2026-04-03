@@ -1,6 +1,6 @@
 'use client';
 
-import { memo } from 'react';
+import { forwardRef, memo } from 'react';
 
 // ============================================================================
 // ShareOverlay — metadata bars rendered on top of the canvas when the share
@@ -39,14 +39,26 @@ const barStyle: React.CSSProperties = {
   zIndex: 30,
 };
 
-const ShareOverlay = memo<ShareOverlayProps>(
-  ({
-    address = '0x0000...0000',
-    activeSince = 'Jan 2025',
-    transactionCount = 0,
-    volume = 0,
-  }) => (
-    <>
+const ShareOverlay = memo(forwardRef<HTMLDivElement, ShareOverlayProps>(
+  (
+    {
+      address = '0x0000...0000',
+      activeSince = 'Jan 2025',
+      transactionCount = 0,
+      volume = 0,
+    },
+    ref,
+  ) => (
+    <div
+      ref={ref}
+      data-share-overlay
+      style={{
+        inset: 0,
+        pointerEvents: 'none',
+        position: 'absolute',
+        zIndex: 30,
+      }}
+    >
       {/* Top bar */}
       <div style={{ ...barStyle, top: 0 }}>
         <span style={{ color: '#fff', fontSize: 11, letterSpacing: '0.06em' }}>
@@ -66,9 +78,9 @@ const ShareOverlay = memo<ShareOverlayProps>(
           {formatVolume(volume)} Volume
         </span>
       </div>
-    </>
+    </div>
   ),
-);
+));
 
 ShareOverlay.displayName = 'ShareOverlay';
 
