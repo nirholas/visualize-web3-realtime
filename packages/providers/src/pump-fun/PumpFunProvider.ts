@@ -26,8 +26,7 @@ export interface PumpFunProviderOptions {
 }
 
 const PUMPFUN_WS_URL = 'wss://pumpportal.fun/api/data';
-const DEFAULT_SOLANA_RPC_WS =
-  'wss://atlas-mainnet.helius-rpc.com?api-key=1be79a41-8a57-4498-a35f-3b77c53db786';
+const DEFAULT_SOLANA_RPC_WS = process.env.NEXT_PUBLIC_SOLANA_WS_URL || '';
 
 const PUMP_PROGRAM_ID = '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P';
 const PUMP_AMM_PROGRAM_ID = 'pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA';

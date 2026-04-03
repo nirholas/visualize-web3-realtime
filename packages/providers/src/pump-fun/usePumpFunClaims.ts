@@ -17,7 +17,7 @@ export interface PumpFunClaimsStats {
 // Constants
 // ============================================================================
 
-const MAINNET_WS = 'wss://atlas-mainnet.helius-rpc.com?api-key=1ff59bc0-129d-4e60-b065-bf0434be42a4';
+const MAINNET_WS = process.env.NEXT_PUBLIC_SOLANA_WS_URL || '';
 const CLAIMS_PROGRAM = '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P';
 const MAX_CLAIMS = 200;
 
