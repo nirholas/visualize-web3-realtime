@@ -417,6 +417,12 @@ export class PumpFunProvider implements DataProvider {
   private connectClaims(): void {
     if (this.claimsWs?.readyState === WebSocket.OPEN) return;
 
+    if (!this.rpcWsUrl) {
+      console.warn('[PumpFunProvider] RPC WebSocket URL not configured, skipping claims connection');
+      this.claimsConnected = false;
+      return;
+    }
+
     const ws = new WebSocket(this.rpcWsUrl);
     this.claimsWs = ws;
 
