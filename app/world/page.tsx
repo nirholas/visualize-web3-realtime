@@ -10,10 +10,8 @@ import LoadingScreen from '@/features/World/LoadingScreen';
 import ProtocolFilterSidebar from '@/features/World/ProtocolFilterSidebar';
 import ShareOverlay from '@/features/World/ShareOverlay';
 import SharePanel, { type ShareColors } from '@/features/World/SharePanel';
-import {
-  useDataProvider,
-  CATEGORY_CONFIGS,
-} from '@/hooks/useDataProvider';
+import { useProviders } from '@web3viz/providers';
+import { providers } from './providers';
 import LiveFeed from '@/features/World/LiveFeed';
 import TimelineBar from '@/features/World/TimelineBar';
 import StartJourney from '@/features/World/StartJourney';
@@ -40,6 +38,11 @@ function formatStat(value: number, prefix = ''): string {
   if (value >= 1_000_000) return `${prefix}${(value / 1_000_000).toFixed(1)}M`;
   if (value >= 1000) return `${prefix}${(value / 1000).toFixed(1)}K`;
   return `${prefix}${value.toFixed(value < 10 ? 2 : 0)}`;
+}
+
+// Compute total volume across all chains
+function getTotalVolume(volumeMap: Record<string, number>): number {
+  return Object.values(volumeMap).reduce((sum, v) => sum + v, 0);
 }
 
 // ---------------------------------------------------------------------------
@@ -132,8 +135,10 @@ export default function WorldPage() {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState<'world' | 'snapshot' | null>(null);
 
-  const { stats, enabledCategories, connected, showAgents, toggleAgents, enabledSources } =
-    useDataProvider({ paused: !isPlaying });
+  const {
+    stats, filteredEvents, allEvents, enabledCategories, toggleCategory,
+    enabledProviders, toggleProvider, categories, sources, connections
+  } = useProviders({ providers, paused: !isPlaying });
 
   // Mark canvas ready once first data arrives
   useEffect(() => {
@@ -148,7 +153,7 @@ export default function WorldPage() {
 
   useEffect(() => {
     const newTs: number[] = [];
-    for (const evt of stats.recentEvents) {
+    for (const evt of allEvents) {
       if (!seenEventIdsRef.current.has(evt.id)) {
         seenEventIdsRef.current.add(evt.id);
         newTs.push(evt.timestamp);
@@ -160,7 +165,7 @@ export default function WorldPage() {
         return next.length > 5000 ? next.slice(-5000) : next;
       });
     }
-  }, [stats.recentEvents]);
+  }, [allEvents]);
 
   // -- Time range for auto-advance --
   const timeRange = useMemo(() => {
@@ -225,10 +230,10 @@ export default function WorldPage() {
   }, [stats.traderEdges, displayTopTokens, timeFilter]);
 
   // -- Time-filtered events for LiveFeed --
-  const displayRawEvents = useMemo(() => {
-    if (timeFilter === null) return stats.rawPumpFunEvents;
-    return stats.rawPumpFunEvents.filter((e) => e.data.timestamp <= timeFilter);
-  }, [stats.rawPumpFunEvents, timeFilter]);
+  const displayFilteredEvents = useMemo(() => {
+    if (timeFilter === null) return filteredEvents;
+    return filteredEvents.filter((e) => e.timestamp <= timeFilter);
+  }, [filteredEvents, timeFilter]);
 
   // Protocol filter sidebar: toggle highlight by mint (single select)
   const handleProtocolToggle = useCallback((mint: string) => {
@@ -246,14 +251,21 @@ export default function WorldPage() {
     });
   }, []);
 
-  // Read ?protocols= param on mount to restore filter
+  // Read ?protocols= and ?agents= params on mount to restore filter and agent toggle
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const proto = params.get('protocols');
     if (proto) {
       setActiveHubMint(proto);
     }
-  }, []);
+    const agentsParam = params.get('agents');
+    if (agentsParam === 'true') {
+      // toggleProvider only when agents should be enabled
+      if (!enabledProviders.has('agents')) {
+        toggleProvider('agents');
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Search for an address in recent events and highlight the corresponding hub
   const handleAddressSearch = useCallback((address: string) => {
@@ -270,7 +282,7 @@ export default function WorldPage() {
     }
 
     // Fallback: search in recent events
-    const match = stats.recentEvents.find(
+    const match = allEvents.find(
       (evt) => evt.address.toLowerCase() === address.toLowerCase(),
     );
 
@@ -287,12 +299,12 @@ export default function WorldPage() {
     setHighlightedAddress(address);
 
     // Map category → hub index (best-effort fallback)
-    const enabledConfigs = CATEGORY_CONFIGS.filter((c) => (enabledCategories as Set<string>).has(c.id));
+    const enabledConfigs = categories.filter((c) => enabledCategories.has(c.id));
     const categoryIdx = enabledConfigs.findIndex((c) => c.id === match.category);
     const hubIndex = categoryIdx >= 0 ? categoryIdx : 0;
     setHighlightedHubIndex(hubIndex);
     graphRef.current?.focusHub(hubIndex, 500);
-  }, [stats.recentEvents, enabledCategories]);
+  }, [allEvents, enabledCategories, categories]);
 
   const handleDismissHighlight = useCallback(() => {
     setHighlightedAddress(null);
@@ -351,18 +363,19 @@ export default function WorldPage() {
   }, []);
 
   // --- Share on X ---
+  const totalVolume = getTotalVolume(stats.totalVolume);
   const handleShareX = useCallback(() => {
     const url = buildShareUrl(shareColors, userAddress || undefined);
     const text = buildShareText(
       {
-        tokens: stats.counts.launches + stats.counts.agentLaunches,
-        volume: Math.round(stats.totalVolumeSol),
+        tokens: (stats.counts.launches ?? 0) + (stats.counts.agentLaunches ?? 0),
+        volume: Math.round(totalVolume),
         transactions: stats.totalTransactions,
       },
       url,
     );
     shareOnX(text, url);
-  }, [shareColors, userAddress, stats]);
+  }, [shareColors, userAddress, stats, totalVolume]);
 
   // --- Share on LinkedIn ---
   const handleShareLinkedIn = useCallback(() => {
@@ -384,6 +397,9 @@ export default function WorldPage() {
     stats,
     userAddress,
   });
+
+  // Get first two connection entries for display
+  const connectionEntries = useMemo(() => Object.entries(connections), [connections]);
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: '#ffffff' }}>
@@ -469,7 +485,7 @@ export default function WorldPage() {
             textTransform: 'uppercase',
           }}
         >
-          World of PumpFun
+          Web3 Realtime
         </span>
         <Link
           href="/agents"
@@ -531,26 +547,31 @@ export default function WorldPage() {
           display: 'flex',
           gap: 4,
           alignItems: 'center',
+          flexWrap: 'wrap',
         }}
       >
-        <ConnectionDot connected={connected.pumpFun} label="PF" />
-        <ConnectionDot connected={connected.claims} label="SOL" />
+        {Object.entries(connections).map(([providerId, conns]) =>
+          conns.map(conn => (
+            <ConnectionDot key={`${providerId}-${conn.name}`} connected={conn.connected} label={providerId.toUpperCase().slice(0, 2)} />
+          ))
+        )}
       </div>
 
-      {/* Protocol filter sidebar — left */}
+      {/* Category filter sidebar — left */}
       <ProtocolFilterSidebar
-        tokens={displayTopTokens}
-        activeMint={activeHubMint}
-        onToggle={handleProtocolToggle}
-        showAgents={showAgents}
-        onToggleAgents={toggleAgents}
+        categories={categories}
+        sources={sources}
+        enabledCategories={enabledCategories}
+        onToggleCategory={toggleCategory}
+        enabledProviders={enabledProviders}
+        onToggleProvider={toggleProvider}
       />
 
       {/* Bottom stats bar */}
       <Suspense fallback={null}>
         <StatsBar
-          totalTokens={stats.counts.launches + stats.counts.agentLaunches}
-          totalVolumeSol={Math.round(stats.totalVolumeSol)}
+          totalTokens={(stats.counts.launches ?? 0) + (stats.counts.agentLaunches ?? 0)}
+          totalVolumeSol={Math.round(totalVolume)}
           totalTrades={stats.totalTransactions}
           highlightedAddress={highlightedAddress}
           onAddressSearch={handleAddressSearch}
@@ -560,7 +581,7 @@ export default function WorldPage() {
       </Suspense>
 
       {/* Live trade feed — bottom right */}
-      <LiveFeed events={displayRawEvents} />
+      <LiveFeed events={displayFilteredEvents} categories={categories} />
 
       <StartJourney
         disabled={isRunning}
@@ -607,7 +628,7 @@ export default function WorldPage() {
             address={userAddress || 'pump.fun'}
             activeSince="Jan 2025"
             transactionCount={stats.totalTransactions}
-            volume={Math.round(stats.totalVolumeSol)}
+            volume={Math.round(totalVolume)}
           />
           <SharePanel
             colors={shareColors}

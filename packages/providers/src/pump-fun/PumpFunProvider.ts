@@ -198,13 +198,49 @@ export class PumpFunProvider implements DataProvider {
     };
   }
 
-  private connectPumpPortal(): void {
-    if (this.pumpPortalWs?.readyState === WebSocket.OPEN) return;
+  // =========================================================================
+  // Event emission
+  // =========================================================================
 
-    const ws = new WebSocket(PUMP_PORTAL_WS);
-    this.pumpPortalWs = ws;
+  private emitEvent(event: DataProviderEvent): void {
+    // Add to ring buffer
+    this.recentEvents.unshift(event);
+    if (this.recentEvents.length > this.maxEvents) {
+      this.recentEvents.pop();
+    }
+
+    // Emit to listeners
+    for (const listener of this.eventListeners) {
+      listener(event);
+    }
+  }
+
+  private emitRaw(event: RawEvent): void {
+    // Add to ring buffer
+    this.rawEvents.unshift(event);
+    if (this.rawEvents.length > this.maxEvents) {
+      this.rawEvents.pop();
+    }
+
+    // Emit to listeners
+    for (const listener of this.rawListeners) {
+      listener(event);
+    }
+  }
+
+  // =========================================================================
+  // PumpPortal WebSocket (trades + launches)
+  // =========================================================================
+
+  private connectTrades(): void {
+    if (this.tradesWs?.readyState === WebSocket.OPEN) return;
+
+    const ws = new WebSocket(PUMPFUN_WS_URL);
+    this.tradesWs = ws;
 
     ws.onopen = () => {
+      this.tradesConnected = true;
+      // Subscribe to new tokens and trades
       ws.send(JSON.stringify({ method: 'subscribeNewToken' }));
       ws.send(JSON.stringify({ method: 'subscribeTokenTrade', keys: ['allTrades'] }));
     };
@@ -216,128 +252,12 @@ export class PumpFunProvider implements DataProvider {
         const raw = JSON.parse(event.data);
         if (!raw || typeof raw !== 'object') return;
 
-        // Token launch event
+        // Token create event
         if (raw.txType === undefined && raw.mint && raw.name) {
-          const tokenName = raw.name || 'Unknown';
-          const tokenSymbol = raw.symbol || '???';
-          const token: Token = {
-            mint: raw.mint,
-            name: tokenName,
-            symbol: tokenSymbol,
-            uri: raw.uri || '',
-            traderPublicKey: raw.traderPublicKey || '',
-            initialBuy: raw.initialBuy || 0,
-            marketCapSol: raw.marketCapSol || 0,
-            signature: raw.signature || '',
-            timestamp: Date.now(),
-            isAgent: isAgentLaunch(tokenName, tokenSymbol),
-          };
-
-          this.tokenCache.set(token.mint!, {
-            name: token.name,
-            symbol: token.symbol,
-          });
-          this.totalTokens++;
-
-          const isAgent = token.isAgent;
-          this.emitEvent({
-            id: `pumpfun-${++globalIdCounter}`,
-            category: isAgent ? 'agentLaunches' : 'launches',
-            source: 'pumpfun',
-            timestamp: Date.now(),
-            label: token.symbol,
-            address: token.traderPublicKey || '',
-            mint: token.mint,
-            meta: { token },
-          });
-
-          this.emitRaw({
-            type: 'tokenCreate',
-            data: token,
-          });
-        }
-        // Trade event
-        else if (raw.txType === 'buy' || raw.txType === 'sell') {
-          const cached = this.tokenCache.get(raw.mint);
-          const trade: Trade = {
-            mint: raw.mint,
-            signature: raw.signature || '',
-            traderPublicKey: raw.traderPublicKey || '',
-            txType: raw.txType,
-            tokenAmount: raw.tokenAmount || 0,
-            solAmount: raw.solAmount || 0,
-            newTokenBalance: raw.newTokenBalance || 0,
-            bondingCurveKey: raw.bondingCurveKey || '',
-            vTokensInBondingCurve: raw.vTokensInBondingCurve || 0,
-            vSolInBondingCurve: raw.vSolInBondingCurve || 0,
-            marketCapSol: raw.marketCapSol || 0,
-            timestamp: Date.now(),
-            name: cached?.name,
-            symbol: cached?.symbol,
-          };
-
-          const solAmount = (trade.solAmount ?? 0) / 1e9;
-          const tradeMint = trade.mint!;
-
-          // Update top tokens accumulator
-          const existing = this.tokenAcc.get(tradeMint);
-          if (existing) {
-            existing.trades++;
-            existing.volumeSol += solAmount;
-            if (cached) {
-              existing.name = cached.name;
-              existing.symbol = cached.symbol;
-            }
-          } else {
-            this.tokenAcc.set(tradeMint, {
-              mint: tradeMint,
-              name: cached?.name || tradeMint.slice(0, 8),
-              symbol: cached?.symbol || '???',
-              trades: 1,
-              volumeSol: solAmount,
-            });
-          }
-
-          // Update trader edges
-          const topTokens = Array.from(this.tokenAcc.values())
-            .sort((a, b) => b.volumeSol - a.volumeSol)
-            .slice(0, MAX_TOP_TOKENS);
-          const topMints = new Set(topTokens.map((t) => t.mint));
-
-          const traderPubkey = trade.traderPublicKey!;
-          const traderKey = `${traderPubkey}:${tradeMint}`;
-          const existingEdge = this.traderAcc.get(traderKey);
-          if (existingEdge) {
-            existingEdge.trades++;
-            existingEdge.volumeSol += solAmount;
-          } else {
-            this.traderAcc.set(traderKey, {
-              trader: traderPubkey,
-              mint: tradeMint,
-              trades: 1,
-              volumeSol: solAmount,
-            });
-          }
-
-          this.totalTrades++;
-          this.totalVolumeSol += solAmount;
-
-          this.emitEvent({
-            id: `pumpfun-${++globalIdCounter}`,
-            category: 'trades',
-            source: 'pumpfun',
-            timestamp: Date.now(),
-            label: trade.symbol || 'Trade',
-            amount: solAmount,
-            address: trade.traderPublicKey || '',
-            mint: trade.mint,
-            meta: { txType: trade.txType },
-          });
-
-          this.emitRaw({
-            type: 'trade',
-            data: trade,
-          });
+          this.handleTokenCreate(raw);
+        } else if (raw.txType === 'buy' || raw.txType === 'sell') {
+          // Trade event
+          this.handleTrade(raw);
         }
       } catch {
         // Ignore malformed messages
@@ -345,8 +265,8 @@ export class PumpFunProvider implements DataProvider {
     };
 
     ws.onclose = () => {
-      const timeoutId = setTimeout(() => this.connectPumpPortal(), 3000);
-      this.reconnectTimeoutIds.push(timeoutId);
+      this.tradesConnected = false;
+      this.tradesReconnectTimer = setTimeout(() => this.connectTrades(), 3000);
     };
 
     ws.onerror = () => {
@@ -354,62 +274,335 @@ export class PumpFunProvider implements DataProvider {
     };
   }
 
-  private connectHelius(): void {
-    if (this.heliusWs?.readyState === WebSocket.OPEN) return;
+  private disconnectTrades(): void {
+    if (this.tradesReconnectTimer) {
+      clearTimeout(this.tradesReconnectTimer);
+      this.tradesReconnectTimer = null;
+    }
+    if (this.tradesWs) {
+      this.tradesWs.close();
+      this.tradesWs = null;
+    }
+    this.tradesConnected = false;
+  }
 
-    const ws = new WebSocket(HELIUS_WS);
-    this.heliusWs = ws;
+  private handleTokenCreate(raw: any): void {
+    const tokenName = raw.name || 'Unknown';
+    const tokenSymbol = raw.symbol || '???';
+    const isAgent = isAgentLaunch(tokenName, tokenSymbol);
+
+    const mint = raw.mint as string;
+    this.tokenCache.set(mint, { name: tokenName, symbol: tokenSymbol });
+
+    const category = isAgent ? 'agentLaunches' : 'launches';
+    this.counts[category]++;
+
+    const event: DataProviderEvent = {
+      id: raw.signature || mint,
+      category,
+      source: 'pumpfun',
+      timestamp: Date.now(),
+      label: tokenSymbol,
+      amount: raw.initialBuy ? raw.initialBuy / 1e9 : undefined,
+      address: raw.traderPublicKey || '',
+      mint,
+    };
+
+    this.emitEvent(event);
+
+    const rawEvent: RawEvent = {
+      type: 'tokenCreate',
+      data: {
+        mint,
+        name: tokenName,
+        symbol: tokenSymbol,
+        uri: raw.uri || '',
+        traderPublicKey: raw.traderPublicKey || '',
+        initialBuy: raw.initialBuy || 0,
+        marketCapSol: raw.marketCapSol || 0,
+        signature: raw.signature || '',
+        timestamp: Date.now(),
+        isAgent,
+      },
+    };
+
+    this.emitRaw(rawEvent);
+  }
+
+  private handleTrade(raw: any): void {
+    const mint = raw.mint as string;
+    const cached = this.tokenCache.get(mint);
+    const solAmount = raw.solAmount ? raw.solAmount / 1e9 : 0;
+
+    // Update accumulator
+    const existing = this.tokenAcc.get(mint);
+    if (existing) {
+      existing.trades++;
+      existing.volumeSol += solAmount;
+      if (cached) {
+        existing.name = cached.name;
+        existing.symbol = cached.symbol;
+      }
+    } else {
+      this.tokenAcc.set(mint, {
+        mint,
+        name: cached?.name || mint.slice(0, 8),
+        symbol: cached?.symbol || '???',
+        trades: 1,
+        volumeSol: solAmount,
+      });
+    }
+
+    // Update trader edges
+    const traderKey = `${raw.traderPublicKey}:${mint}`;
+    const existingEdge = this.traderAcc.get(traderKey);
+    if (existingEdge) {
+      existingEdge.trades++;
+      existingEdge.volumeSol += solAmount;
+    } else {
+      this.traderAcc.set(traderKey, {
+        trader: raw.traderPublicKey || '',
+        mint,
+        trades: 1,
+        volumeSol: solAmount,
+      });
+    }
+
+    this.counts.trades++;
+    this.totalVolumeSol += solAmount;
+
+    const event: DataProviderEvent = {
+      id: raw.signature || `${mint}-${Date.now()}`,
+      category: 'trades',
+      source: 'pumpfun',
+      timestamp: Date.now(),
+      label: cached?.symbol || '???',
+      amount: solAmount,
+      address: raw.traderPublicKey || '',
+      mint,
+      meta: { txType: raw.txType },
+    };
+
+    this.emitEvent(event);
+
+    const rawEvent: RawEvent = {
+      type: 'trade',
+      data: {
+        mint,
+        signature: raw.signature || '',
+        traderPublicKey: raw.traderPublicKey || '',
+        txType: raw.txType,
+        tokenAmount: raw.tokenAmount || 0,
+        solAmount: raw.solAmount || 0,
+        newTokenBalance: raw.newTokenBalance || 0,
+        bondingCurveKey: raw.bondingCurveKey || '',
+        vTokensInBondingCurve: raw.vTokensInBondingCurve || 0,
+        vSolInBondingCurve: raw.vSolInBondingCurve || 0,
+        marketCapSol: raw.marketCapSol || 0,
+        timestamp: Date.now(),
+        name: cached?.name,
+        symbol: cached?.symbol,
+      },
+    };
+
+    this.emitRaw(rawEvent);
+  }
+
+  // =========================================================================
+  // Solana RPC WebSocket (claims)
+  // =========================================================================
+
+  private connectClaims(): void {
+    if (this.claimsWs?.readyState === WebSocket.OPEN) return;
+
+    const ws = new WebSocket(this.rpcWsUrl);
+    this.claimsWs = ws;
 
     ws.onopen = () => {
-      ws.send(
-        JSON.stringify({
-          jsonrpc: '2.0',
-          id: 1,
-          method: 'logsSubscribe',
-          params: [{ mentions: [CLAIMS_PROGRAM] }, { commitment: 'confirmed' }],
-        })
-      );
+      this.claimsConnected = true;
+      // Subscribe to logs for each PumpFun program
+      const programs = [PUMP_PROGRAM_ID, PUMP_AMM_PROGRAM_ID, PUMP_FEE_PROGRAM_ID];
+      for (const programId of programs) {
+        const id = this.solanaNextId++;
+        ws.send(
+          JSON.stringify({
+            jsonrpc: '2.0',
+            id,
+            method: 'logsSubscribe',
+            params: [{ mentions: [programId] }, { commitment: 'confirmed' }],
+          }),
+        );
+      }
     };
 
     ws.onmessage = (event) => {
       if (this._paused || !this._enabled) return;
 
       try {
-        const raw = JSON.parse(event.data);
-        if (raw.method !== 'logsNotification') return;
+        const msg = JSON.parse(event.data);
 
-        const claim = parseClaimInstruction(raw);
-        if (!claim) return;
+        // Handle subscription confirmations
+        if (msg.result !== undefined && typeof msg.result === 'number') {
+          this.solanaSubIds.push(msg.result);
+          return;
+        }
 
-        this.totalClaims++;
-        this.totalVolumeSol += claim.solAmount ?? 0;
+        // Handle log notifications
+        if (msg.method === 'logsNotification' && msg.params?.result?.value) {
+          const value = msg.params.result.value;
+          const logs: string[] = value.logs || [];
+          const signature: string = value.signature || '';
+          const slot: number = msg.params.result.context?.slot || 0;
 
-        this.emitEvent({
-          id: `pumpfun-${++globalIdCounter}`,
-          category: 'claimsWallet',
-          source: 'pumpfun',
-          timestamp: Date.now(),
-          label: 'Wallet Claim',
-          address: claim.wallet || '',
-          meta: { solAmount: claim.solAmount },
-        });
+          // Skip failed transactions
+          if (value.err !== null) return;
 
-        this.emitRaw({
-          type: 'claim',
-          data: claim,
-        });
+          this.parseAndHandleClaim(logs, signature, slot);
+        }
       } catch {
         // Ignore malformed messages
       }
     };
 
     ws.onclose = () => {
-      const timeoutId = setTimeout(() => this.connectHelius(), 3000);
-      this.reconnectTimeoutIds.push(timeoutId);
+      this.claimsConnected = false;
+      this.solanaSubIds = [];
+      this.claimsReconnectTimer = setTimeout(() => this.connectClaims(), 5000);
     };
 
     ws.onerror = () => {
       ws.close();
     };
+  }
+
+  private disconnectClaims(): void {
+    if (this.claimsReconnectTimer) {
+      clearTimeout(this.claimsReconnectTimer);
+      this.claimsReconnectTimer = null;
+    }
+
+    const ws = this.claimsWs;
+    if (ws?.readyState === WebSocket.OPEN) {
+      for (const subId of this.solanaSubIds) {
+        ws.send(
+          JSON.stringify({
+            jsonrpc: '2.0',
+            id: this.solanaNextId++,
+            method: 'logsUnsubscribe',
+            params: [subId],
+          }),
+        );
+      }
+    }
+
+    if (this.claimsWs) {
+      this.claimsWs.close();
+      this.claimsWs = null;
+    }
+
+    this.claimsConnected = false;
+    this.solanaSubIds = [];
+  }
+
+  private parseAndHandleClaim(logs: string[], signature: string, slot: number): void {
+    let claimType: 'wallet' | 'github' | null = null;
+    let programId = '';
+
+    for (const log of logs) {
+      // Program data lines contain base64-encoded event data
+      if (log.startsWith('Program data: ')) {
+        try {
+          const b64 = log.slice('Program data: '.length);
+          const bytes = atob(b64);
+          // Extract first 8 bytes as hex discriminator
+          let disc = '';
+          for (let i = 0; i < Math.min(8, bytes.length); i++) {
+            disc += bytes.charCodeAt(i).toString(16).padStart(2, '0');
+          }
+
+          if (WALLET_CLAIM_DISCRIMINATORS.has(disc)) {
+            claimType = 'wallet';
+            break;
+          }
+          if (disc === GITHUB_CLAIM_DISCRIMINATOR) {
+            claimType = 'github';
+            break;
+          }
+        } catch {
+          // Ignore invalid base64
+        }
+      }
+
+      // Detect which program emitted the log
+      if (log.includes(PUMP_FEE_PROGRAM_ID)) {
+        programId = PUMP_FEE_PROGRAM_ID;
+      } else if (log.includes(PUMP_AMM_PROGRAM_ID)) {
+        programId = PUMP_AMM_PROGRAM_ID;
+      } else if (log.includes(PUMP_PROGRAM_ID)) {
+        programId = PUMP_PROGRAM_ID;
+      }
+    }
+
+    if (!claimType) return;
+
+    // Use signature slice as claimer identifier
+    const claimer = signature.slice(0, 44);
+
+    // First-claim detection
+    const isFirstClaim = !this.seenWallets.has(claimer);
+    if (isFirstClaim) {
+      this.seenWallets.add(claimer);
+    }
+
+    // Determine category
+    const isPrimary = claimType === 'github' ? 'claimsGithub' : 'claimsWallet';
+    const primaryLabel = claimType === 'github' ? 'GitHub Claim' : 'Wallet Claim';
+
+    // Emit primary claim event
+    const event: DataProviderEvent = {
+      id: signature,
+      category: isPrimary,
+      source: 'pumpfun',
+      timestamp: Date.now(),
+      label: primaryLabel,
+      address: claimer,
+      meta: { programId, isFirstClaim },
+    };
+
+    this.counts[isPrimary]++;
+    this.emitEvent(event);
+
+    const rawEvent: RawEvent = {
+      type: 'claim',
+      data: {
+        signature,
+        slot,
+        timestamp: Date.now(),
+        claimType,
+        programId: programId || (claimType === 'github' ? PUMP_FEE_PROGRAM_ID : PUMP_PROGRAM_ID),
+        claimer,
+        isFirstClaim,
+        logs,
+      },
+    };
+
+    this.emitRaw(rawEvent);
+
+    // Emit first-claim event if applicable
+    if (isFirstClaim) {
+      this.counts.claimsFirst++;
+
+      const firstEvent: DataProviderEvent = {
+        id: `${signature}-first`,
+        category: 'claimsFirst',
+        source: 'pumpfun',
+        timestamp: Date.now(),
+        label: `First ${claimType === 'github' ? 'GitHub' : 'Wallet'} Claim`,
+        address: claimer,
+        meta: { programId },
+      };
+
+      this.emitEvent(firstEvent);
+    }
   }
 }

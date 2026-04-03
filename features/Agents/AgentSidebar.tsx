@@ -21,10 +21,8 @@ export interface AgentSidebarProps {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function getAgentStatus(agent: AgentIdentity): 'active' | 'idle' | 'error' {
-  // Simple heuristic: if agent has error state, red; if active tasks, green; else blue
-  if (agent.status === 'error') return 'error';
-  if (agent.activeTasks && agent.activeTasks > 0) return 'active';
+function getAgentStatus(_agent: AgentIdentity): 'active' | 'idle' | 'error' {
+  // Default to idle — actual status tracked externally via flow data
   return 'idle';
 }
 

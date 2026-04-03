@@ -2,43 +2,30 @@
 > @web3viz/providers@0.1.0 typecheck
 > tsc --noEmit
 
-src/pump-fun/PumpFunProvider.ts(133,10): error TS2339: Property 'connectTrades' does not exist on type 'PumpFunProvider'.
-src/pump-fun/PumpFunProvider.ts(134,10): error TS2339: Property 'connectClaims' does not exist on type 'PumpFunProvider'.
-src/pump-fun/PumpFunProvider.ts(138,10): error TS2339: Property 'disconnectTrades' does not exist on type 'PumpFunProvider'.
-src/pump-fun/PumpFunProvider.ts(139,10): error TS2339: Property 'disconnectClaims' does not exist on type 'PumpFunProvider'.
-src/pump-fun/PumpFunProvider.ts(161,17): error TS2304: Cannot find name 'MAX_TOP_TOKENS'.
-src/pump-fun/PumpFunProvider.ts(170,22): error TS2339: Property 'totalTokens' does not exist on type 'PumpFunProvider'.
-src/pump-fun/PumpFunProvider.ts(171,22): error TS2339: Property 'totalTrades' does not exist on type 'PumpFunProvider'.
-src/pump-fun/PumpFunProvider.ts(172,22): error TS2339: Property 'totalClaims' does not exist on type 'PumpFunProvider'.
-src/pump-fun/PumpFunProvider.ts(174,31): error TS2339: Property 'totalTrades' does not exist on type 'PumpFunProvider'.
-src/pump-fun/PumpFunProvider.ts(174,50): error TS2339: Property 'totalClaims' does not exist on type 'PumpFunProvider'.
-src/pump-fun/PumpFunProvider.ts(188,25): error TS2339: Property 'pumpPortalWs' does not exist on type 'PumpFunProvider'.
-src/pump-fun/PumpFunProvider.ts(192,25): error TS2339: Property 'heliusWs' does not exist on type 'PumpFunProvider'.
-src/pump-fun/PumpFunProvider.ts(198,25): error TS2339: Property 'push' does not exist on type 'Set<(event: DataProviderEvent) => void>'.
-src/pump-fun/PumpFunProvider.ts(200,49): error TS2339: Property 'filter' does not exist on type 'Set<(event: DataProviderEvent) => void>'.
-src/pump-fun/PumpFunProvider.ts(200,57): error TS7006: Parameter 'l' implicitly has an 'any' type.
-src/pump-fun/PumpFunProvider.ts(205,23): error TS2339: Property 'push' does not exist on type 'Set<(event: RawEvent) => void>'.
-src/pump-fun/PumpFunProvider.ts(207,45): error TS2339: Property 'filter' does not exist on type 'Set<(event: RawEvent) => void>'.
-src/pump-fun/PumpFunProvider.ts(207,53): error TS7006: Parameter 'l' implicitly has an 'any' type.
-src/pump-fun/PumpFunProvider.ts(224,14): error TS2339: Property 'pumpPortalWs' does not exist on type 'PumpFunProvider'.
-src/pump-fun/PumpFunProvider.ts(226,30): error TS2304: Cannot find name 'PUMP_PORTAL_WS'.
-src/pump-fun/PumpFunProvider.ts(227,10): error TS2339: Property 'pumpPortalWs' does not exist on type 'PumpFunProvider'.
-src/pump-fun/PumpFunProvider.ts(245,24): error TS2304: Cannot find name 'Token'.
-src/pump-fun/PumpFunProvider.ts(262,16): error TS2339: Property 'totalTokens' does not exist on type 'PumpFunProvider'.
-src/pump-fun/PumpFunProvider.ts(266,30): error TS2304: Cannot find name 'globalIdCounter'.
-src/pump-fun/PumpFunProvider.ts(284,24): error TS2304: Cannot find name 'Trade'.
-src/pump-fun/PumpFunProvider.ts(326,23): error TS2304: Cannot find name 'MAX_TOP_TOKENS'.
-src/pump-fun/PumpFunProvider.ts(344,16): error TS2339: Property 'totalTrades' does not exist on type 'PumpFunProvider'.
-src/pump-fun/PumpFunProvider.ts(348,30): error TS2304: Cannot find name 'globalIdCounter'.
-src/pump-fun/PumpFunProvider.ts(371,12): error TS2339: Property 'reconnectTimeoutIds' does not exist on type 'PumpFunProvider'.
-src/pump-fun/PumpFunProvider.ts(380,14): error TS2339: Property 'heliusWs' does not exist on type 'PumpFunProvider'.
-src/pump-fun/PumpFunProvider.ts(382,30): error TS2304: Cannot find name 'HELIUS_WS'.
-src/pump-fun/PumpFunProvider.ts(383,10): error TS2339: Property 'heliusWs' does not exist on type 'PumpFunProvider'.
-src/pump-fun/PumpFunProvider.ts(391,33): error TS2304: Cannot find name 'CLAIMS_PROGRAM'.
-src/pump-fun/PumpFunProvider.ts(403,23): error TS2304: Cannot find name 'parseClaimInstruction'.
-src/pump-fun/PumpFunProvider.ts(406,14): error TS2339: Property 'totalClaims' does not exist on type 'PumpFunProvider'.
-src/pump-fun/PumpFunProvider.ts(410,28): error TS2304: Cannot find name 'globalIdCounter'.
-src/pump-fun/PumpFunProvider.ts(430,12): error TS2339: Property 'reconnectTimeoutIds' does not exist on type 'PumpFunProvider'.
+src/pump-fun/PumpFunProvider.ts(136,10): error TS2339: Property 'connectTrades' does not exist on type 'PumpFunProvider'.
+src/pump-fun/PumpFunProvider.ts(137,10): error TS2339: Property 'connectClaims' does not exist on type 'PumpFunProvider'.
+src/pump-fun/PumpFunProvider.ts(141,10): error TS2339: Property 'disconnectTrades' does not exist on type 'PumpFunProvider'.
+src/pump-fun/PumpFunProvider.ts(142,10): error TS2339: Property 'disconnectClaims' does not exist on type 'PumpFunProvider'.
+src/pump-fun/PumpFunProvider.ts(185,45): error TS2339: Property 'tradesConnected' does not exist on type 'PumpFunProvider'.
+src/pump-fun/PumpFunProvider.ts(186,45): error TS2551: Property 'claimsConnected' does not exist on type 'PumpFunProvider'. Did you mean 'heliusConnected'?
+src/pump-fun/PumpFunProvider.ts(191,25): error TS2339: Property 'add' does not exist on type '((event: DataProviderEvent) => void)[]'.
+src/pump-fun/PumpFunProvider.ts(193,27): error TS2339: Property 'delete' does not exist on type '((event: DataProviderEvent) => void)[]'.
+src/pump-fun/PumpFunProvider.ts(198,23): error TS2339: Property 'add' does not exist on type '((event: RawEvent) => void)[]'.
+src/pump-fun/PumpFunProvider.ts(200,25): error TS2339: Property 'delete' does not exist on type '((event: RawEvent) => void)[]'.
+src/pump-fun/PumpFunProvider.ts(243,16): error TS2339: Property 'totalTokens' does not exist on type 'PumpFunProvider'.
+src/pump-fun/PumpFunProvider.ts(246,16): error TS2339: Property 'emitEvent' does not exist on type 'PumpFunProvider'.
+src/pump-fun/PumpFunProvider.ts(247,30): error TS2304: Cannot find name 'globalIdCounter'.
+src/pump-fun/PumpFunProvider.ts(257,16): error TS2339: Property 'emitRaw' does not exist on type 'PumpFunProvider'.
+src/pump-fun/PumpFunProvider.ts(307,23): error TS2304: Cannot find name 'MAX_TOP_TOKENS'.
+src/pump-fun/PumpFunProvider.ts(325,16): error TS2339: Property 'totalTrades' does not exist on type 'PumpFunProvider'.
+src/pump-fun/PumpFunProvider.ts(328,16): error TS2339: Property 'emitEvent' does not exist on type 'PumpFunProvider'.
+src/pump-fun/PumpFunProvider.ts(329,30): error TS2304: Cannot find name 'globalIdCounter'.
+src/pump-fun/PumpFunProvider.ts(340,16): error TS2339: Property 'emitRaw' does not exist on type 'PumpFunProvider'.
+src/pump-fun/PumpFunProvider.ts(384,23): error TS2304: Cannot find name 'parseClaimInstruction'.
+src/pump-fun/PumpFunProvider.ts(387,14): error TS2339: Property 'totalClaims' does not exist on type 'PumpFunProvider'.
+src/pump-fun/PumpFunProvider.ts(390,14): error TS2339: Property 'emitEvent' does not exist on type 'PumpFunProvider'.
+src/pump-fun/PumpFunProvider.ts(391,28): error TS2304: Cannot find name 'globalIdCounter'.
+src/pump-fun/PumpFunProvider.ts(400,14): error TS2339: Property 'emitRaw' does not exist on type 'PumpFunProvider'.
 npm error Lifecycle script `typecheck` failed with error:
 npm error code 2
 npm error path /workspaces/visualize-web3-realtime/packages/providers

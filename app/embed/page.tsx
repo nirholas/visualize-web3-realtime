@@ -4,7 +4,8 @@ import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 
-import { useDataProvider } from '@/hooks/useDataProvider';
+import { useProviders } from '@web3viz/providers';
+import { providers } from '../world/providers';
 
 // Lazy-load the 3D force graph to avoid SSR issues with Three.js
 const ForceGraph = dynamic(() => import('@/features/World/ForceGraph'), {
@@ -22,7 +23,7 @@ function EmbedInner() {
   // Parse URL params for customization
   const bg = searchParams.get('bg') || '#ffffff';
 
-  const { stats } = useDataProvider({ paused: false });
+  const { stats } = useProviders({ providers, paused: false });
 
   return (
     <div style={{ width: '100%', height: '100vh', background: bg, position: 'relative' }}>
