@@ -581,6 +581,8 @@ CameraSetup.displayName = 'CameraSetup';
 export interface ForceGraphProps {
   topTokens: TopToken[];
   traderEdges: TraderEdge[];
+  activeProtocol?: string | null;
+  onSelectProtocol?: (mint: string | null) => void;
   height?: string | number;
 }
 
@@ -589,11 +591,12 @@ export interface ForceGraphHandle {
   focusHub: (index: number, durationMs?: number) => Promise<void>;
   getCanvasElement: () => HTMLCanvasElement | null;
   getHubCount: () => number;
+  getHubPosition: (index: number) => [number, number, number] | null;
   setOrbitEnabled: (enabled: boolean) => void;
 }
 
 const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function ForceGraph(
-  { topTokens, traderEdges, height = '100%' },
+  { topTokens, traderEdges, activeProtocol = null, onSelectProtocol, height = '100%' },
   ref,
 ) {
   const simRef = useRef<ForceGraphSimulation | null>(null);
@@ -609,6 +612,11 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
   useImperativeHandle(ref, () => ({
     getCanvasElement: () => containerRef.current?.querySelector('canvas') ?? null,
     getHubCount: () => sim.nodes.filter((n) => n.type === 'hub').length,
+    getHubPosition: (index: number) => {
+      const hubs = sim.nodes.filter((n) => n.type === 'hub');
+      const hub = hubs[index];
+      return hub ? [hub.x ?? 0, 0, hub.y ?? 0] as [number, number, number] : null;
+    },
     animateCameraTo: async (request) => {
       const api = cameraApiRef.current;
       if (!api) return;
@@ -658,7 +666,12 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
         dpr={[1, 1.5]}
       >
         <CameraSetup apiRef={cameraApiRef} />
-        <NetworkScene sim={sim} />
+        <NetworkScene
+          sim={sim}
+          topTokens={topTokens}
+          activeProtocol={activeProtocol ?? null}
+          onSelectProtocol={onSelectProtocol ?? (() => {})}
+        />
       </Canvas>
     </div>
   );

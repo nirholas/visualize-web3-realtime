@@ -57,7 +57,7 @@ export interface PumpFunClaimStats {
 // Constants
 // ---------------------------------------------------------------------------
 
-const SOLANA_WS_URL = 'wss://api.mainnet-beta.solana.com';
+const SOLANA_WS_URL = process.env.NEXT_PUBLIC_SOLANA_WS_URL || 'wss://api.mainnet-beta.solana.com';
 const MAX_RECENT_CLAIMS = 200;
 
 // ---------------------------------------------------------------------------

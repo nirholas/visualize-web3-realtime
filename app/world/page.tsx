@@ -116,6 +116,7 @@ export default function WorldPage() {
   const [highlightedAddress, setHighlightedAddress] = useState<string | null>(null);
   const [highlightedHubIndex, setHighlightedHubIndex] = useState<number | null>(null);
   const [activeProtocol, setActiveProtocol] = useState<PumpFunCategory | null>(null);
+  const [activeHubMint, setActiveHubMint] = useState<string | null>(null);
   const [searchToast, setSearchToast] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [embedOpen, setEmbedOpen] = useState(false);
@@ -389,6 +390,8 @@ export default function WorldPage() {
           ref={graphRef}
           topTokens={displayTopTokens}
           traderEdges={displayTraderEdges}
+          activeProtocol={activeHubMint}
+          onSelectProtocol={setActiveHubMint}
           height="100%"
         />
       </div>
