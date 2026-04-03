@@ -327,12 +327,14 @@ interface PrimaryNodesProps {
     driftedPositionsRef?: React.MutableRefObject<THREE.Vector3[]>;
     /** Hub index to highlight (e.g. for address search) */
     highlightedHub?: number | null;
+    /** Hub index highlighted by protocol filter sidebar (dims all others) */
+    highlightedHubIndex?: number | null;
     hubPositions: THREE.Vector3[];
     nodeColor: string;
     stage: VortexStage;
 }
 
-const PrimaryNodes = memo<PrimaryNodesProps>(({ hubPositions, stage, apiEndpoints, categoryColors, nodeColor, highlightedHub, driftedPositionsRef }) => {
+const PrimaryNodes = memo<PrimaryNodesProps>(({ hubPositions, stage, apiEndpoints, categoryColors, nodeColor, highlightedHub, highlightedHubIndex, driftedPositionsRef }) => {
     const meshRef = useRef<THREE.InstancedMesh>(null);
     const dummy = useMemo(() => new THREE.Object3D(), []);
     const scaleRef = useRef<Float32Array>(new Float32Array(hubPositions.length).fill(1));
@@ -351,15 +353,20 @@ const PrimaryNodes = memo<PrimaryNodesProps>(({ hubPositions, stage, apiEndpoint
     // Apply per-instance colors when categoryColors or highlight change
     useEffect(() => {
         if (!meshRef.current) return;
+        const dimColor = new THREE.Color('#cccccc');
         for (let i = 0; i < hubPositions.length; i++) {
             const c = i === highlightedHub ? HIGHLIGHT_COLOR : (categoryColors?.[i] || nodeColor);
             colorObj.set(c);
+            // Dim non-highlighted hubs when sidebar filter is active
+            if (highlightedHubIndex != null && i !== highlightedHubIndex) {
+                colorObj.lerp(dimColor, 0.85);
+            }
             meshRef.current.setColorAt(i, colorObj);
         }
         if (meshRef.current.instanceColor) {
             meshRef.current.instanceColor.needsUpdate = true;
         }
-    }, [categoryColors, nodeColor, hubPositions.length, colorObj, highlightedHub]);
+    }, [categoryColors, nodeColor, hubPositions.length, colorObj, highlightedHub, highlightedHubIndex]);
 
     useFrame((state) => {
         if (!meshRef.current) return;
@@ -522,6 +529,9 @@ const ParticleSwarm = memo<ParticleSwarmProps>(({ hubPositions, stage, mouseWorl
     const totalParticles = hubPositions.length * NETWORK_CONFIG.PARTICLES_PER_HUB;
     const pointsRef = useRef<THREE.Points>(null);
 
+    // Resolved base color
+    const baseColor = useMemo(() => new THREE.Color(particleColor || NETWORK_COLORS.particle), [particleColor]);
+
     // Per-particle state arrays
     const particleState = useMemo(() => {
         const homePositions = new Float32Array(totalParticles * 3);
@@ -532,6 +542,7 @@ const ParticleSwarm = memo<ParticleSwarmProps>(({ hubPositions, stage, mouseWorl
         const orbitSpeeds = new Float32Array(totalParticles);
         const orbitPhases = new Float32Array(totalParticles);
         const orbitTilts = new Float32Array(totalParticles);
+        const colors = new Float32Array(totalParticles * 3);
 
         for (let h = 0; h < hubPositions.length; h++) {
             const hub = hubPositions[h];
@@ -560,10 +571,16 @@ const ParticleSwarm = memo<ParticleSwarmProps>(({ hubPositions, stage, mouseWorl
                 orbitSpeeds[i] = 0.2 + Math.random() * 0.6;
                 orbitPhases[i] = Math.random() * Math.PI * 2;
                 orbitTilts[i] = (Math.random() - 0.5) * Math.PI * 0.4;
+
+                // Initialize colors to base particle color
+                colors[i3] = baseColor.r;
+                colors[i3 + 1] = baseColor.g;
+                colors[i3 + 2] = baseColor.b;
             }
         }
 
         return {
+            colors,
             currentPositions,
             homePositions,
             hubIndices,
@@ -573,7 +590,29 @@ const ParticleSwarm = memo<ParticleSwarmProps>(({ hubPositions, stage, mouseWorl
             sizes,
             velocities,
         };
-    }, [hubPositions, totalParticles]);
+    }, [hubPositions, totalParticles, baseColor]);
+
+    // Update particle colors when highlight filter changes
+    useEffect(() => {
+        if (!pointsRef.current) return;
+        const { colors, hubIndices } = particleState;
+        const dimColor = new THREE.Color('#ddd');
+        const bright = baseColor;
+        for (let i = 0; i < totalParticles; i++) {
+            const i3 = i * 3;
+            if (highlightedHubIndex != null && hubIndices[i] !== highlightedHubIndex) {
+                colors[i3] = dimColor.r;
+                colors[i3 + 1] = dimColor.g;
+                colors[i3 + 2] = dimColor.b;
+            } else {
+                colors[i3] = bright.r;
+                colors[i3 + 1] = bright.g;
+                colors[i3 + 2] = bright.b;
+            }
+        }
+        const colorAttr = pointsRef.current.geometry.getAttribute('color') as THREE.BufferAttribute;
+        if (colorAttr) colorAttr.needsUpdate = true;
+    }, [highlightedHubIndex, particleState, totalParticles, baseColor]);
 
     useFrame((state) => {
         if (!pointsRef.current) return;
@@ -681,15 +720,22 @@ const ParticleSwarm = memo<ParticleSwarmProps>(({ hubPositions, stage, mouseWorl
                     count={totalParticles}
                     itemSize={1}
                 />
+                <bufferAttribute
+                    args={[particleState.colors, 3]}
+                    attach="attributes-color"
+                    count={totalParticles}
+                    itemSize={3}
+                    usage={THREE.DynamicDrawUsage}
+                />
             </bufferGeometry>
             <pointsMaterial
                 blending={THREE.AdditiveBlending}
-                color={particleColor || NETWORK_COLORS.particle}
                 depthWrite={false}
-                opacity={0.7}
+                opacity={highlightedHubIndex != null ? 0.5 : 0.7}
                 size={0.08}
                 sizeAttenuation
                 transparent
+                vertexColors
             />
         </points>
     );
@@ -702,11 +748,13 @@ ParticleSwarm.displayName = 'ParticleSwarm';
 // ============================================================================
 
 interface ConnectionLinesProps {
+    /** Hub index to highlight (null = no filter) */
+    highlightedHubIndex?: number | null;
     hubPositions: THREE.Vector3[];
     stage: VortexStage;
 }
 
-const ConnectionLines = memo<ConnectionLinesProps>(({ hubPositions, stage }) => {
+const ConnectionLines = memo<ConnectionLinesProps>(({ hubPositions, stage, highlightedHubIndex }) => {
     const lineRef = useRef<THREE.LineSegments>(null);
     const pointsCacheRef = useRef<THREE.Points | null>(null);
     const spatialHash = useMemo(() => new SpatialHash(NETWORK_CONFIG.PROXIMITY_THRESHOLD), []);
@@ -809,7 +857,9 @@ const ConnectionLines = memo<ConnectionLinesProps>(({ hubPositions, stage }) => 
         geom.setDrawRange(0, lineIdx / 3);
     });
 
-    const stageOpacity = stage === 'calling' || stage === 'paying' ? 0.25 : 0.1;
+    const baseOpacity = stage === 'calling' || stage === 'paying' ? 0.25 : 0.1;
+    const stageOpacity = highlightedHubIndex != null ? baseOpacity * 0.2 : baseOpacity;
+    const opacity = highlightedHubIndex != null ? stageOpacity * 0.25 : stageOpacity;
 
     return (
         <group ref={groupRef}>
@@ -826,7 +876,7 @@ const ConnectionLines = memo<ConnectionLinesProps>(({ hubPositions, stage }) => 
                 <lineBasicMaterial
                     blending={THREE.AdditiveBlending}
                     color={NETWORK_COLORS.line}
-                    opacity={stageOpacity}
+                    opacity={opacity}
                     transparent
                 />
             </lineSegments>
@@ -1323,12 +1373,16 @@ interface NetworkSceneProps {
     /** Per-hub colors (falls back to nodeColor) */
     cameraRef: React.MutableRefObject<THREE.PerspectiveCamera | null>;
     categoryColors?: string[];
+    /** Ref to drifted node positions for journey overlay */
+    driftedPositionsRef?: React.MutableRefObject<THREE.Vector3[]>;
     /** Hub index to highlight (null = no filter) */
     highlightedHubIndex?: number | null;
     hubPositions: THREE.Vector3[];
     mouseActive: React.MutableRefObject<boolean>;
     mouseWorldPos: React.MutableRefObject<THREE.Vector3>;
     nodeColor: string;
+    /** Called when user dismisses highlight */
+    onDismissHighlight?: () => void;
     orbitEnabledRef: React.MutableRefObject<boolean>;
     stage: VortexStage;
     /** Color for user/particle elements */
@@ -1343,6 +1397,7 @@ const NetworkScene = memo<NetworkSceneProps>(
         stage,
         apiEndpoints,
         categoryColors,
+        driftedPositionsRef,
         highlightedHubIndex,
         mouseWorldPos,
         mouseActive,
@@ -1373,6 +1428,7 @@ const NetworkScene = memo<NetworkSceneProps>(
                 <PrimaryNodes
                     apiEndpoints={apiEndpoints}
                     categoryColors={categoryColors}
+                    driftedPositionsRef={driftedPositionsRef}
                     highlightedHubIndex={highlightedHubIndex}
                     hubPositions={hubPositions}
                     nodeColor={nodeColor}

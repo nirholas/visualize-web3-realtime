@@ -106,12 +106,26 @@ BottomStatPill.displayName = 'BottomStatPill';
 // Address Search
 // ---------------------------------------------------------------------------
 
+function truncateAddress(address: string): string {
+  if (address.length <= 10) return address;
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+}
+
 const AddressSearch = memo<{
+  highlightedAddress?: string | null;
+  onDismiss?: () => void;
   onSearch: (address: string) => void;
-}>(({ onSearch }) => {
+}>(({ onSearch, highlightedAddress, onDismiss }) => {
   const [value, setValue] = useState('');
   const [error, setError] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Sync input value when highlight changes
+  useEffect(() => {
+    if (highlightedAddress) {
+      setValue(highlightedAddress);
+    }
+  }, [highlightedAddress]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -123,6 +137,11 @@ const AddressSearch = memo<{
     },
     [value, onSearch],
   );
+
+  const handleDismiss = useCallback(() => {
+    setValue('');
+    onDismiss?.();
+  }, [onDismiss]);
 
   // Flash red border on error
   useEffect(() => {
@@ -152,7 +171,7 @@ const AddressSearch = memo<{
       <input
         ref={inputRef}
         type="text"
-        value={value}
+        value={highlightedAddress ? truncateAddress(highlightedAddress) : value}
         onChange={(e) => setValue(e.target.value)}
         placeholder="Search address…"
         style={{
@@ -161,13 +180,34 @@ const AddressSearch = memo<{
           fontSize: 11,
           fontFamily: 'inherit',
           color: 'rgba(255,255,255,0.8)',
-          background: 'rgba(255,255,255,0.04)',
-          border: `1px solid ${error ? 'rgba(239,68,68,0.7)' : 'rgba(255,255,255,0.08)'}`,
+          background: highlightedAddress
+            ? 'rgba(61,99,255,0.12)'
+            : 'rgba(255,255,255,0.04)',
+          border: `1px solid ${error ? 'rgba(239,68,68,0.7)' : highlightedAddress ? 'rgba(61,99,255,0.3)' : 'rgba(255,255,255,0.08)'}`,
           borderRadius: 6,
           outline: 'none',
           transition: 'border-color 0.3s ease',
         }}
       />
+      {highlightedAddress ? (
+        <button
+          type="button"
+          onClick={handleDismiss}
+          style={{
+            padding: '5px 14px',
+            fontSize: 10,
+            fontWeight: 600,
+            fontFamily: 'inherit',
+            color: '#fff',
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: 6,
+            cursor: 'pointer',
+          }}
+        >
+          ✕
+        </button>
+      ) : (
       <button
         type="submit"
         style={{
@@ -193,6 +233,7 @@ const AddressSearch = memo<{
       >
         Go
       </button>
+      )}
     </form>
   );
 });
@@ -207,15 +248,21 @@ export interface StatsBarProps {
   totalTokens: number;
   totalVolumeSol: number;
   totalTrades: number;
+  /** The currently highlighted address (null = none) */
+  highlightedAddress?: string | null;
   /** Called with the searched address. Parent should handle camera pan / not-found. */
   onAddressSearch?: (address: string) => void;
+  /** Called when the user dismisses the highlight */
+  onDismissHighlight?: () => void;
 }
 
 export default memo<StatsBarProps>(function StatsBar({
   totalTokens,
   totalVolumeSol,
   totalTrades,
+  highlightedAddress,
   onAddressSearch,
+  onDismissHighlight,
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -277,7 +324,7 @@ export default memo<StatsBarProps>(function StatsBar({
         }}
       />
 
-      <AddressSearch onSearch={handleSearch} />
+      <AddressSearch onSearch={handleSearch} highlightedAddress={highlightedAddress} onDismiss={onDismissHighlight} />
     </div>
   );
 });

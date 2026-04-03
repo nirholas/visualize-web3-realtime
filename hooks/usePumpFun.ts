@@ -42,12 +42,30 @@ export type PumpFunEvent =
   | { type: 'tokenCreate'; data: PumpFunToken }
   | { type: 'trade'; data: PumpFunTrade };
 
+export interface TopToken {
+  mint: string;
+  symbol: string;
+  name: string;
+  trades: number;
+  volumeSol: number;
+}
+
+/** Per-trader → token edge info for the force graph */
+export interface TraderEdge {
+  trader: string;
+  mint: string;
+  trades: number;
+  volumeSol: number;
+}
+
 export interface PumpFunStats {
   totalTokens: number;
   totalTrades: number;
   totalVolumeSol: number;
   recentEvents: PumpFunEvent[];
-  topTokens: { mint: string; symbol: string; name: string; trades: number; volumeSol: number }[];
+  topTokens: TopToken[];
+  /** Per-trader edges to tokens (for ForceGraph agent nodes) */
+  traderEdges: TraderEdge[];
 }
 
 // ---------------------------------------------------------------------------
@@ -76,6 +94,7 @@ export function usePumpFun({ paused = false }: { paused?: boolean } = {}) {
     totalVolumeSol: 0,
     recentEvents: [],
     topTokens: [],
+    traderEdges: [],
   });
   const [connected, setConnected] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
@@ -85,7 +104,9 @@ export function usePumpFun({ paused = false }: { paused?: boolean } = {}) {
   // Token name cache: mint → { name, symbol }
   const tokenCache = useRef<Map<string, { name: string; symbol: string }>>(new Map());
   // Accumulator for top tokens: mint → { trades, volumeSol }
-  const tokenAcc = useRef<Map<string, { mint: string; name: string; symbol: string; trades: number; volumeSol: number }>>(new Map());
+  const tokenAcc = useRef<Map<string, TopToken>>(new Map());
+  // Accumulator for trader → token edges: "trader:mint" → { trades, volumeSol }
+  const traderAcc = useRef<Map<string, TraderEdge>>(new Map());
 
   const connect = useCallback(() => {
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
@@ -176,12 +197,33 @@ export function usePumpFun({ paused = false }: { paused?: boolean } = {}) {
             .sort((a, b) => b.volumeSol - a.volumeSol)
             .slice(0, MAX_TOP_TOKENS);
 
+          // Build trader → token edges for top-token mints only
+          const topMints = new Set(sorted.map((t) => t.mint));
+          const traderKey = `${trade.traderPublicKey}:${trade.mint}`;
+          const existingEdge = traderAcc.current.get(traderKey);
+          if (existingEdge) {
+            existingEdge.trades++;
+            existingEdge.volumeSol += solAmount;
+          } else {
+            traderAcc.current.set(traderKey, {
+              trader: trade.traderPublicKey,
+              mint: trade.mint,
+              trades: 1,
+              volumeSol: solAmount,
+            });
+          }
+          // Snapshot trader edges for top tokens only (capped for perf)
+          const traderEdges = Array.from(traderAcc.current.values())
+            .filter((e) => topMints.has(e.mint))
+            .slice(0, 5000);
+
           setStats((prev) => ({
             ...prev,
             totalTrades: prev.totalTrades + 1,
             totalVolumeSol: prev.totalVolumeSol + solAmount,
             recentEvents: [{ type: 'trade' as const, data: trade }, ...prev.recentEvents].slice(0, MAX_EVENTS),
             topTokens: sorted,
+            traderEdges,
           }));
         }
       } catch {

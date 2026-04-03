@@ -35,6 +35,7 @@ export default function StartJourney({ disabled = false, isRunning, onClick, res
         textAlign: 'center',
         textTransform: 'uppercase',
         transition: 'transform 180ms ease, box-shadow 180ms ease',
+        whiteSpace: 'pre-line',
         width: 68,
         zIndex: 35,
       }}

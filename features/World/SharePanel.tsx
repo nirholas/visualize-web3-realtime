@@ -16,6 +16,11 @@ interface SharePanelProps {
   colors: ShareColors;
   onChange: (colors: ShareColors) => void;
   onClose: () => void;
+  onDownloadWorld?: () => void;
+  onDownloadSnapshot?: () => void;
+  onShareX?: () => void;
+  onShareLinkedIn?: () => void;
+  downloading?: 'world' | 'snapshot' | null;
 }
 
 // ============================================================================
@@ -170,7 +175,16 @@ ColorControl.displayName = 'ColorControl';
 // SharePanel
 // ============================================================================
 
-const SharePanel = memo<SharePanelProps>(({ colors, onChange, onClose }) => {
+const SharePanel = memo<SharePanelProps>(({
+  colors,
+  onChange,
+  onClose,
+  onDownloadWorld,
+  onDownloadSnapshot,
+  onShareX,
+  onShareLinkedIn,
+  downloading = null,
+}) => {
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Close on click outside

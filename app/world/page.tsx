@@ -1,7 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { memo, Suspense, useCallback, useMemo, useRef, useState } from 'react';
+import { memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import InfoPopover from '@/features/World/InfoPopover';
 import JourneyOverlay from '@/features/World/JourneyOverlay';
@@ -22,7 +22,7 @@ import type { X402FlowTrace } from '@/features/X402Flow/types';
 // Lazy-load the 3D network to avoid SSR issues with Three.js
 const X402Network = dynamic(() => import('@/features/X402Flow/X402Network'), {
   ssr: false,
-  loading: () => <div style={{ width: '100%', height: '100%', background: '#08080f' }} />,
+  loading: () => <div style={{ width: '100%', height: '100%', background: '#ffffff' }} />,
 }) as any;
 
 // ---------------------------------------------------------------------------
@@ -93,17 +93,18 @@ const StatPill = memo<{ label: string; value: string }>(({ label, value }) => (
       display: 'flex',
       gap: 5,
       alignItems: 'baseline',
-      padding: '3px 10px',
-      fontFamily: 'monospace',
-      background: 'rgb(176 176 200 / 4%)',
-      border: '1px solid rgb(176 176 200 / 6%)',
-      borderRadius: 4,
+      padding: '4px 12px',
+      fontFamily: "'IBM Plex Mono', monospace",
+      background: '#ffffff',
+      border: '1px solid #e8e8e8',
+      borderRadius: 6,
+      boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
     }}
   >
-    <span style={{ fontSize: 9, color: 'rgb(176 176 200 / 30%)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+    <span style={{ fontSize: 10, color: '#666', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 400 }}>
       {label}
     </span>
-    <span style={{ fontSize: 12, fontWeight: 600, color: 'rgb(176 176 200 / 70%)' }}>
+    <span style={{ fontSize: 14, fontWeight: 500, color: '#161616' }}>
       {value}
     </span>
   </div>
@@ -122,10 +123,11 @@ const ConnectionDot = memo<{ connected: boolean; label: string }>(({ connected, 
       gap: 4,
       alignItems: 'center',
       padding: '3px 8px',
-      fontFamily: 'monospace',
+      fontFamily: "'IBM Plex Mono', monospace",
       fontSize: 9,
-      color: 'rgb(176 176 200 / 30%)',
+      color: '#999',
       letterSpacing: '0.04em',
+      textTransform: 'uppercase',
     }}
     title={`${label}: ${connected ? 'Connected' : 'Disconnected'}`}
   >
@@ -151,6 +153,9 @@ export default function WorldPage() {
   const [paused, setPaused] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [userAddress, setUserAddress] = useState('');
+  const [highlightedAddress, setHighlightedAddress] = useState<string | null>(null);
+  const [highlightedHubIndex, setHighlightedHubIndex] = useState<number | null>(null);
+  const [searchToast, setSearchToast] = useState<string | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [shareColors, setShareColors] = useState<ShareColors>({
     background: '#ffffff',
@@ -160,12 +165,62 @@ export default function WorldPage() {
   const infoButtonRef = useRef<HTMLButtonElement>(null);
   const networkRef = useRef<X402NetworkHandle | null>(null);
 
-  const { stats, filteredEvents, enabledCategories, toggleCategory, connected } =
+  const { stats, enabledCategories, toggleCategory, connected } =
     useDataProvider({ paused });
 
+  // Search for an address in recent events and highlight the corresponding hub
   const handleAddressSearch = useCallback((address: string) => {
     setUserAddress(address);
+
+    // Find the address in recent unified events
+    const match = stats.recentEvents.find(
+      (evt) => evt.address.toLowerCase() === address.toLowerCase(),
+    );
+
+    if (!match) {
+      setSearchToast('Address not found in current data');
+      setHighlightedAddress(null);
+      setHighlightedHubIndex(null);
+      return;
+    }
+
+    setSearchToast(null);
+    setHighlightedAddress(address);
+
+    // Map category → hub index. Hub 0 is central origin; hubs 1..N are enabled categories
+    const enabledConfigs = CATEGORY_CONFIGS.filter((c) => enabledCategories.has(c.id));
+    const categoryIdx = enabledConfigs.findIndex((c) => c.id === match.category);
+    const hubIndex = categoryIdx >= 0 ? categoryIdx + 1 : 0;
+    setHighlightedHubIndex(hubIndex);
+
+    // Animate camera to the hub
+    networkRef.current?.focusHub(hubIndex, 800);
+  }, [stats.recentEvents, enabledCategories]);
+
+  const handleDismissHighlight = useCallback(() => {
+    setHighlightedAddress(null);
+    setHighlightedHubIndex(null);
+    // Resume normal orbit by resetting the camera
+    networkRef.current?.setOrbitEnabled(true);
   }, []);
+
+  // Clear toast after 3 seconds
+  useEffect(() => {
+    if (!searchToast) return;
+    const t = setTimeout(() => setSearchToast(null), 3000);
+    return () => clearTimeout(t);
+  }, [searchToast]);
+
+  // Auto-search from URL ?address= param on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const addr = params.get('address');
+    if (addr) {
+      // Delay to allow data to stream in
+      const t = setTimeout(() => handleAddressSearch(addr), 2000);
+      return () => clearTimeout(t);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const shareTheme = useMemo(
     () => ({
@@ -205,13 +260,17 @@ export default function WorldPage() {
   );
 
   return (
-    <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: '#08080f' }}>
+    <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: '#ffffff' }}>
       {/* 3D Network — full screen */}
       <X402Network
         apiEndpoints={apiEndpoints}
         categoryColors={CATEGORY_CONFIGS.filter((c) => enabledCategories.has(c.id)).map((c) => c.color)}
         flow={flow}
         height="100%"
+        highlightedAddress={highlightedAddress}
+        highlightedHubIndex={highlightedHubIndex}
+        onAddressSearch={handleAddressSearch}
+        onDismissHighlight={handleDismissHighlight}
         onShare={handleOpenShare}
         ref={networkRef}
         stage={stats.totalTransactions > 0 ? 'calling' : 'idle'}
@@ -227,6 +286,29 @@ export default function WorldPage() {
         title={overlay.title}
       />
 
+      {/* Address search toast */}
+      {searchToast && (
+        <div
+          style={{
+            background: 'rgba(0,0,0,0.75)',
+            borderRadius: 8,
+            bottom: 80,
+            color: '#fff',
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 12,
+            left: '50%',
+            padding: '8px 16px',
+            pointerEvents: 'none',
+            position: 'absolute',
+            transform: 'translateX(-50%)',
+            whiteSpace: 'nowrap',
+            zIndex: 30,
+          }}
+        >
+          {searchToast}
+        </div>
+      )}
+
       <div
         style={{
           alignItems: 'center',
@@ -241,7 +323,7 @@ export default function WorldPage() {
       >
         <span
           style={{
-            color: 'rgba(176 176 200 / 55%)',
+            color: '#999',
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 11,
             letterSpacing: '0.1em',
@@ -259,10 +341,10 @@ export default function WorldPage() {
             ref={infoButtonRef}
             style={{
               alignItems: 'center',
-              background: 'rgba(176 176 200 / 12%)',
-              border: '1px solid rgba(176 176 200 / 35%)',
+              background: 'rgba(0, 0, 0, 0.04)',
+              border: '1px solid rgba(0, 0, 0, 0.12)',
               borderRadius: '50%',
-              color: '#ffffff',
+              color: '#161616',
               cursor: 'pointer',
               display: 'flex',
               fontFamily: "'IBM Plex Mono', monospace",
@@ -326,14 +408,15 @@ export default function WorldPage() {
                 padding: '5px 10px',
                 fontFamily: 'monospace',
                 fontSize: 10,
-                color: isActive ? cfg.color : 'rgb(176 176 200 / 20%)',
-                background: isActive ? 'rgb(176 176 200 / 6%)' : 'rgb(176 176 200 / 2%)',
-                border: `1px solid ${isActive ? cfg.color + '40' : 'rgb(176 176 200 / 6%)'}`,
-                borderRadius: 6,
+                color: isActive ? cfg.color : '#ccc',
+                background: isActive ? '#ffffff' : 'rgba(255,255,255,0.6)',
+                border: `1px solid ${isActive ? cfg.color + '40' : '#e8e8e8'}`,
+                borderRadius: 10,
                 cursor: 'pointer',
-                transition: 'all 0.2s ease',
+                transition: 'all 150ms ease',
                 whiteSpace: 'nowrap',
                 letterSpacing: '0.04em',
+                boxShadow: isActive ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
               }}
               title={`Toggle ${cfg.label}`}
             >
@@ -343,7 +426,7 @@ export default function WorldPage() {
                 style={{
                   marginLeft: 'auto',
                   fontSize: 9,
-                  color: isActive ? 'rgb(176 176 200 / 40%)' : 'rgb(176 176 200 / 15%)',
+                  color: isActive ? '#999' : '#ddd',
                 }}
               >
                 {formatStat(stats.counts[cfg.id])}
@@ -364,10 +447,11 @@ export default function WorldPage() {
           padding: '4px 12px',
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: 10,
-          color: 'rgb(176 176 200 / 50%)',
-          background: 'rgb(176 176 200 / 4%)',
-          border: '1px solid rgb(176 176 200 / 8%)',
-          borderRadius: 4,
+          color: '#666',
+          background: '#ffffff',
+          border: '1px solid #e8e8e8',
+          borderRadius: 6,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
           cursor: 'pointer',
           letterSpacing: '0.06em',
           textTransform: 'uppercase',
@@ -382,12 +466,14 @@ export default function WorldPage() {
           totalTokens={stats.counts.launches + stats.counts.agentLaunches}
           totalVolumeSol={Math.round(stats.totalVolumeSol)}
           totalTrades={stats.totalTransactions}
+          highlightedAddress={highlightedAddress}
           onAddressSearch={handleAddressSearch}
+          onDismissHighlight={handleDismissHighlight}
         />
       </Suspense>
 
       {/* Live trade feed — bottom right */}
-      <LiveFeed events={stats.rawPumpFunEvents} unifiedEvents={filteredEvents} />
+      <LiveFeed events={stats.rawPumpFunEvents} />
 
       <StartJourney
         disabled={isRunning}

@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 
-import { usePumpFun, type PumpFunEvent, type PumpFunStats } from './usePumpFun';
+import { usePumpFun, type PumpFunEvent, type PumpFunStats, type TraderEdge } from './usePumpFun';
 import { usePumpFunClaims, type PumpFunClaimStats, type PumpFunClaim } from './usePumpFunClaims';
 
 // ---------------------------------------------------------------------------
@@ -73,6 +73,8 @@ export interface DataProviderStats {
   recentEvents: DataProviderEvent[];
   /** Top tokens by volume (from PumpFun trades) */
   topTokens: PumpFunStats['topTokens'];
+  /** Per-trader edges to tokens (for ForceGraph agent nodes) */
+  traderEdges: TraderEdge[];
   /** Raw PumpFun events for LiveFeed backward compat */
   rawPumpFunEvents: PumpFunEvent[];
 }
@@ -202,6 +204,7 @@ export function useDataProvider({ paused = false }: { paused?: boolean } = {}) {
       totalAgents: pumpFun.stats.topTokens.length,
       recentEvents: allEvents,
       topTokens: pumpFun.stats.topTokens,
+      traderEdges: pumpFun.stats.traderEdges,
       rawPumpFunEvents: pumpFun.stats.recentEvents,
     };
   }, [pumpFun.stats, claims.stats]);
