@@ -18,9 +18,6 @@ import { TaskInspectorPanel } from '@/features/Agents/TaskInspector';
 import { agentThemeTokens } from '@/packages/ui/src/tokens/agent-colors';
 import { captureCanvas, downloadBlob, timestampedFilename } from '@/features/World/utils/screenshot';
 
-// Make this page dynamic since it uses useSearchParams()
-export const dynamic = 'force-dynamic';
-
 // Lazy-load the 3D force graph (Three.js not SSR-safe)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const AgentForceGraph = dynamicImport(() => import('@/features/Agents/AgentForceGraph'), {
@@ -52,10 +49,10 @@ const AgentForceGraph = dynamicImport(() => import('@/features/Agents/AgentForce
 const ALL_TOOL_CATEGORIES = new Set(['filesystem', 'search', 'terminal', 'network', 'code', 'reasoning']);
 
 // ---------------------------------------------------------------------------
-// Page
+// Wrapped Page Component (useSearchParams in separate component)
 // ---------------------------------------------------------------------------
 
-export default function AgentsPage() {
+function AgentsPageInner() {
   const searchParams = useSearchParams();
   const agentGraphRef = useRef<AgentForceGraphHandle>(null);
   const [activeAgentId, setActiveAgentId] = useState<string | null>(null);
@@ -532,5 +529,14 @@ export default function AgentsPage() {
         />
       )}
     </div>
+  );
+}
+
+// Export wrapped with Suspense for useSearchParams compatibility
+export default function AgentsPage() {
+  return (
+    <Suspense fallback={<div style={{ width: '100%', height: '100vh', background: '#0a0a0f' }} />}>
+      <AgentsPageInner />
+    </Suspense>
   );
 }
