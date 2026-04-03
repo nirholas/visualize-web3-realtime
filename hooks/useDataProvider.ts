@@ -41,7 +41,7 @@ function mergeStats(providers: DataProvider[]): DataProviderStats {
     }
 
     // Merge volumes per chain
-    for (const [chain, vol] of Object.entries(stats.totalVolume)) {
+    for (const [chain, vol] of Object.entries(stats.totalVolume ?? {})) {
       totalVolume[chain] = (totalVolume[chain] || 0) + vol;
     }
 
@@ -58,7 +58,7 @@ function mergeStats(providers: DataProvider[]): DataProviderStats {
   allEvents.length = Math.min(allEvents.length, MAX_UNIFIED_EVENTS);
 
   // Sort top tokens by volume descending, take top 12
-  allTopTokens.sort((a, b) => b.volume - a.volume);
+  allTopTokens.sort((a, b) => (b.volume ?? 0) - (a.volume ?? 0));
   allTopTokens.length = Math.min(allTopTokens.length, 12);
 
   return {

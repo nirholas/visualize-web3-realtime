@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
+import dynamicImport from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AgentTask, AgentIdentity } from '@web3viz/core';
@@ -18,9 +18,12 @@ import { TaskInspectorPanel } from '@/features/Agents/TaskInspector';
 import { agentThemeTokens } from '@/packages/ui/src/tokens/agent-colors';
 import { captureCanvas, downloadBlob, timestampedFilename } from '@/features/World/utils/screenshot';
 
+// Make this page dynamic since it uses useSearchParams()
+export const dynamic = 'force-dynamic';
+
 // Lazy-load the 3D force graph (Three.js not SSR-safe)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const AgentForceGraph = dynamic(() => import('@/features/Agents/AgentForceGraph'), {
+const AgentForceGraph = dynamicImport(() => import('@/features/Agents/AgentForceGraph'), {
   ssr: false,
   loading: () => (
     <div
