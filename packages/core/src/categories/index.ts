@@ -39,17 +39,37 @@ export const SOURCE_CONFIG_MAP = Object.fromEntries(
 // ---------------------------------------------------------------------------
 
 export const CATEGORIES = [
+  // Solana / PumpFun
   'launches',
   'agentLaunches',
   'trades',
-  'swaps',
-  'transfers',
-  'mints',
-  'burns',
-  'volume',
   'claimsWallet',
   'claimsGithub',
   'claimsFirst',
+  // Ethereum
+  'ethSwaps',
+  'ethTransfers',
+  'ethMints',
+  // Base
+  'baseSwaps',
+  'baseTransfers',
+  'baseMints',
+  // AI Agents
+  'agentDeploys',
+  'agentInteractions',
+  'agentSpawn',
+  'agentTask',
+  'toolCall',
+  'subagentSpawn',
+  'reasoning',
+  'taskComplete',
+  'taskFailed',
+  // ERC-8004
+  'erc8004Mints',
+  'erc8004Transfers',
+  // CEX
+  'cexSpotTrades',
+  'cexLiquidations',
 ] as const;
 
 export type BuiltInCategory = (typeof CATEGORIES)[number];
@@ -80,18 +100,29 @@ export const CATEGORY_CONFIGS: CategoryConfig[] = [
   { id: 'claimsGithub', label: 'GitHub Claims', icon: '\u2B22', color: '#34d399', sourceId: 'pumpfun' },
   { id: 'claimsFirst', label: 'First Claims', icon: '\u2605', color: '#f87171', sourceId: 'pumpfun' },
   // Ethereum categories
-  { id: 'swaps', label: 'Swaps', icon: '\u21C4', color: '#60a5fa', sourceId: 'ethereum' },
-  { id: 'transfers', label: 'Transfers', icon: '\u2192', color: '#818cf8', sourceId: 'ethereum' },
+  { id: 'ethSwaps', label: 'ETH Swaps', icon: '\u21C4', color: '#627EEA', sourceId: 'ethereum' },
+  { id: 'ethTransfers', label: 'ETH Transfers', icon: '\u2192', color: '#8799EE', sourceId: 'ethereum' },
+  { id: 'ethMints', label: 'ETH Mints', icon: '\u2726', color: '#4B6AE5', sourceId: 'ethereum' },
   // Base categories
-  { id: 'swaps', label: 'Swaps', icon: '\u21C4', color: '#3b82f6', sourceId: 'base' },
-  { id: 'mints', label: 'Mints', icon: '\u2726', color: '#22d3ee', sourceId: 'base' },
+  { id: 'baseSwaps', label: 'Base Swaps', icon: '\u21C4', color: '#0052FF', sourceId: 'base' },
+  { id: 'baseTransfers', label: 'Base Transfers', icon: '\u2192', color: '#3377FF', sourceId: 'base' },
+  { id: 'baseMints', label: 'Base Mints', icon: '\u2726', color: '#668FFF', sourceId: 'base' },
   // Agent categories
-  { id: 'trades', label: 'Agent Trades', icon: '\u2B23', color: '#f472b6', sourceId: 'agents' },
+  { id: 'agentDeploys', label: 'Agent Deploys', icon: '\u2B23', color: '#ec4899', sourceId: 'agents' },
+  { id: 'agentInteractions', label: 'Agent Interactions', icon: '\u2B22', color: '#f472b6', sourceId: 'agents' },
+  { id: 'agentSpawn', label: 'Agent Spawns', icon: '\u2B21', color: '#c084fc', sourceId: 'agents' },
+  { id: 'agentTask', label: 'Tasks', icon: '\u25B6', color: '#a78bfa', sourceId: 'agents' },
+  { id: 'toolCall', label: 'Tool Calls', icon: '\u26A1', color: '#60a5fa', sourceId: 'agents' },
+  { id: 'subagentSpawn', label: 'Sub-agents', icon: '\u25C6', color: '#f472b6', sourceId: 'agents' },
+  { id: 'reasoning', label: 'Reasoning', icon: '\u25CE', color: '#fbbf24', sourceId: 'agents' },
+  { id: 'taskComplete', label: 'Completions', icon: '\u2713', color: '#34d399', sourceId: 'agents' },
+  { id: 'taskFailed', label: 'Failures', icon: '\u2717', color: '#f87171', sourceId: 'agents' },
   // ERC-8004 categories
-  { id: 'mints', label: 'Issuance', icon: '\u2B22', color: '#34d399', sourceId: 'erc8004' },
-  { id: 'burns', label: 'Burns', icon: '\u2716', color: '#f87171', sourceId: 'erc8004' },
+  { id: 'erc8004Mints', label: 'ERC-8004 Issuance', icon: '\u2B22', color: '#2dd4bf', sourceId: 'erc8004' },
+  { id: 'erc8004Transfers', label: 'ERC-8004 Transfers', icon: '\u2192', color: '#34d399', sourceId: 'erc8004' },
   // CEX categories
-  { id: 'volume', label: 'Volume', icon: '\u25CF', color: '#fbbf24', sourceId: 'cex' },
+  { id: 'cexSpotTrades', label: 'CEX Spot Trades', icon: '\u25CF', color: '#fbbf24', sourceId: 'cex' },
+  { id: 'cexLiquidations', label: 'CEX Liquidations', icon: '\u2716', color: '#f59e0b', sourceId: 'cex' },
 ];
 
 export const CATEGORY_CONFIG_MAP = Object.fromEntries(

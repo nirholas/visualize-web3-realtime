@@ -2,111 +2,135 @@
 
 ## Context
 
-Task 21 created a `PumpFunProvider` class that implements the `DataProvider` interface. Currently the app uses `useDataProvider` (at `packages/providers/src/useDataProvider.ts`) which directly calls the old React hooks (`usePumpFun`, `usePumpFunClaims`) and hardcodes their aggregation.
+Task 21 created `PumpFunProvider`, a class implementing `DataProvider` from `@web3viz/core`. Currently the app uses `hooks/useDataProvider.ts` which directly calls React hooks (`usePumpFun`, `usePumpFunClaims`) and hardcodes PumpFun aggregation.
 
-We need a new `useProviders` hook that works with any `DataProvider` instances — it subscribes to their events, aggregates stats, manages category filtering, and provides connection state. This is the bridge between imperative provider classes and React.
+We need a `useProviders` hook that bridges imperative `DataProvider` classes into React. It manages lifecycle (connect/disconnect), aggregates events from multiple providers, and exposes filtering. This replaces both `hooks/useDataProvider.ts` and `packages/providers/src/useDataProvider.ts`.
+
+## Reference Files — Read These First
+
+- `packages/core/src/providers/index.ts` — `DataProvider` interface: `connect()`, `disconnect()`, `onEvent()`, `getStats()`, `getConnections()`, `categories`, `sourceConfig`, `setPaused()`, `setEnabled()`
+- `packages/core/src/types/index.ts` — `DataProviderEvent`, `DataProviderStats`, `MergedStats`, `TopToken`, `TraderEdge`
+- `packages/core/src/categories/index.ts` — `CategoryConfig`, `SourceConfig`
+- `packages/providers/src/mock/MockProvider.ts` — A `DataProvider` class (test that hook works with this)
+- `packages/providers/src/pump-fun/PumpFunProvider.ts` — PumpFun `DataProvider` class (created in task 21)
+- `hooks/useDataProvider.ts` — Current hook being replaced (understand its return type and what the page expects)
+- `hooks/providers/pumpfun.ts` — Alternative wrapper (understand what it returns)
 
 ## What to Build
 
 ### 1. `packages/providers/src/useProviders.ts` (NEW)
 
-A React hook that takes an array of `DataProvider` instances and provides unified access to all their data.
-
-**Signature**:
 ```ts
-interface UseProvidersOptions {
-  /** Provider instances to manage */
+export interface UseProvidersOptions {
+  /** DataProvider instances to manage */
   providers: DataProvider[];
-  /** Start paused? */
+  /** Start paused? (default false) */
   paused?: boolean;
-  /** Max unified events to keep */
+  /** Max unified events to retain (default 300) */
   maxEvents?: number;
 }
 
-interface UseProvidersReturn {
+export interface UseProvidersReturn {
   /** Merged stats from all providers */
   stats: MergedStats;
-  /** All recent events filtered by enabled categories */
+  /** Recent events filtered by enabled categories */
   filteredEvents: DataProviderEvent[];
-  /** All recent events unfiltered */
+  /** All recent events (unfiltered) */
   allEvents: DataProviderEvent[];
-  /** Set of enabled category IDs */
+  /** Currently enabled category IDs */
   enabledCategories: Set<string>;
-  /** Toggle a category on/off */
+  /** Toggle a single category */
   toggleCategory: (categoryId: string) => void;
-  /** Set of enabled provider IDs */
+  /** Currently enabled provider IDs */
   enabledProviders: Set<string>;
   /** Toggle a provider on/off */
   toggleProvider: (providerId: string) => void;
-  /** All categories from all providers */
+  /** All categories from all enabled providers */
   categories: CategoryConfig[];
-  /** All source configs from all providers */
+  /** All source configs from enabled providers */
   sources: SourceConfig[];
-  /** Per-provider connection state */
+  /** Per-provider connection state, keyed by provider ID */
   connections: Record<string, ConnectionState[]>;
 }
 
-function useProviders(options: UseProvidersOptions): UseProvidersReturn;
+export function useProviders(options: UseProvidersOptions): UseProvidersReturn;
 ```
 
 **Implementation details**:
 
-1. **Lifecycle management** — `useEffect` that calls `provider.connect()` on mount and `provider.disconnect()` on unmount for each provider. When providers array changes, diff and connect/disconnect accordingly.
+1. **Provider lifecycle** (`useEffect`):
+   - On mount: call `provider.connect()` for each provider
+   - On unmount: call `provider.disconnect()` for each provider
+   - Use a ref to track current providers. If the `providers` array identity changes, diff and connect/disconnect new/removed providers
+   - Pass `providers` by reference — consumers should `useMemo` upstream
 
-2. **Event subscription** — For each provider, call `provider.onEvent(callback)` to subscribe. The callback pushes events into a shared buffer. Use `useRef` for the buffer and flush to state on a 100ms debounce (to batch rapid events).
+2. **Event subscription** (`useEffect`):
+   - For each provider, call `provider.onEvent(callback)` — returns unsubscribe fn
+   - The callback pushes events into a `useRef<DataProviderEvent[]>` buffer
+   - Flush buffer to state every 100ms via `setInterval` (batching for perf)
+   - When flushing: merge with existing events, sort by timestamp desc, cap at `maxEvents`
+   - Store unsubscribe functions in a ref, call them on cleanup
 
-3. **Stats aggregation** — Poll `provider.getStats()` on each event batch (or on interval). Merge stats from all providers:
-   - `counts`: sum per-category counts from all providers
-   - `totalVolumeSol`: sum
-   - `totalTransactions`: sum
-   - `topTokens`: concatenate from all providers, re-sort by volume, take top 8
-   - `traderEdges`: concatenate from all providers
-   - `recentEvents`: merge all providers' events, sort by timestamp desc, take maxEvents
-   - `bySource`: stats breakdown per provider ID (from `MergedStats` type in `@web3viz/core`)
+3. **Stats aggregation** (derived via `useMemo` from events + providers):
+   - Call `provider.getStats()` for each enabled provider
+   - Merge:
+     - `counts`: sum per-category from all providers
+     - `totalVolumeSol`: sum
+     - `totalTransactions`: sum
+     - `totalAgents`: sum
+     - `topTokens`: concat all, re-sort by `volumeSol` desc, take top 8
+     - `traderEdges`: concat all
+     - `recentEvents`: the unified event buffer (already sorted)
+     - `rawEvents`: concat
+     - `bySource`: `Record<string, DataProviderStats>` — stats from each provider keyed by `provider.id`
 
-4. **Category management** — Collect `provider.categories` from all providers into a single array. Maintain a `Set<string>` of enabled category IDs (all enabled by default). `toggleCategory` flips membership. `filteredEvents` = `allEvents.filter(e => enabledCategories.has(e.category))`.
+   **Important**: Stats need to update when new events arrive. Since events flush on interval, stats should re-derive when the event list changes. Use `useMemo` keyed on events state + a counter that increments on each flush.
 
-5. **Provider management** — Maintain a `Set<string>` of enabled provider IDs (all enabled by default). When a provider is disabled, call `provider.setEnabled(false)` and filter its events from the unified stream.
+4. **Category management**:
+   - Collect `provider.categories` from all providers into one array
+   - `enabledCategories`: `useState<Set<string>>` initialized with all category IDs
+   - `toggleCategory(id)`: flip membership in the set
+   - `filteredEvents`: `allEvents.filter(e => enabledCategories.has(e.category))`
 
-6. **Connection state** — Build from `provider.getConnections()` for each provider, keyed by provider ID.
+5. **Provider management**:
+   - `enabledProviders`: `useState<Set<string>>` initialized with all provider IDs
+   - `toggleProvider(id)`: flip membership, call `provider.setEnabled(enabled)`, filter events
+   - When provider is disabled: its events are excluded from filteredEvents and allEvents
 
-7. **Pause/resume** — When `paused` option changes, call `provider.setPaused(paused)` on all providers.
+6. **Connection state**:
+   - `connections`: derived from `provider.getConnections()` for each provider, keyed by ID
+   - Refresh on same interval as event flush (100ms)
+
+7. **Pause/resume**:
+   - When `paused` prop changes, call `provider.setPaused(paused)` on all providers (via `useEffect`)
 
 ### 2. Update `packages/providers/src/index.ts`
 
-Add the new hook to exports:
+Add exports:
 ```ts
 export { useProviders } from './useProviders';
 export type { UseProvidersOptions, UseProvidersReturn } from './useProviders';
 ```
 
-### 3. Keep `useDataProvider.ts` for now
+### 3. Deprecate old hooks
 
-Do NOT delete it yet. It will be removed in task 23 when the UI is updated. Mark it with a deprecation comment:
+Add to top of `packages/providers/src/useDataProvider.ts`:
 ```ts
-/** @deprecated Use useProviders() instead */
+/** @deprecated Use useProviders() with DataProvider instances instead */
 ```
 
-## Reference Files
-
-Read these files:
-- `packages/core/src/providers/index.ts` — DataProvider interface (connect, disconnect, onEvent, getStats, getConnections, categories, etc.)
-- `packages/core/src/types/index.ts` — DataProviderEvent, DataProviderStats, MergedStats, TopToken, TraderEdge
-- `packages/core/src/categories/index.ts` — CategoryConfig, SourceConfig types
-- `packages/providers/src/useDataProvider.ts` — The old hook being replaced (understand what it returns so we don't break consumers)
-- `packages/providers/src/pump-fun/PumpFunProvider.ts` — The provider class this hook will consume (created in task 21)
-- `packages/providers/src/mock/MockProvider.ts` — Another provider class this hook should work with
+Do NOT delete it yet — the app still imports it. That changes in task 23.
 
 ## Important Notes
 
-- This hook must work with ANY DataProvider, not just PumpFun. Don't import PumpFun-specific types.
-- Use `useRef` for mutable accumulators (event buffers, subscription cleanup functions) to avoid re-render loops.
-- The providers array should be treated as stable (passed via useMemo upstream). Don't re-subscribe on every render.
-- Import types from `@web3viz/core`, not from local files.
-- Do NOT modify any UI components or the app page — that's task 23.
+- The hook must work with **any** `DataProvider` — don't import PumpFun-specific types
+- Import all types from `@web3viz/core`
+- Use `useRef` for mutable state (event buffers, unsubscribe fns, timers) to avoid re-render cascades
+- The `providers` array should be treated as referentially stable. Use a ref + shallow comparison to detect changes.
+- Do NOT modify any UI, page, or component files
 
 ## Verification
 
-1. Run `cd /workspaces/visualize-web3-realtime && npx turbo typecheck` — should pass
-2. The hook should be importable: `import { useProviders } from '@web3viz/providers'`
-3. It should accept `[new PumpFunProvider(), new MockProvider()]` as providers
+1. `cd /workspaces/visualize-web3-realtime && npx turbo typecheck` — zero errors
+2. Importable: `import { useProviders } from '@web3viz/providers'`
+3. Should accept `[new PumpFunProvider(), new MockProvider()]` without type errors

@@ -130,7 +130,7 @@ function EventCard({ event }: { event: RawEvent }) {
         : 'claimsWallet';
 
   const config = CATEGORY_BY_ID[category];
-  const data = event.data as Record<string, unknown>;
+  const data = event.data as unknown as Record<string, unknown>;
 
   return (
     <div className="px-4 py-2.5 text-xs flex items-start gap-2">

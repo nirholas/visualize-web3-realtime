@@ -220,6 +220,13 @@ export function useDataProvider({ paused = false }: { paused?: boolean } = {}) {
     cex: cex.connected,
   }), [pumpfun.connected, ethereum.connected, base.connected, agents.connected, erc8004.connected, cex.connected]);
 
+  // --- Agent toggle convenience API ---
+  const showAgents = enabledSources.has('agents');
+
+  const toggleAgents = useCallback(() => {
+    toggleSource('agents');
+  }, [toggleSource]);
+
   return {
     stats,
     filteredEvents,
@@ -228,5 +235,7 @@ export function useDataProvider({ paused = false }: { paused?: boolean } = {}) {
     enabledCategories,
     toggleCategory,
     connected,
+    showAgents,
+    toggleAgents,
   };
 }

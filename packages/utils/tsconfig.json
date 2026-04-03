@@ -1,7 +1,13 @@
 {
   "extends": "../tsconfig/react-library.json",
   "compilerOptions": {
-    "outDir": "./dist"
+    "composite": false,
+    "noEmit": true,
+    "rootDir": "..",
+    "paths": {
+      "@web3viz/core": ["../core/src/index.ts"],
+      "@web3viz/core/*": ["../core/src/*/index.ts"]
+    }
   },
   "include": ["src"]
 }

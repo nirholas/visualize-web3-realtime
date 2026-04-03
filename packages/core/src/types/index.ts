@@ -27,48 +27,61 @@ export type BuiltInSource =
 
 /** A token on-chain (e.g. from PumpFun, Uniswap, etc.) */
 export interface Token {
-  mint: string;
+  /** Token contract address (mint on Solana, contract on EVM) */
+  tokenAddress: string;
   name: string;
   symbol: string;
+  /** Chain identifier: 'solana' | 'ethereum' | 'base' | string */
+  chain: string;
   uri?: string;
-  traderPublicKey: string;
+  creatorAddress: string;
   initialBuy?: number;
-  marketCapSol?: number;
+  marketCap?: number;
+  /** Native currency symbol for marketCap (e.g. 'SOL', 'ETH') */
+  nativeSymbol?: string;
   signature?: string;
   timestamp: number;
   /** Whether this token appears to be an AI agent launch */
   isAgent?: boolean;
   /** Which data source produced this token */
   source?: string;
+  /** Arbitrary provider-specific metadata */
+  meta?: Record<string, unknown>;
 }
 
 /** An on-chain trade event */
 export interface Trade {
-  mint: string;
+  tokenAddress: string;
+  chain: string;
   signature: string;
-  traderPublicKey: string;
-  txType: 'buy' | 'sell';
+  traderAddress: string;
+  txType: 'buy' | 'sell' | 'swap' | string;
   tokenAmount: number;
-  solAmount: number;
-  newTokenBalance?: number;
-  bondingCurveKey?: string;
-  vTokensInBondingCurve?: number;
-  vSolInBondingCurve?: number;
-  marketCapSol?: number;
+  nativeAmount: number;
+  nativeSymbol: string;
+  /** USD equivalent if available */
+  usdAmount?: number;
+  marketCap?: number;
   timestamp: number;
   name?: string;
   symbol?: string;
   /** Which data source produced this trade */
   source?: string;
+  /** Arbitrary provider-specific metadata */
+  meta?: Record<string, unknown>;
 }
 
 /** A token/entity ranked by activity — used as a hub node in the graph */
 export interface TopToken {
-  mint: string;
+  tokenAddress: string;
   symbol: string;
   name: string;
+  chain: string;
   trades: number;
-  volumeSol: number;
+  volume: number;
+  nativeSymbol: string;
+  /** USD volume if available */
+  volumeUsd?: number;
   /** Source provider that produced this entry */
   source?: string;
 }
@@ -76,9 +89,10 @@ export interface TopToken {
 /** An edge between a participant and a hub (for graph visualization) */
 export interface TraderEdge {
   trader: string;
-  mint: string;
+  tokenAddress: string;
+  chain: string;
   trades: number;
-  volumeSol: number;
+  volume: number;
   /** Source provider that produced this edge */
   source?: string;
 }
@@ -86,24 +100,31 @@ export interface TraderEdge {
 /** A claim event (e.g. fee claims, social claims) */
 export interface Claim {
   signature: string;
+  chain: string;
   slot?: number;
   timestamp: number;
-  claimType: 'wallet' | 'github' | string;
+  claimType: string;
   programId: string;
   claimer: string;
   isFirstClaim: boolean;
   logs?: string[];
+  /** Arbitrary provider-specific metadata */
+  meta?: Record<string, unknown>;
 }
 
 // ---------------------------------------------------------------------------
 // Event types
 // ---------------------------------------------------------------------------
 
+import type { AgentEvent } from './agent';
+
 /** Raw event from a data source */
 export type RawEvent =
   | { type: 'tokenCreate'; data: Token }
   | { type: 'trade'; data: Trade }
-  | { type: 'claim'; data: Claim };
+  | { type: 'claim'; data: Claim }
+  | { type: 'custom'; data: Record<string, unknown> }
+  | { type: 'agentEvent'; data: AgentEvent };
 
 /**
  * Unified event with category and source assignment.
@@ -111,15 +132,20 @@ export type RawEvent =
  */
 export interface DataProviderEvent {
   id: string;
+  /** Which provider emitted this */
+  providerId: string;
   /** Category within the source (e.g. 'launches', 'trades', 'swaps') */
   category: string;
-  /** Source provider ID (e.g. 'pumpfun', 'ethereum', 'base') */
-  source: string;
+  chain: string;
   timestamp: number;
   label: string;
   amount?: number;
+  /** Native currency symbol */
+  nativeSymbol?: string;
+  /** USD equivalent */
+  amountUsd?: number;
   address: string;
-  mint?: string;
+  tokenAddress?: string;
   meta?: Record<string, unknown>;
 }
 
@@ -133,7 +159,8 @@ export interface GraphNode {
   label: string;
   radius: number;
   color: string;
-  hubMint?: string;
+  chain?: string;
+  hubTokenAddress?: string;
   /** Source provider that owns this node */
   source?: string;
   x?: number;
@@ -158,7 +185,8 @@ export interface GraphEdge {
 /** Aggregate stats from a single data provider */
 export interface DataProviderStats {
   counts: Record<string, number>;
-  totalVolumeSol: number;
+  /** Total volume per chain: { solana: 123.4, ethereum: 56.7 } */
+  totalVolume: Record<string, number>;
   totalTransactions: number;
   totalAgents: number;
   recentEvents: DataProviderEvent[];

@@ -11,6 +11,22 @@
 //   import type { TopToken } from '@web3viz/core/types';
 // ============================================================================
 
+// Agent types
+export type {
+  AgentIdentity,
+  AgentTaskStatus,
+  AgentTask,
+  ToolCallStatus,
+  AgentToolCall,
+  AgentEventType,
+  AgentEvent,
+  AgentFlowTrace,
+  ExecutorStatus,
+  ExecutorState,
+  AgentGraphNodeType,
+  AgentGraphNode,
+} from './types/agent';
+
 // Types
 export type {
   BuiltInSource,

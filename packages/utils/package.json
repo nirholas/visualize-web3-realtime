@@ -7,7 +7,9 @@
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@web3viz/core": "*"
+  },
   "devDependencies": {
     "@web3viz/tsconfig": "*",
     "typescript": "^5.5.0"
