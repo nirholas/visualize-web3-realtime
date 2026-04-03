@@ -54,6 +54,9 @@ export const CATEGORIES = [
 
 export type BuiltInCategory = (typeof CATEGORIES)[number];
 
+/** Alias for use in consumer code — same as BuiltInCategory but can be extended */
+export type CategoryId = BuiltInCategory | (string & {});
+
 // ---------------------------------------------------------------------------
 // Category configuration
 // ---------------------------------------------------------------------------
@@ -93,6 +96,11 @@ export const CATEGORY_CONFIGS: CategoryConfig[] = [
 
 export const CATEGORY_CONFIG_MAP = Object.fromEntries(
   CATEGORY_CONFIGS.map((c) => [c.sourceId ? `${c.sourceId}:${c.id}` : c.id, c]),
+) as Record<string, CategoryConfig>;
+
+/** Simple lookup by category id only (first match wins) */
+export const CATEGORY_BY_ID = Object.fromEntries(
+  [...CATEGORY_CONFIGS].reverse().map((c) => [c.id, c]),
 ) as Record<string, CategoryConfig>;
 
 /** Get categories for a specific source */

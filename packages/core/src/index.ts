@@ -41,6 +41,7 @@ export {
   CATEGORIES,
   CATEGORY_CONFIGS,
   CATEGORY_CONFIG_MAP,
+  CATEGORY_BY_ID,
   SOURCE_CONFIGS,
   SOURCE_CONFIG_MAP,
   createCategory,
@@ -49,6 +50,7 @@ export {
   mergeCategories,
   buildCategoryMap,
   type BuiltInCategory,
+  type CategoryId,
   type CategoryConfig,
   type SourceConfig,
 } from './categories';

@@ -5,13 +5,13 @@ import { memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 
 import InfoPopover from '@/features/World/InfoPopover';
 import JourneyOverlay from '@/features/World/JourneyOverlay';
+import LoadingScreen from '@/features/World/LoadingScreen';
 import ProtocolFilterSidebar from '@/features/World/ProtocolFilterSidebar';
 import ShareOverlay from '@/features/World/ShareOverlay';
 import SharePanel, { type ShareColors } from '@/features/World/SharePanel';
 import {
   useDataProvider,
   CATEGORY_CONFIGS,
-  type PumpFunCategory,
 } from '@/hooks/useDataProvider';
 import LiveFeed from '@/features/World/LiveFeed';
 import TimelineBar from '@/features/World/TimelineBar';
@@ -113,6 +113,7 @@ export default function WorldPage() {
   const isLive = timeFilter === null;
   const [infoOpen, setInfoOpen] = useState(false);
   const [userAddress, setUserAddress] = useState('');
+  const [canvasReady, setCanvasReady] = useState(false);
   const [highlightedAddress, setHighlightedAddress] = useState<string | null>(null);
   const [highlightedHubIndex, setHighlightedHubIndex] = useState<number | null>(null);
   const [activeHubMint, setActiveHubMint] = useState<string | null>(null);
@@ -131,6 +132,13 @@ export default function WorldPage() {
 
   const { stats, enabledCategories, connected } =
     useDataProvider({ paused: !isPlaying });
+
+  // Mark canvas ready once first data arrives
+  useEffect(() => {
+    if (!canvasReady && stats.topTokens.length > 0) {
+      setCanvasReady(true);
+    }
+  }, [canvasReady, stats.topTokens.length]);
 
   // -- Timeline timestamp accumulation --
   const [timelineTimestamps, setTimelineTimestamps] = useState<number[]>([]);
@@ -360,6 +368,9 @@ export default function WorldPage() {
 
   return (
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: '#ffffff' }}>
+      {/* Loading screen */}
+      <LoadingScreen ready={canvasReady} />
+
       {/* Timeline scrubber — top bar */}
       <TimelineBar
         eventTimestamps={timelineTimestamps}
@@ -488,12 +499,11 @@ export default function WorldPage() {
         <ConnectionDot connected={connected.claims} label="SOL" />
       </div>
 
-      {/* Category filter sidebar — left */}
+      {/* Protocol filter sidebar — left */}
       <ProtocolFilterSidebar
-        categories={CATEGORY_CONFIGS}
-        activeProtocol={activeProtocol}
+        tokens={displayTopTokens}
+        activeMint={activeHubMint}
         onToggle={handleProtocolToggle}
-        counts={stats.counts}
       />
 
       {/* Bottom stats bar */}

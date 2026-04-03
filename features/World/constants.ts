@@ -16,7 +16,7 @@ export const COLOR_PALETTE = [
 export const PROTOCOL_COLORS = {
   default: '#161616',
   highlight: '#3d63ff',
-  agentDefault: '#2a2a2a',
+  agentDefault: '#4a4a4a',
 } as const;
 
 export const GRAPH_CONFIG = {

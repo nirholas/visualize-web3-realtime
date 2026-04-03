@@ -1,0 +1,25 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --w3v-bg: #0a0a0f;
+  --w3v-surface: #141420;
+  --w3v-border: #2a2a3a;
+  --w3v-text: #e2e2f0;
+  --w3v-text-muted: #8888aa;
+  --w3v-accent: #a78bfa;
+  --w3v-accent-muted: rgba(167, 139, 250, 0.2);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--w3v-bg);
+  color: var(--w3v-text);
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  -webkit-font-smoothing: antialiased;
+}

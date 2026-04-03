@@ -1,41 +1,38 @@
 {
-  "name": "visualize-web3-realtime",
+  "name": "@web3viz/playground",
   "version": "0.1.0",
   "private": true,
-  "workspaces": [
-    "packages/*",
-    "apps/*"
-  ],
   "scripts": {
-    "dev": "next dev -p 3100",
-    "dev:playground": "turbo run dev --filter=@web3viz/playground",
-    "build": "turbo run build",
-    "build:web": "next build",
-    "start": "next start -p 3100",
+    "dev": "next dev -p 3200",
+    "build": "next build",
+    "start": "next start -p 3200",
     "lint": "next lint",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^8.18.0",
-    "d3-force": "^3.0.0",
+    "@web3viz/core": "workspace:*",
+    "@web3viz/providers": "workspace:*",
+    "@web3viz/react-graph": "workspace:*",
+    "@web3viz/ui": "workspace:*",
+    "@web3viz/utils": "workspace:*",
     "framer-motion": "^11.0.0",
-    "html2canvas": "^1.4.1",
     "next": "^14.2.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "three": "^0.169.0"
   },
   "devDependencies": {
-    "@types/d3-force": "^3.0.10",
-    "@types/node": "^20.14.0",
+    "@types/node": "^20.0.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@types/three": "^0.169.0",
+    "@web3viz/tailwind-config": "workspace:*",
+    "@web3viz/tsconfig": "workspace:*",
     "autoprefixer": "^10.4.0",
     "postcss": "^8.4.0",
     "tailwindcss": "^3.4.0",
-    "turbo": "^2.0.0",
     "typescript": "^5.5.0"
   }
 }
