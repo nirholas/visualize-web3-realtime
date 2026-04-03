@@ -9,7 +9,7 @@
     "build": "tsc"
   },
   "dependencies": {
-    "@web3viz/core": "workspace:*",
+    "@web3viz/core": "*",
     "better-sqlite3": "^11.0.0",
     "ws": "^8.16.0"
   },

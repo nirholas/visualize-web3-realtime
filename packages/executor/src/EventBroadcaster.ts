@@ -1,4 +1,5 @@
-import { WebSocketServer, type WebSocket } from 'ws';
+import { WebSocketServer } from 'ws';
+import type { WebSocket } from 'ws';
 import type { AgentEvent, AgentIdentity, AgentTask, ExecutorState } from './types.js';
 import type { BroadcastMessage } from './types.js';
 

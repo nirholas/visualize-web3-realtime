@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "next dev -p 3100",
     "dev:playground": "turbo run dev --filter=@web3viz/playground",
+    "dev:executor": "turbo run dev --filter=@web3viz/executor",
     "build": "next build",
     "build:web": "next build",
     "start": "next start -p 3100",

@@ -10,7 +10,7 @@ import { HealthMonitor } from './HealthMonitor.js';
 import { SperaxOSClient } from './SperaxOSClient.js';
 import { StateStore } from './StateStore.js';
 
-const DEFAULT_AGENT_ROLES = ['coder', 'researcher', 'planner'];
+export const DEFAULT_AGENT_ROLES = ['coder', 'researcher', 'planner'];
 
 export class ExecutorServer {
   private readonly queue: TaskQueue;
@@ -47,20 +47,26 @@ export class ExecutorServer {
   }
 
   private parseRequestBody(req: any): Promise<Record<string, unknown>> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       let body = '';
       req.on('data', (chunk: Buffer) => {
         body += chunk;
-        if (body.length > 1024 * 1024) reject(new Error('Payload too large'));
+        if (body.length > 1024 * 1024) {
+          resolve({});
+          return;
+        }
       });
       req.on('end', () => {
         try {
-          resolve(body ? JSON.parse(body) : {});
+          const parsed = body ? JSON.parse(body) : {};
+          resolve(typeof parsed === 'object' && parsed !== null ? parsed : {});
         } catch {
           resolve({});
         }
       });
-      req.on('error', reject);
+      req.on('error', () => {
+        resolve({});
+      });
     });
   }
 

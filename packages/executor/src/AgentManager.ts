@@ -4,6 +4,7 @@ import { SperaxOSClient } from './SperaxOSClient.js';
 
 const MOCK_TOOL_NAMES = ['read_file', 'grep_search', 'run_in_terminal', 'semantic_search', 'create_file'];
 const MOCK_CATEGORIES = ['filesystem', 'search', 'terminal', 'search', 'filesystem'] as const;
+const DEFAULT_AGENT_ROLES = ['coder', 'researcher', 'planner'];
 
 let _callId = 0;
 function uid(): string { return `call_${Date.now()}_${++_callId}`; }

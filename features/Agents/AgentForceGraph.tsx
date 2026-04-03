@@ -122,6 +122,8 @@ export interface AgentForceGraphProps {
   shareColors?: ShareColors;
   /** Height of the canvas container */
   height?: string | number;
+  /** Color scheme for theme-aware rendering */
+  colorScheme?: 'dark' | 'light';
 }
 
 export interface AgentForceGraphHandle {
