@@ -6,10 +6,26 @@
 // ============================================================================
 
 // ---------------------------------------------------------------------------
+// Source identification
+// ---------------------------------------------------------------------------
+
+/**
+ * Every data source (provider) is identified by a source ID.
+ * Built-in sources are typed here; plugins add their own string IDs.
+ */
+export type BuiltInSource =
+  | 'pumpfun'
+  | 'ethereum'
+  | 'base'
+  | 'agents'
+  | 'erc8004'
+  | 'cex';
+
+// ---------------------------------------------------------------------------
 // Token & Trade types
 // ---------------------------------------------------------------------------
 
-/** A token on-chain (e.g. from PumpFun) */
+/** A token on-chain (e.g. from PumpFun, Uniswap, etc.) */
 export interface Token {
   mint: string;
   name: string;
@@ -22,6 +38,8 @@ export interface Token {
   timestamp: number;
   /** Whether this token appears to be an AI agent launch */
   isAgent?: boolean;
+  /** Which data source produced this token */
+  source?: string;
 }
 
 /** An on-chain trade event */
@@ -40,23 +58,29 @@ export interface Trade {
   timestamp: number;
   name?: string;
   symbol?: string;
+  /** Which data source produced this trade */
+  source?: string;
 }
 
-/** A token ranked by trading activity */
+/** A token/entity ranked by activity — used as a hub node in the graph */
 export interface TopToken {
   mint: string;
   symbol: string;
   name: string;
   trades: number;
   volumeSol: number;
+  /** Source provider that produced this entry */
+  source?: string;
 }
 
-/** An edge between a trader wallet and a token (for graph visualization) */
+/** An edge between a participant and a hub (for graph visualization) */
 export interface TraderEdge {
   trader: string;
   mint: string;
   trades: number;
   volumeSol: number;
+  /** Source provider that produced this edge */
+  source?: string;
 }
 
 /** A claim event (e.g. fee claims, social claims) */
@@ -81,10 +105,16 @@ export type RawEvent =
   | { type: 'trade'; data: Trade }
   | { type: 'claim'; data: Claim };
 
-/** Unified event with category assignment */
+/**
+ * Unified event with category and source assignment.
+ * This is the canonical event type that all providers emit.
+ */
 export interface DataProviderEvent {
   id: string;
+  /** Category within the source (e.g. 'launches', 'trades', 'swaps') */
   category: string;
+  /** Source provider ID (e.g. 'pumpfun', 'ethereum', 'base') */
+  source: string;
   timestamp: number;
   label: string;
   amount?: number;
@@ -104,6 +134,8 @@ export interface GraphNode {
   radius: number;
   color: string;
   hubMint?: string;
+  /** Source provider that owns this node */
+  source?: string;
   x?: number;
   y?: number;
   vx?: number;
@@ -123,7 +155,7 @@ export interface GraphEdge {
 // Stats & aggregation types
 // ---------------------------------------------------------------------------
 
-/** Aggregate stats from a data provider */
+/** Aggregate stats from a single data provider */
 export interface DataProviderStats {
   counts: Record<string, number>;
   totalVolumeSol: number;
@@ -133,6 +165,12 @@ export interface DataProviderStats {
   topTokens: TopToken[];
   traderEdges: TraderEdge[];
   rawEvents: RawEvent[];
+}
+
+/** Merged stats from all active providers */
+export interface MergedStats extends DataProviderStats {
+  /** Per-source breakdown of stats */
+  bySource: Record<string, DataProviderStats>;
 }
 
 // ---------------------------------------------------------------------------

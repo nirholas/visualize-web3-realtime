@@ -1,0 +1,33 @@
+{
+  "name": "@web3viz/react-graph",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "React Three Fiber force-directed graph visualization for Web3 data",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "echo 'lint not configured'"
+  },
+  "dependencies": {
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.18.0",
+    "@web3viz/core": "workspace:*",
+    "three": "^0.169.0"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@types/three": "^0.169.0",
+    "@web3viz/tsconfig": "workspace:*",
+    "typescript": "^5.5.0"
+  }
+}

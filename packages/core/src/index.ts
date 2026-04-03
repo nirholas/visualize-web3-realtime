@@ -13,6 +13,7 @@
 
 // Types
 export type {
+  BuiltInSource,
   Token,
   Trade,
   TopToken,
@@ -23,6 +24,7 @@ export type {
   GraphNode,
   GraphEdge,
   DataProviderStats,
+  MergedStats,
   ShareColors,
   EmbedConfig,
   Vec3,
