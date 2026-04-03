@@ -1,0 +1,196 @@
+'use client';
+
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+// ---------------------------------------------------------------------------
+// PumpFun WebSocket types
+// ---------------------------------------------------------------------------
+
+export interface PumpFunToken {
+  mint: string;
+  name: string;
+  symbol: string;
+  uri: string;
+  traderPublicKey: string;
+  initialBuy: number;
+  marketCapSol: number;
+  signature: string;
+  timestamp: number;
+}
+
+export interface PumpFunTrade {
+  mint: string;
+  signature: string;
+  traderPublicKey: string;
+  txType: 'buy' | 'sell';
+  tokenAmount: number;
+  solAmount: number;
+  newTokenBalance: number;
+  bondingCurveKey: string;
+  vTokensInBondingCurve: number;
+  vSolInBondingCurve: number;
+  marketCapSol: number;
+  timestamp: number;
+  // Resolved from token creates
+  name?: string;
+  symbol?: string;
+}
+
+export type PumpFunEvent =
+  | { type: 'tokenCreate'; data: PumpFunToken }
+  | { type: 'trade'; data: PumpFunTrade };
+
+export interface PumpFunStats {
+  totalTokens: number;
+  totalTrades: number;
+  totalVolumeSol: number;
+  recentEvents: PumpFunEvent[];
+  topTokens: { mint: string; symbol: string; name: string; trades: number; volumeSol: number }[];
+}
+
+// ---------------------------------------------------------------------------
+// Hook
+// ---------------------------------------------------------------------------
+
+const WS_URL = 'wss://pumpportal.fun/api/data';
+const MAX_EVENTS = 200;
+const MAX_TOP_TOKENS = 8;
+
+export function usePumpFun({ paused = false }: { paused?: boolean } = {}) {
+  const [stats, setStats] = useState<PumpFunStats>({
+    totalTokens: 0,
+    totalTrades: 0,
+    totalVolumeSol: 0,
+    recentEvents: [],
+    topTokens: [],
+  });
+  const [connected, setConnected] = useState(false);
+  const wsRef = useRef<WebSocket | null>(null);
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
+
+  // Token name cache: mint → { name, symbol }
+  const tokenCache = useRef<Map<string, { name: string; symbol: string }>>(new Map());
+  // Accumulator for top tokens: mint → { trades, volumeSol }
+  const tokenAcc = useRef<Map<string, { mint: string; name: string; symbol: string; trades: number; volumeSol: number }>>(new Map());
+
+  const connect = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) return;
+
+    const ws = new WebSocket(WS_URL);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      setConnected(true);
+      // Subscribe to all new token creations and trades
+      ws.send(JSON.stringify({ method: 'subscribeNewToken' }));
+      ws.send(JSON.stringify({ method: 'subscribeTokenTrade', keys: ['allTrades'] }));
+    };
+
+    ws.onmessage = (event) => {
+      if (pausedRef.current) return;
+
+      try {
+        const raw = JSON.parse(event.data);
+        if (!raw || typeof raw !== 'object') return;
+
+        // Detect event type
+        if (raw.txType === undefined && raw.mint && raw.name) {
+          // Token create
+          const token: PumpFunToken = {
+            mint: raw.mint,
+            name: raw.name || 'Unknown',
+            symbol: raw.symbol || '???',
+            uri: raw.uri || '',
+            traderPublicKey: raw.traderPublicKey || '',
+            initialBuy: raw.initialBuy || 0,
+            marketCapSol: raw.marketCapSol || 0,
+            signature: raw.signature || '',
+            timestamp: Date.now(),
+          };
+          tokenCache.current.set(token.mint, { name: token.name, symbol: token.symbol });
+
+          setStats((prev) => ({
+            ...prev,
+            totalTokens: prev.totalTokens + 1,
+            recentEvents: [{ type: 'tokenCreate' as const, data: token }, ...prev.recentEvents].slice(0, MAX_EVENTS),
+          }));
+        } else if (raw.txType === 'buy' || raw.txType === 'sell') {
+          // Trade event
+          const cached = tokenCache.current.get(raw.mint);
+          const trade: PumpFunTrade = {
+            mint: raw.mint,
+            signature: raw.signature || '',
+            traderPublicKey: raw.traderPublicKey || '',
+            txType: raw.txType,
+            tokenAmount: raw.tokenAmount || 0,
+            solAmount: raw.solAmount || 0,
+            newTokenBalance: raw.newTokenBalance || 0,
+            bondingCurveKey: raw.bondingCurveKey || '',
+            vTokensInBondingCurve: raw.vTokensInBondingCurve || 0,
+            vSolInBondingCurve: raw.vSolInBondingCurve || 0,
+            marketCapSol: raw.marketCapSol || 0,
+            timestamp: Date.now(),
+            name: cached?.name,
+            symbol: cached?.symbol,
+          };
+
+          // Update accumulator
+          const solAmount = trade.solAmount / 1e9; // lamports → SOL
+          const existing = tokenAcc.current.get(trade.mint);
+          if (existing) {
+            existing.trades++;
+            existing.volumeSol += solAmount;
+            if (cached) {
+              existing.name = cached.name;
+              existing.symbol = cached.symbol;
+            }
+          } else {
+            tokenAcc.current.set(trade.mint, {
+              mint: trade.mint,
+              name: cached?.name || trade.mint.slice(0, 8),
+              symbol: cached?.symbol || '???',
+              trades: 1,
+              volumeSol: solAmount,
+            });
+          }
+
+          // Compute top tokens
+          const sorted = Array.from(tokenAcc.current.values())
+            .sort((a, b) => b.volumeSol - a.volumeSol)
+            .slice(0, MAX_TOP_TOKENS);
+
+          setStats((prev) => ({
+            ...prev,
+            totalTrades: prev.totalTrades + 1,
+            totalVolumeSol: prev.totalVolumeSol + solAmount,
+            recentEvents: [{ type: 'trade' as const, data: trade }, ...prev.recentEvents].slice(0, MAX_EVENTS),
+            topTokens: sorted,
+          }));
+        }
+      } catch {
+        // Ignore malformed messages
+      }
+    };
+
+    ws.onclose = () => {
+      setConnected(false);
+      // Auto-reconnect after 3s
+      setTimeout(connect, 3000);
+    };
+
+    ws.onerror = () => {
+      ws.close();
+    };
+  }, []);
+
+  useEffect(() => {
+    connect();
+    return () => {
+      wsRef.current?.close();
+      wsRef.current = null;
+    };
+  }, [connect]);
+
+  return { stats, connected };
+}
