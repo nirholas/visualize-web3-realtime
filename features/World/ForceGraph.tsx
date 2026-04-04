@@ -589,7 +589,7 @@ const SceneBackground = memo<{ color: string }>(({ color }) => {
 });
 SceneBackground.displayName = 'SceneBackground';
 
-/** Ground plane for visual grounding */
+/** Ground plane for visual grounding — double-sided for 360° viewing */
 const Ground = memo(() => (
   <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]} receiveShadow>
     <planeGeometry args={[200, 200]} />
@@ -599,6 +599,9 @@ const Ground = memo(() => (
       metalness={0.0}
       clearcoat={0.05}
       clearcoatRoughness={0.9}
+      side={THREE.DoubleSide}
+      transparent
+      opacity={0.6}
     />
   </mesh>
 ));
@@ -850,27 +853,29 @@ const CameraSetup = memo<{ apiRef: React.MutableRefObject<CameraApi | null> }>((
     const controls = controlsRef.current;
     if (!controls) return;
 
-    // Set initial position: elevated view looking down at origin
-    controls.setLookAt(0, 55, 12, 0, 0, 0, false);
+    // Angled orbital view — ~35° from horizontal, looking at the node cluster
+    // This gives a 3D perspective where you can see depth and height of nodes
+    controls.setLookAt(0, 30, 50, 0, 0, 0, false);
 
-    // Smooth damping for premium feel
+    // Smooth damping for premium feel (matches world.gizatech.xyz)
     controls.smoothTime = 0.35;
     controls.draggingSmoothTime = 0.15;
 
     // Distance constraints
     controls.minDistance = 10;
-    controls.maxDistance = 150;
+    controls.maxDistance = 200;
 
     // Unrestricted polar angle — full 360° vertical rotation (no floor clamp)
     controls.minPolarAngle = 0;
     controls.maxPolarAngle = Math.PI;
 
-    // Unrestricted azimuth
+    // Unrestricted azimuth — full horizontal rotation
     controls.minAzimuthAngle = -Infinity;
     controls.maxAzimuthAngle = Infinity;
 
-    // Dolly speed
+    // Interaction tuning
     controls.dollySpeed = 0.5;
+    controls.truckSpeed = 1.0;
   }, []);
 
   useEffect(() => {
@@ -1121,7 +1126,7 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
   return (
     <div ref={containerRef} style={{ width: '100%', height, position: 'relative' }}>
       <Canvas
-        camera={{ fov: 45, near: 0.1, far: 500, position: [0, 55, 12] }}
+        camera={{ fov: 45, near: 0.1, far: 500, position: [0, 30, 50] }}
         style={{ background: shareColors?.background ?? '#ffffff' }}
         gl={{ antialias: false, alpha: false }}
         dpr={[1, 1.5]}
