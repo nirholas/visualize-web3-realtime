@@ -26,6 +26,7 @@ import { buildShareUrl, buildShareText, parseShareParams, shareOnX, shareOnLinke
 import type { ForceGraphHandle } from '@/features/World/ForceGraph';
 import { WorldChat } from '@/features/World/ai/WorldChat';
 import FloatingPanel from '@/features/World/FloatingPanel';
+import { DarkModeProvider, useDarkMode } from '@/features/World/DarkModeContext';
 import { formatStat } from '@/features/World/utils/shared';
 
 // Lazy-load the 3D force graph to avoid SSR issues with Three.js
@@ -571,7 +572,10 @@ export default function WorldPage() {
     connections: connectionEntries.length,
   }), [stats.totalTransactions, totalVolume, connectionEntries.length]);
 
+  const effectiveBg = shareOpen ? shareColors.background : '#0a0a0f';
+
   return (
+    <DarkModeProvider background={effectiveBg}>
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: '#0a0a0f' }}>
       {/* Loading screen — only show when a provider is enabled */}
       {hasActiveProvider && <LoadingScreen ready={canvasReady} />}
@@ -997,5 +1001,6 @@ export default function WorldPage() {
         &#x2699; Sources
       </button>
     </div>
+    </DarkModeProvider>
   );
 }

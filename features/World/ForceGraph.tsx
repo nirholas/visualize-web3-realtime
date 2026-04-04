@@ -247,6 +247,7 @@ function HubNodeMesh({
   onPointerOut: () => void;
   onClick: () => void;
   colorOverride?: string;
+  isDark?: boolean;
 }) {
   const groupRef = useRef<THREE.Group>(null!);
   const meshRef = useRef<THREE.Mesh>(null!);
@@ -262,6 +263,10 @@ function HubNodeMesh({
   const isAgentHub = node?.source === 'agents';
   const AGENT_COLOR_PALETTE = ['#c084fc', '#60a5fa', '#f472b6', '#34d399', '#fbbf24', '#fb923c', '#a78bfa', '#22d3ee'];
 
+  // Theme-aware default colors: bright on dark bg, darker on light bg
+  const defaultHubColor = isDark ? PROTOCOL_COLORS.default : '#2a5a9e';
+  const defaultEmissiveIntensity = isDark ? 2.0 : 0.8;
+
   useEffect(() => {
     if (isHighlighted) {
       targetColor.current.set('#3d63ff');
@@ -276,7 +281,7 @@ function HubNodeMesh({
       targetOpacity.current = 1;
       targetRingOpacity.current = isAgentHub ? 0.5 : 0;
     } else if (isDimmed) {
-      targetColor.current.set(PROTOCOL_COLORS.default);
+      targetColor.current.set(defaultHubColor);
       targetOpacity.current = 0.15;
       targetRingOpacity.current = 0;
     } else {
@@ -285,12 +290,12 @@ function HubNodeMesh({
         targetColor.current.set(AGENT_COLOR_PALETTE[paletteIndex % AGENT_COLOR_PALETTE.length]);
         targetRingOpacity.current = 0.3;
       } else {
-        targetColor.current.set(PROTOCOL_COLORS.default);
+        targetColor.current.set(defaultHubColor);
         targetRingOpacity.current = 0;
       }
       targetOpacity.current = 1;
     }
-  }, [isActive, isDimmed, isHighlighted, paletteIndex, colorOverride, isAgentHub]);
+  }, [isActive, isDimmed, isHighlighted, paletteIndex, colorOverride, isAgentHub, isDark, defaultHubColor]);
 
   useFrame((state, delta) => {
     const nodeData = sim.nodeMap.get(nodeId);
@@ -334,13 +339,13 @@ function HubNodeMesh({
         <sphereGeometry args={[1, 32, 32]} />
         <meshStandardMaterial
           ref={materialRef}
-          color={PROTOCOL_COLORS.default}
+          color={defaultHubColor}
           transparent
           opacity={1}
           roughness={0.3}
           metalness={0.1}
-          emissive={PROTOCOL_COLORS.default}
-          emissiveIntensity={2.0}
+          emissive={defaultHubColor}
+          emissiveIntensity={defaultEmissiveIntensity}
           envMapIntensity={1.2}
           toneMapped={false}
         />
@@ -384,22 +389,23 @@ const AgentNodes = memo<{
   /** Address of the specifically searched agent — gets its own highlighted treatment */
   highlightedAddress?: string | null;
   colorOverride?: string;
-}>(({ sim, activeProtocol, highlightedHubId, highlightedAddress, colorOverride }) => {
+  isDark?: boolean;
+}>(({ sim, activeProtocol, highlightedHubId, highlightedAddress, colorOverride, isDark = true }) => {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const tempObj = useMemo(() => new THREE.Object3D(), []);
   const tempColor = useMemo(() => new THREE.Color(), []);
-  const dimColor = useMemo(() => new THREE.Color('#334155'), []);
+  const dimColor = useMemo(() => new THREE.Color(isDark ? '#334155' : '#94a3b8'), [isDark]);
   const geometry = useMemo(() => new THREE.SphereGeometry(1, 8, 8), []);
   const material = useMemo(
     () => new THREE.MeshStandardMaterial({
       roughness: 0.4,
       metalness: 0.0,
-      emissive: new THREE.Color('#ffffff'),
-      emissiveIntensity: 1.5,
+      emissive: new THREE.Color(isDark ? '#ffffff' : '#333333'),
+      emissiveIntensity: isDark ? 1.5 : 0.6,
       transparent: true,
       toneMapped: false,
     }),
-    [],
+    [isDark],
   );
 
   // Cache the active hub's palette color by hub index
@@ -460,8 +466,8 @@ const AgentNodes = memo<{
             tempColor.copy(dimColor).multiplyScalar(0.15);
           }
         } else {
-          // Default: dark gray agent spheres
-          tempColor.set(PROTOCOL_COLORS.agentDefault);
+          // Default: bright on dark bg, darker on light bg
+          tempColor.set(isDark ? PROTOCOL_COLORS.agentDefault : '#2a6090');
         }
       }
       mesh.setColorAt(i, tempColor);
@@ -705,7 +711,8 @@ const NetworkScene = memo<{
   onSelectProtocol: (mint: string | null) => void;
   onDismissHighlight?: () => void;
   shareColors?: ShareColors;
-}>(({ sim, topTokens, activeProtocol, highlightedHubIndex, highlightedAddress, onSelectProtocol, onDismissHighlight, shareColors }) => {
+  isDark?: boolean;
+}>(({ sim, topTokens, activeProtocol, highlightedHubIndex, highlightedAddress, onSelectProtocol, onDismissHighlight, shareColors, isDark = true }) => {
   const [hoveredHub, setHoveredHub] = useState<string | null>(null);
 
   const hubIds = useMemo(
@@ -774,6 +781,7 @@ const NetworkScene = memo<{
             onSelectProtocol(activeProtocol === hub.id ? null : hub.id)
           }
           colorOverride={shareColors?.protocol}
+          isDark={isDark}
         />
       ))}
       <AgentNodes
@@ -782,6 +790,7 @@ const NetworkScene = memo<{
         highlightedHubId={highlightedHubId}
         highlightedAddress={highlightedAddress}
         colorOverride={shareColors?.user}
+        isDark={isDark}
       />
       {/* Show YouAreHereMarker above the searched agent node */}
       {highlightedAddress && onDismissHighlight && (
@@ -896,6 +905,8 @@ export interface ForceGraphProps {
   onDismissHighlight?: () => void;
   height?: string | number;
   shareColors?: ShareColors;
+  /** Whether the scene is in dark mode — affects node/particle brightness */
+  isDark?: boolean;
   /** When true, show gentle ambient drifting nodes instead of real data */
   idle?: boolean;
 }
@@ -936,7 +947,7 @@ const SnapshotHelper = memo<{ snapshotRef: React.MutableRefObject<(() => string 
 SnapshotHelper.displayName = 'SnapshotHelper';
 
 const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function ForceGraph(
-  { topTokens, traderEdges, activeProtocol = null, highlightedHubIndex = null, highlightedAddress = null, onSelectProtocol, onDismissHighlight, height = '100%', shareColors, idle = false },
+  { topTokens, traderEdges, activeProtocol = null, highlightedHubIndex = null, highlightedAddress = null, onSelectProtocol, onDismissHighlight, height = '100%', shareColors, isDark = true, idle = false },
   ref,
 ) {
   const simRef = useRef<ForceGraphSimulation | null>(null);
@@ -1109,6 +1120,7 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
             onSelectProtocol={onSelectProtocol ?? (() => {})}
             onDismissHighlight={onDismissHighlight}
             shareColors={shareColors}
+            isDark={isDark}
           />
         )}
         <PostProcessing />
