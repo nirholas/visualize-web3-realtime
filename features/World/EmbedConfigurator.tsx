@@ -23,6 +23,15 @@ interface EmbedConfiguratorProps {
 
 const HEX_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function isValidHex(v: string): boolean {
   return HEX_RE.test(v.startsWith('#') ? v : `#${v}`);
 }
@@ -65,19 +74,22 @@ function generateIframeSnippet(config: EmbedConfig, baseUrl: string): string {
   const src = `${baseUrl}${buildEmbedUrl(config)}`;
   const w = config.width > 0 ? `width="${config.width}"` : 'width="100%"';
   const h = `height="${config.height}"`;
-  return `<iframe\n  src="${src}"\n  ${w}\n  ${h}\n  frameborder="0"\n  allow="accelerometer; autoplay"\n  style="border: none; border-radius: 8px;"\n  title="${config.title}"\n></iframe>`;
+  const safeTitle = escapeHtml(config.title);
+  return `<iframe\n  src="${src}"\n  ${w}\n  ${h}\n  frameborder="0"\n  allow="accelerometer; autoplay"\n  style="border: none; border-radius: 8px;"\n  title="${safeTitle}"\n></iframe>`;
 }
 
 function generateScriptSnippet(config: EmbedConfig, baseUrl: string): string {
   const src = `${baseUrl}${buildEmbedUrl(config)}`;
   const w = config.width > 0 ? `${config.width}px` : '100%';
-  return `<div id="pumpfun-widget" style="width:${w};height:${config.height}px;"></div>\n<script>\n  (function() {\n    var d = document.getElementById('pumpfun-widget');\n    var f = document.createElement('iframe');\n    f.src = '${src}';\n    f.style.cssText = 'width:100%;height:100%;border:none;border-radius:8px;';\n    f.title = '${config.title}';\n    d.appendChild(f);\n  })();\n</script>`;
+  const safeTitle = escapeHtml(config.title).replace(/'/g, "\\'");
+  return `<div id="pumpfun-widget" style="width:${w};height:${config.height}px;"></div>\n<script>\n  (function() {\n    var d = document.getElementById('pumpfun-widget');\n    var f = document.createElement('iframe');\n    f.src = '${src}';\n    f.style.cssText = 'width:100%;height:100%;border:none;border-radius:8px;';\n    f.title = '${safeTitle}';\n    d.appendChild(f);\n  })();\n</script>`;
 }
 
 function generateReactSnippet(config: EmbedConfig, baseUrl: string): string {
   const src = `${baseUrl}${buildEmbedUrl(config)}`;
   const w = config.width > 0 ? `${config.width}` : `"100%"`;
-  return `export function PumpFunWidget() {\n  return (\n    <iframe\n      src="${src}"\n      width={${w}}\n      height={${config.height}}\n      frameBorder="0"\n      allow="accelerometer; autoplay"\n      style={{ border: 'none', borderRadius: 8 }}\n      title="${config.title}"\n    />\n  );\n}`;
+  const safeTitle = escapeHtml(config.title);
+  return `export function PumpFunWidget() {\n  return (\n    <iframe\n      src="${src}"\n      width={${w}}\n      height={${config.height}}\n      frameBorder="0"\n      allow="accelerometer; autoplay"\n      style={{ border: 'none', borderRadius: 8 }}\n      title="${safeTitle}"\n    />\n  );\n}`;
 }
 
 // ============================================================================

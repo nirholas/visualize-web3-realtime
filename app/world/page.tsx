@@ -30,7 +30,7 @@ import { WorldChat } from '@/features/World/ai/WorldChat';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ForceGraph = dynamic(() => import('@/features/World/ForceGraph'), {
   ssr: false,
-  loading: () => <div style={{ width: '100%', height: '100%', background: '#ffffff' }} />,
+  loading: () => <div style={{ width: '100%', height: '100%', background: '#0a0a0f' }} />,
 }) as any;
 
 // ---------------------------------------------------------------------------
@@ -61,16 +61,16 @@ const StatPill = memo<{ label: string; value: string }>(({ label, value }) => (
       alignItems: 'baseline',
       padding: '4px 12px',
       fontFamily: "'IBM Plex Mono', monospace",
-      background: '#ffffff',
-      border: '1px solid #e8e8e8',
+      background: 'rgba(255, 255, 255, 0.05)',
+      border: '1px solid rgba(255, 255, 255, 0.1)',
       borderRadius: 6,
-      boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
     }}
   >
-    <span style={{ fontSize: 10, color: '#666', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 400 }}>
+    <span style={{ fontSize: 10, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 400 }}>
       {label}
     </span>
-    <span style={{ fontSize: 14, fontWeight: 500, color: '#161616' }}>
+    <span style={{ fontSize: 14, fontWeight: 500, color: '#e2e8f0' }}>
       {value}
     </span>
   </div>
@@ -134,7 +134,7 @@ const WelcomeOverlay = memo<{ visible: boolean }>(({ visible }) => (
   >
     <span
       style={{
-        color: '#161616',
+        color: '#e2e8f0',
         fontFamily: "'IBM Plex Mono', monospace",
         fontSize: 16,
         fontWeight: 500,
@@ -146,7 +146,7 @@ const WelcomeOverlay = memo<{ visible: boolean }>(({ visible }) => (
     </span>
     <span
       style={{
-        color: '#555',
+        color: '#94a3b8',
         fontFamily: "'IBM Plex Mono', monospace",
         fontSize: 12,
         letterSpacing: '0.04em',
@@ -165,11 +165,11 @@ const WelcomeOverlay = memo<{ visible: boolean }>(({ visible }) => (
       }}
     >
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ opacity: 0.4 }}>
-        <path d="M10 3L5 8L10 13" stroke="#666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M10 3L5 8L10 13" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
       <span
         style={{
-          color: '#666',
+          color: '#64748b',
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: 10,
           letterSpacing: '0.06em',
@@ -581,7 +581,7 @@ export default function WorldPage() {
   }), [stats.totalTransactions, totalVolume, connectionEntries.length]);
 
   return (
-    <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: '#ffffff' }}>
+    <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: '#0a0a0f' }}>
       {/* Loading screen — only show when a provider is enabled */}
       {hasActiveProvider && <LoadingScreen ready={canvasReady} />}
 
@@ -671,7 +671,7 @@ export default function WorldPage() {
       >
         <span
           style={{
-            color: '#444',
+            color: '#94a3b8',
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 11,
             letterSpacing: '0.1em',
@@ -704,10 +704,10 @@ export default function WorldPage() {
             fontFamily: "'IBM Plex Mono', monospace",
             letterSpacing: '0.08em',
             textTransform: 'uppercase',
-            color: enabledProviders.has('agents') ? '#fff' : '#999',
+            color: enabledProviders.has('agents') ? '#fff' : '#94a3b8',
             background: enabledProviders.has('agents') ? '#c084fc' : 'transparent',
             padding: '2px 8px',
-            border: enabledProviders.has('agents') ? '1px solid #c084fc' : '1px solid rgba(0,0,0,0.12)',
+            border: enabledProviders.has('agents') ? '1px solid #c084fc' : '1px solid rgba(255,255,255,0.15)',
             borderRadius: 10,
             cursor: 'pointer',
             transition: 'all 200ms ease',
@@ -726,10 +726,10 @@ export default function WorldPage() {
             ref={infoButtonRef}
             style={{
               alignItems: 'center',
-              background: 'rgba(0, 0, 0, 0.04)',
-              border: '1px solid rgba(0, 0, 0, 0.12)',
+              background: 'rgba(255, 255, 255, 0.06)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
               borderRadius: '50%',
-              color: '#161616',
+              color: '#94a3b8',
               cursor: 'pointer',
               display: 'flex',
               fontFamily: "'IBM Plex Mono', monospace",
@@ -820,12 +820,12 @@ export default function WorldPage() {
           onClick={handleOpenShare}
           style={{
             alignItems: 'center',
-            background: '#ffffff',
-            border: '1px solid #e8e8e8',
+            background: 'rgba(255, 255, 255, 0.06)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
             borderRadius: 20,
             bottom: 18,
-            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-            color: '#666',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+            color: '#94a3b8',
             cursor: 'pointer',
             display: 'flex',
             fontFamily: "'IBM Plex Mono', monospace",
@@ -902,12 +902,12 @@ export default function WorldPage() {
           onClick={() => setEmbedOpen(true)}
           style={{
             alignItems: 'center',
-            background: '#ffffff',
-            border: '1px solid #e8e8e8',
+            background: 'rgba(255, 255, 255, 0.06)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
             borderRadius: 6,
             bottom: 92,
-            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-            color: '#666',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+            color: '#94a3b8',
             cursor: 'pointer',
             display: 'flex',
             fontFamily: "'IBM Plex Mono', monospace",
@@ -932,12 +932,12 @@ export default function WorldPage() {
         type="button"
         style={{
           alignItems: 'center',
-          background: '#ffffff',
-          border: '1px solid #e8e8e8',
+          background: 'rgba(255, 255, 255, 0.06)',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
           borderRadius: 6,
           bottom: 16,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-          color: '#666',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+          color: '#94a3b8',
           cursor: 'pointer',
           display: 'flex',
           fontFamily: "'IBM Plex Mono', monospace",

@@ -1,8 +1,8 @@
 'use client';
 
-import React, { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import React, { forwardRef, memo, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { ContactShadows, Environment, CameraControls } from '@react-three/drei';
+import { Environment, CameraControls } from '@react-three/drei';
 import CameraControlsImpl from 'camera-controls';
 import * as THREE from 'three';
 import {
@@ -52,6 +52,11 @@ const MAX_AGENT_NODES = 5000;
 const HUB_BASE_RADIUS = 0.8;
 const HUB_MAX_RADIUS = 3.0;
 const AGENT_RADIUS = 0.06;
+
+// Edge highlight bloom color (overbright blue triggers selective bloom)
+const EDGE_HIGHLIGHT_R = 0.48;
+const EDGE_HIGHLIGHT_G = 0.78;
+const EDGE_HIGHLIGHT_B = 2.0;
 
 // Idle ambient constants
 const IDLE_NODE_COUNT = 40;
@@ -383,7 +388,7 @@ const AgentNodes = memo<{
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const tempObj = useMemo(() => new THREE.Object3D(), []);
   const tempColor = useMemo(() => new THREE.Color(), []);
-  const dimColor = useMemo(() => new THREE.Color('#cccccc'), []);
+  const dimColor = useMemo(() => new THREE.Color('#334155'), []);
   const geometry = useMemo(() => new THREE.SphereGeometry(1, 8, 8), []);
   const material = useMemo(
     () => new THREE.MeshStandardMaterial({
@@ -556,9 +561,9 @@ const Edges = memo<{
         if (activeProtocol) {
           const srcRelated = src.id === activeProtocol || src.hubTokenAddress === activeProtocol;
           const tgtRelated = tgt.id === activeProtocol || tgt.hubTokenAddress === activeProtocol;
-          gray = (srcRelated || tgtRelated) ? (isHubEdge ? 0.55 : 0.65) : 0.92;
+          gray = (srcRelated || tgtRelated) ? (isHubEdge ? 0.45 : 0.35) : 0.08;
         } else {
-          gray = isHubEdge ? 0.55 : 0.75;
+          gray = isHubEdge ? 0.4 : 0.2;
         }
         cA.array[idx] = gray; cA.array[idx + 1] = gray; cA.array[idx + 2] = gray;
         cA.array[idx + 3] = gray; cA.array[idx + 4] = gray; cA.array[idx + 5] = gray;
@@ -589,23 +594,7 @@ const SceneBackground = memo<{ color: string }>(({ color }) => {
 });
 SceneBackground.displayName = 'SceneBackground';
 
-/** Ground plane for visual grounding — double-sided for 360° viewing */
-const Ground = memo(() => (
-  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]} receiveShadow>
-    <planeGeometry args={[200, 200]} />
-    <meshPhysicalMaterial
-      color="#eeeef0"
-      roughness={0.85}
-      metalness={0.0}
-      clearcoat={0.05}
-      clearcoatRoughness={0.9}
-      side={THREE.DoubleSide}
-      transparent
-      opacity={0.6}
-    />
-  </mesh>
-));
-Ground.displayName = 'Ground';
+
 
 // ---------------------------------------------------------------------------
 // Idle ambient scene — gentle drifting orbs when no data is active
@@ -631,7 +620,7 @@ function createIdleNodes(): IdleNode[] {
       vx: (Math.random() - 0.5) * IDLE_SPEED,
       vz: (Math.random() - 0.5) * IDLE_SPEED,
       radius: IDLE_RADIUS_MIN + Math.random() * (IDLE_RADIUS_MAX - IDLE_RADIUS_MIN),
-      gray: 0.25 + Math.random() * 0.2,
+      gray: 0.5 + Math.random() * 0.4,
     });
   }
   return nodes;
@@ -647,10 +636,10 @@ const IdleAmbientScene = memo(() => {
     () => new THREE.MeshStandardMaterial({
       roughness: 0.4,
       metalness: 0.0,
-      emissive: new THREE.Color('#888888'),
-      emissiveIntensity: 0.8,
+      emissive: new THREE.Color('#60a5fa'),
+      emissiveIntensity: 1.2,
       transparent: true,
-      opacity: 0.65,
+      opacity: 0.7,
       toneMapped: false,
     }),
     [],
@@ -697,16 +686,6 @@ const IdleAmbientScene = memo(() => {
       <Environment preset="studio" environmentIntensity={0.4} background={false} />
       <directionalLight position={[20, 40, 20]} intensity={0.3} />
       <instancedMesh ref={meshRef} args={[geometry, material, IDLE_NODE_COUNT]} frustumCulled={false} />
-      <Ground />
-      <ContactShadows
-        position={[0, -0.49, 0]}
-        scale={100}
-        blur={2.5}
-        far={4}
-        opacity={0.35}
-        resolution={256}
-        color="#000000"
-      />
     </>
   );
 });
@@ -739,22 +718,12 @@ const NetworkScene = memo<{
     ? hubIds[highlightedHubIndex]?.id ?? null
     : null;
 
-  // Track hub positions (for potential future hub marker use)
-  const hubPositionsRef = useRef<THREE.Vector3[]>([]);
   // Track the highlighted agent's 3D position for the YouAreHereMarker
   const agentPositionRef = useRef<THREE.Vector3 | null>(null);
 
   // Tick simulation and update tracked positions each frame
   useFrame(() => {
     sim.tick();
-
-    const hubs = sim.nodes.filter((n) => n.type === 'hub');
-    while (hubPositionsRef.current.length < hubs.length) {
-      hubPositionsRef.current.push(new THREE.Vector3());
-    }
-    for (let i = 0; i < hubs.length; i++) {
-      hubPositionsRef.current[i].set(hubs[i].x ?? 0, 0, hubs[i].y ?? 0);
-    }
 
     // Track highlighted agent position
     if (highlightedAddress) {
@@ -813,16 +782,6 @@ const NetworkScene = memo<{
         highlightedHubId={highlightedHubId}
         highlightedAddress={highlightedAddress}
         colorOverride={shareColors?.user}
-      />
-      <Ground />
-      <ContactShadows
-        position={[0, -0.49, 0]}
-        scale={100}
-        blur={2.5}
-        far={4}
-        opacity={0.35}
-        resolution={256}
-        color="#000000"
       />
       {/* Show YouAreHereMarker above the searched agent node */}
       {highlightedAddress && onDismissHighlight && (
@@ -1093,7 +1052,7 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#ffffff',
+          background: '#0a0a0f',
           flexDirection: 'column',
           gap: 12,
         }}
@@ -1103,7 +1062,7 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 14,
             fontWeight: 400,
-            color: '#666',
+            color: '#888',
             textTransform: 'uppercase',
             letterSpacing: '0.08em',
           }}
@@ -1114,7 +1073,7 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
           style={{
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 12,
-            color: '#999',
+            color: '#666',
           }}
         >
           Your browser or device does not support WebGL, which is required for this visualization.
@@ -1127,7 +1086,7 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
     <div ref={containerRef} style={{ width: '100%', height, position: 'relative' }}>
       <Canvas
         camera={{ fov: 45, near: 0.1, far: 500, position: [0, 30, 50] }}
-        style={{ background: shareColors?.background ?? '#ffffff' }}
+        style={{ background: shareColors?.background ?? '#0a0a0f' }}
         gl={{ antialias: false, alpha: false }}
         dpr={[1, 1.5]}
         onCreated={({ gl }) => {

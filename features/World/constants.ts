@@ -14,9 +14,9 @@ export const COLOR_PALETTE = [
 ] as const;
 
 export const PROTOCOL_COLORS = {
-  default: '#161616',
+  default: '#a0c4ff',
   highlight: '#3d63ff',
-  agentDefault: '#4a4a4a',
+  agentDefault: '#7dd3fc',
 } as const;
 
 export const CHAIN_COLORS: Record<string, string> = {

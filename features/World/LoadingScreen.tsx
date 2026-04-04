@@ -29,7 +29,7 @@ const LoadingScreen = memo<LoadingScreenProps>(({ ready = false }) => {
     <div
       style={{
         alignItems: 'center',
-        background: '#ffffff',
+        background: '#0a0a0f',
         display: 'flex',
         flexDirection: 'column',
         gap: 16,
@@ -44,16 +44,16 @@ const LoadingScreen = memo<LoadingScreenProps>(({ ready = false }) => {
       <div
         style={{
           animation: 'spin 1s linear infinite',
-          border: '2px solid #e8e8e8',
+          border: '2px solid #1e293b',
           borderRadius: '50%',
-          borderTopColor: '#161616',
+          borderTopColor: '#60a5fa',
           height: 32,
           width: 32,
         }}
       />
       <span
         style={{
-          color: '#999',
+          color: '#555',
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: 11,
           letterSpacing: '0.08em',

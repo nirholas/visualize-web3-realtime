@@ -48,7 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             align-items: center;
             justify-content: center;
             gap: 20px;
-            background: #ffffff;
+            background: #0a0a0f;
             transition: opacity 300ms ease;
           }
           #boot-loader.hide {
@@ -58,8 +58,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           #boot-loader .spinner {
             width: 36px;
             height: 36px;
-            border: 2px solid #e8e8e8;
-            border-top-color: #161616;
+            border: 2px solid #1e293b;
+            border-top-color: #60a5fa;
             border-radius: 50%;
             animation: boot-spin 0.8s linear infinite;
           }
@@ -69,7 +69,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             font-weight: 400;
             letter-spacing: 0.14em;
             text-transform: uppercase;
-            color: #999;
+            color: #555;
           }
           @keyframes boot-spin {
             to { transform: rotate(360deg); }
