@@ -8,6 +8,7 @@ import type {
   RawEvent,
 } from '@web3viz/core';
 import { getAllProviders, getCategoriesForSource, SOURCE_CONFIG_MAP } from '@web3viz/core';
+import { BoundedMap } from '../shared';
 
 import { AGENT_CATEGORIES } from './categories';
 import { isAgentEvent, registerAgentAddress } from './detection';
@@ -63,10 +64,10 @@ export class AgentProvider implements DataProvider {
   };
 
   // Track unique agents seen (address → { name, interactions })
-  private knownAgents = new Map<string, { name: string; interactions: number }>();
+  private knownAgents = new BoundedMap<string, { name: string; interactions: number }>(5000);
 
   // Track edges: key "interactor:agentAddress" → trade count
-  private edgeMap = new Map<string, { trader: string; agentAddress: string; count: number }>();
+  private edgeMap = new BoundedMap<string, { trader: string; agentAddress: string; count: number }>(50000);
 
   constructor(options: AgentProviderOptions = {}) {
     this.subscribeDelayMs = options.subscribeDelayMs ?? 1000;

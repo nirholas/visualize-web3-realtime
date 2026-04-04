@@ -25,6 +25,7 @@ import { captureCanvas, captureSnapshot, downloadBlob, timestampedFilename } fro
 import { buildShareUrl, buildShareText, parseShareParams, shareOnX, shareOnLinkedIn } from '@/features/World/utils/shareUrl';
 import type { ForceGraphHandle } from '@/features/World/ForceGraph';
 import { WorldChat } from '@/features/World/ai/WorldChat';
+import { formatStat } from '@/features/World/utils/shared';
 
 // Lazy-load the 3D force graph to avoid SSR issues with Three.js
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -32,17 +33,6 @@ const ForceGraph = dynamic(() => import('@/features/World/ForceGraph'), {
   ssr: false,
   loading: () => <div style={{ width: '100%', height: '100%', background: '#0a0a0f' }} />,
 }) as any;
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function formatStat(value: number, prefix = ''): string {
-  if (value >= 1_000_000_000) return `${prefix}${(value / 1_000_000_000).toFixed(1)}B`;
-  if (value >= 1_000_000) return `${prefix}${(value / 1_000_000).toFixed(1)}M`;
-  if (value >= 1000) return `${prefix}${(value / 1000).toFixed(1)}K`;
-  return `${prefix}${value.toFixed(value < 10 ? 2 : 0)}`;
-}
 
 // Compute total volume across all chains
 function getTotalVolume(volumeMap: Record<string, number>): number {

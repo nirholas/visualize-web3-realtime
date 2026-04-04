@@ -1,6 +1,7 @@
 'use client';
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { isValidHex, normalizeHex, escapeHtml } from './utils/shared';
 
 // ============================================================================
 // Types
@@ -21,29 +22,6 @@ interface EmbedConfiguratorProps {
 // Helpers
 // ============================================================================
 
-const HEX_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
-
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-function isValidHex(v: string): boolean {
-  return HEX_RE.test(v.startsWith('#') ? v : `#${v}`);
-}
-
-function normalizeHex(v: string): string {
-  const raw = v.startsWith('#') ? v : `#${v}`;
-  if (!HEX_RE.test(raw)) return '';
-  if (raw.length === 4) {
-    return `#${raw[1]}${raw[1]}${raw[2]}${raw[2]}${raw[3]}${raw[3]}`;
-  }
-  return raw.toLowerCase();
-}
 
 const SIZE_PRESETS = [
   { label: 'Small', width: 400, height: 300 },

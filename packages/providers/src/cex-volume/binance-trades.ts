@@ -6,6 +6,8 @@
  */
 
 import type { DataProviderEvent } from '@web3viz/core';
+import { WebSocketManager } from '../shared';
+import { safeJsonParse, isObject, parseFiniteFloat } from '../shared/validate';
 
 interface BinanceTradeConfig {
   pairs: string[];
@@ -17,16 +19,15 @@ interface BinanceTradeConfig {
 
 export class BinanceTradeStream {
   private config: BinanceTradeConfig;
-  private ws: WebSocket | null = null;
+  private wsManager: WebSocketManager | null = null;
   private connected = false;
-  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(config: BinanceTradeConfig) {
     this.config = config;
   }
 
   connect(): void {
-    if (this.ws?.readyState === WebSocket.OPEN) return;
+    if (this.wsManager?.isConnected) return;
 
     // Build combined stream URL: trade streams for each pair + mini-ticker for price data
     const streams = [
@@ -35,17 +36,17 @@ export class BinanceTradeStream {
     ];
     const url = `wss://stream.binance.com:9443/stream?streams=${streams.join('/')}`;
 
-    const ws = new WebSocket(url);
-    this.ws = ws;
+    this.wsManager = new WebSocketManager({
+      url,
+      heartbeatIntervalMs: 0, // Binance sends its own pings
+      onStateChange: (state) => {
+        this.connected = state === 'connected';
+      },
+      onMessage: (raw) => {
+        if (this.config.isPaused()) return;
+        const wrapper = safeJsonParse(raw);
+        if (!isObject(wrapper)) return;
 
-    ws.onopen = () => {
-      this.connected = true;
-    };
-
-    ws.onmessage = (event) => {
-      if (this.config.isPaused()) return;
-      try {
-        const wrapper = JSON.parse(event.data as string);
         const data = wrapper.data;
 
         if (Array.isArray(data)) {
@@ -53,29 +54,18 @@ export class BinanceTradeStream {
           return;
         }
 
-        if (data.e === 'trade') {
-          this.handleTrade(data);
+        if (isObject(data) && data.e === 'trade') {
+          this.handleTrade(data as Record<string, unknown>);
         }
-      } catch {
-        // Ignore malformed messages
-      }
-    };
+      },
+    });
 
-    ws.onclose = () => {
-      this.connected = false;
-      this.reconnectTimer = setTimeout(() => this.connect(), 3000);
-    };
-
-    ws.onerror = () => {
-      ws.close();
-    };
+    this.wsManager.connect();
   }
 
   disconnect(): void {
-    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
-    this.reconnectTimer = null;
-    this.ws?.close();
-    this.ws = null;
+    this.wsManager?.disconnect();
+    this.wsManager = null;
     this.connected = false;
   }
 
@@ -85,8 +75,9 @@ export class BinanceTradeStream {
 
   private handleTrade(data: Record<string, unknown>): void {
     const symbol = data.s as string; // e.g. "BTCUSDT"
-    const price = parseFloat(data.p as string);
-    const quantity = parseFloat(data.q as string);
+    const price = parseFiniteFloat(data.p as string);
+    const quantity = parseFiniteFloat(data.q as string);
+    if (price == null || quantity == null) return;
     const usdValue = price * quantity;
 
     // Filter small trades

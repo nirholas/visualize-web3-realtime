@@ -1,6 +1,7 @@
 'use client';
 
 import { forwardRef, memo } from 'react';
+import { truncateAddress, formatVolume } from './utils/shared';
 
 // ============================================================================
 // ShareOverlay — metadata bars rendered on top of the canvas when the share
@@ -12,17 +13,6 @@ interface ShareOverlayProps {
   activeSince?: string;
   transactionCount?: number;
   volume?: number;
-}
-
-function truncateAddress(addr: string): string {
-  if (addr.length <= 12) return addr;
-  return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-}
-
-function formatVolume(v: number): string {
-  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
-  if (v >= 1_000) return `$${(v / 1_000).toFixed(1)}K`;
-  return `$${v.toFixed(0)}`;
 }
 
 const barStyle: React.CSSProperties = {

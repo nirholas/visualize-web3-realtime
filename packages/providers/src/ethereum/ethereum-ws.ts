@@ -7,6 +7,7 @@
  */
 
 import type { DataProviderEvent } from '@web3viz/core';
+import { WebSocketManager, safeJsonParse, isObject, isValidEthLog } from '../shared';
 import {
   UNISWAP_V2_SWAP_TOPIC,
   UNISWAP_V3_SWAP_TOPIC,

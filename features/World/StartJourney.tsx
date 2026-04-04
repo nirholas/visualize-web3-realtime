@@ -23,6 +23,13 @@ export default function StartJourney({ disabled = false, isRunning, onClick, res
         (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)';
         (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none';
       }}
+      onFocus={(e) => {
+        e.currentTarget.style.outline = '2px solid #3d63ff';
+        e.currentTarget.style.outlineOffset = '2px';
+      }}
+      onBlur={(e) => {
+        e.currentTarget.style.outline = 'none';
+      }}
       style={{
         alignItems: 'center',
         background: disabled ? '#e8e8e8' : '#1a1a1a',
@@ -40,6 +47,7 @@ export default function StartJourney({ disabled = false, isRunning, onClick, res
         letterSpacing: '0.02em',
         lineHeight: 1.2,
         opacity: disabled ? 0.65 : 1,
+        outline: 'none',
         position: 'absolute',
         right: 18,
         textAlign: 'center',

@@ -24,6 +24,7 @@ import type {
 } from '@web3viz/core';
 import { registerProvider, getCategoriesForSource, SOURCE_CONFIG_MAP } from '@web3viz/core';
 
+import { BoundedMap } from '../shared';
 import { BinanceTradeStream } from './binance-trades';
 import { BinanceLiquidationStream } from './binance-liquidations';
 
@@ -61,7 +62,7 @@ export class CexVolumeProvider implements DataProvider {
   };
 
   // Track volume per symbol for top tokens display
-  private symbolAcc = new Map<string, TopToken>();
+  private symbolAcc = new BoundedMap<string, TopToken>(5000);
 
   constructor() {
     this.sourceConfig = SOURCE_CONFIG_MAP['cex'] ?? {

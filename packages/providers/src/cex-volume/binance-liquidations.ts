@@ -6,6 +6,8 @@
  */
 
 import type { DataProviderEvent } from '@web3viz/core';
+import { WebSocketManager } from '../shared';
+import { safeJsonParse, isObject, parseFiniteFloat } from '../shared/validate';
 
 interface LiquidationConfig {
   onEvent: (event: DataProviderEvent) => void;
@@ -14,51 +16,38 @@ interface LiquidationConfig {
 
 export class BinanceLiquidationStream {
   private config: LiquidationConfig;
-  private ws: WebSocket | null = null;
+  private wsManager: WebSocketManager | null = null;
   private connected = false;
-  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(config: LiquidationConfig) {
     this.config = config;
   }
 
   connect(): void {
-    if (this.ws?.readyState === WebSocket.OPEN) return;
+    if (this.wsManager?.isConnected) return;
 
-    const ws = new WebSocket('wss://fstream.binance.com/ws/!forceOrder@arr');
-    this.ws = ws;
-
-    ws.onopen = () => {
-      this.connected = true;
-    };
-
-    ws.onmessage = (event) => {
-      if (this.config.isPaused()) return;
-      try {
-        const data = JSON.parse(event.data as string);
-        if (data.e === 'forceOrder') {
-          this.handleLiquidation(data.o);
+    this.wsManager = new WebSocketManager({
+      url: 'wss://fstream.binance.com/ws/!forceOrder@arr',
+      heartbeatIntervalMs: 0, // Binance sends its own pings
+      onStateChange: (state) => {
+        this.connected = state === 'connected';
+      },
+      onMessage: (raw) => {
+        if (this.config.isPaused()) return;
+        const data = safeJsonParse(raw);
+        if (!isObject(data)) return;
+        if (data.e === 'forceOrder' && isObject(data.o)) {
+          this.handleLiquidation(data.o as Record<string, unknown>);
         }
-      } catch {
-        // Ignore malformed messages
-      }
-    };
+      },
+    });
 
-    ws.onclose = () => {
-      this.connected = false;
-      this.reconnectTimer = setTimeout(() => this.connect(), 5000);
-    };
-
-    ws.onerror = () => {
-      ws.close();
-    };
+    this.wsManager.connect();
   }
 
   disconnect(): void {
-    if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
-    this.reconnectTimer = null;
-    this.ws?.close();
-    this.ws = null;
+    this.wsManager?.disconnect();
+    this.wsManager = null;
     this.connected = false;
   }
 
@@ -69,8 +58,9 @@ export class BinanceLiquidationStream {
   private handleLiquidation(order: Record<string, unknown>): void {
     const symbol = order.s as string;
     const side = order.S as string; // SELL = long liq'd, BUY = short liq'd
-    const quantity = parseFloat(order.q as string);
-    const price = parseFloat((order.ap || order.p) as string);
+    const quantity = parseFiniteFloat(order.q as string);
+    const price = parseFiniteFloat((order.ap || order.p) as string);
+    if (price == null || quantity == null) return;
     const usdValue = price * quantity;
 
     const baseAsset = symbol.replace(/USDT$|BUSD$/, '');

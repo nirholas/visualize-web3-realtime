@@ -10,6 +10,7 @@ import type {
   TraderEdge,
 } from '@web3viz/core';
 import { getCategoriesForSource, SOURCE_CONFIGS } from '@web3viz/core';
+import { BoundedMap, BoundedSet, WebSocketManager, safeJsonParse, isObject, getString, getNumber } from '../shared';
 
 export interface PumpFunProviderOptions {
   rpcWsUrl?: string;
@@ -55,20 +56,14 @@ export class PumpFunProvider implements DataProvider {
   private rpcWsUrl: string;
   private _paused = false;
   private _enabled = true;
-  private tradesWs: WebSocket | null = null;
-  private claimsWs: WebSocket | null = null;
-  private tradesReconnectTimer: ReturnType<typeof setTimeout> | null = null;
-  private claimsReconnectTimer: ReturnType<typeof setTimeout> | null = null;
-  private tradesReconnectAttempts = 0;
-  private claimsReconnectAttempts = 0;
-  private static readonly BASE_RECONNECT_MS = 3000;
-  private static readonly MAX_RECONNECT_MS = 60000;
+  private tradesWsManager: WebSocketManager | null = null;
+  private claimsWsManager: WebSocketManager | null = null;
   private tradesConnected = false;
   private claimsConnected = false;
-  private tokenCache = new Map<string, { name: string; symbol: string }>();
-  private tokenAcc = new Map<string, TopToken>();
-  private traderAcc = new Map<string, TraderEdge>();
-  private seenWallets = new Set<string>();
+  private tokenCache = new BoundedMap<string, { name: string; symbol: string }>(10_000);
+  private tokenAcc = new BoundedMap<string, TopToken>(10_000);
+  private traderAcc = new BoundedMap<string, TraderEdge>(50_000);
+  private seenWallets = new BoundedSet<string>(50_000);
   private recentEvents: DataProviderEvent[] = [];
   private rawEvents: RawEvent[] = [];
   private counts = { launches: 0, agentLaunches: 0, trades: 0, claimsWallet: 0, claimsGithub: 0, claimsFirst: 0 };
@@ -142,61 +137,69 @@ export class PumpFunProvider implements DataProvider {
   }
 
   private connectTrades(): void {
-    if (this.tradesWs?.readyState === WebSocket.OPEN) return;
-    const ws = new WebSocket(PUMPFUN_WS_URL);
-    this.tradesWs = ws;
-    ws.onopen = () => {
-      console.log('[PumpFunProvider] Trades WS connected');
-      this.tradesConnected = true;
-      this.tradesReconnectAttempts = 0;
-      ws.send(JSON.stringify({ method: 'subscribeNewToken' }));
-      ws.send(JSON.stringify({ method: 'subscribeTokenTrade', keys: ['allTrades'] }));
-    };
-    ws.onmessage = (event) => {
-      if (this._paused || !this._enabled) return;
-      try {
-        const raw = JSON.parse(event.data);
-        if (!raw || typeof raw !== 'object') return;
-        if (raw.txType === undefined && raw.mint && raw.name) this.handleTokenCreate(raw);
-        else if (raw.txType === 'buy' || raw.txType === 'sell') this.handleTrade(raw);
-      } catch { /* ignore */ }
-    };
-    ws.onclose = () => {
-      this.tradesConnected = false;
-      this.tradesReconnectAttempts++;
-      const delay = Math.min(PumpFunProvider.BASE_RECONNECT_MS * Math.pow(2, this.tradesReconnectAttempts - 1), PumpFunProvider.MAX_RECONNECT_MS);
-      console.warn(`[PumpFunProvider] Trades WS closed — reconnecting in ${(delay / 1000).toFixed(0)}s`);
-      this.tradesReconnectTimer = setTimeout(() => this.connectTrades(), delay);
-    };
-    ws.onerror = () => { ws.close(); };
+    if (this.tradesWsManager?.isConnected) return;
+    this.tradesWsManager?.disconnect();
+    this.tradesWsManager = new WebSocketManager({
+      url: PUMPFUN_WS_URL,
+      baseReconnectMs: 3000,
+      maxReconnectMs: 60000,
+      onStateChange: (state) => {
+        this.tradesConnected = state === 'connected';
+      },
+      onOpen: (ws) => {
+        console.log('[PumpFunProvider] Trades WS connected');
+        ws.send(JSON.stringify({ method: 'subscribeNewToken' }));
+        ws.send(JSON.stringify({ method: 'subscribeTokenTrade', keys: ['allTrades'] }));
+      },
+      onMessage: (data) => {
+        if (this._paused || !this._enabled) return;
+        const raw = safeJsonParse(data);
+        if (!isObject(raw)) return;
+        const txType = getString(raw, 'txType', '');
+        const mint = getString(raw, 'mint', '');
+        const name = getString(raw, 'name', '');
+        if (!txType && mint && name) this.handleTokenCreate(raw);
+        else if (txType === 'buy' || txType === 'sell') this.handleTrade(raw);
+      },
+      onClose: (_code, _reason) => {
+        console.warn('[PumpFunProvider] Trades WS closed — will reconnect');
+      },
+      onError: (err) => {
+        console.warn('[PumpFunProvider] Trades WS error:', err.message);
+      },
+    });
+    this.tradesWsManager.connect();
   }
 
   private disconnectTrades(): void {
-    if (this.tradesReconnectTimer) { clearTimeout(this.tradesReconnectTimer); this.tradesReconnectTimer = null; }
-    if (this.tradesWs) { this.tradesWs.close(); this.tradesWs = null; }
+    this.tradesWsManager?.disconnect();
+    this.tradesWsManager = null;
     this.tradesConnected = false;
-    this.tradesReconnectAttempts = 0;
   }
 
-  private handleTokenCreate(raw: any): void {
-    const tokenName = raw.name || 'Unknown';
-    const tokenSymbol = raw.symbol || '???';
+  private handleTokenCreate(raw: Record<string, unknown>): void {
+    const tokenName = getString(raw, 'name', 'Unknown');
+    const tokenSymbol = getString(raw, 'symbol', '???');
     const isAgent = isAgentLaunch(tokenName, tokenSymbol);
-    const mint = raw.mint as string;
+    const mint = getString(raw, 'mint', '');
+    if (!mint) return;
     this.tokenCache.set(mint, { name: tokenName, symbol: tokenSymbol });
     const category = isAgent ? 'agentLaunches' : 'launches';
     this.counts[category]++;
+    const initialBuy = getNumber(raw, 'initialBuy', 0);
+    const signature = getString(raw, 'signature', '');
+    const traderPublicKey = getString(raw, 'traderPublicKey', '');
 
     this.emitEvent({
-      id: raw.signature || mint,
+      id: signature || mint,
       providerId: this.id,
       category,
       chain: 'solana',
       timestamp: Date.now(),
       label: tokenSymbol,
-      amount: raw.initialBuy ? raw.initialBuy / 1e9 : undefined,
+      amount: initialBuy ? initialBuy / 1e9 : undefined,
       nativeSymbol: 'SOL',
-      address: raw.traderPublicKey || '',
+      address: traderPublicKey,
       tokenAddress: mint,
     });
 
@@ -207,22 +210,26 @@ export class PumpFunProvider implements DataProvider {
         name: tokenName,
         symbol: tokenSymbol,
         chain: 'solana',
-        uri: raw.uri || '',
-        creatorAddress: raw.traderPublicKey || '',
-        initialBuy: raw.initialBuy || 0,
-        marketCap: raw.marketCapSol || 0,
+        uri: getString(raw, 'uri', ''),
+        creatorAddress: traderPublicKey,
+        initialBuy,
+        marketCap: getNumber(raw, 'marketCapSol', 0),
         nativeSymbol: 'SOL',
-        signature: raw.signature || '',
+        signature,
         timestamp: Date.now(),
         isAgent,
       },
     });
   }
 
-  private handleTrade(raw: any): void {
-    const mint = raw.mint as string;
+  private handleTrade(raw: Record<string, unknown>): void {
+    const mint = getString(raw, 'mint', '');
+    if (!mint) return;
     const cached = this.tokenCache.get(mint);
-    const solAmount = raw.solAmount ? raw.solAmount / 1e9 : 0;
+    const solAmount = getNumber(raw, 'solAmount', 0) / 1e9;
+    const txType = getString(raw, 'txType', '');
+    const signature = getString(raw, 'signature', '');
+    const traderPublicKey = getString(raw, 'traderPublicKey', '');
 
     const existing = this.tokenAcc.get(mint);
     if (existing) {
@@ -237,12 +244,12 @@ export class PumpFunProvider implements DataProvider {
       });
     }
 
-    const traderKey = `${raw.traderPublicKey}:${mint}`;
+    const traderKey = `${traderPublicKey}:${mint}`;
     const existingEdge = this.traderAcc.get(traderKey);
     if (existingEdge) { existingEdge.trades++; existingEdge.volume += solAmount; }
     else {
       this.traderAcc.set(traderKey, {
-        trader: raw.traderPublicKey || '', tokenAddress: mint,
+        trader: traderPublicKey, tokenAddress: mint,
         chain: 'solana', trades: 1, volume: solAmount,
       });
     }
@@ -251,7 +258,7 @@ export class PumpFunProvider implements DataProvider {
     this.totalVolumeSol += solAmount;
 
     this.emitEvent({
-      id: raw.signature || `${mint}-${Date.now()}`,
+      id: signature || `${mint}-${Date.now()}`,
       providerId: this.id,
       category: 'trades',
       chain: 'solana',
@@ -259,9 +266,9 @@ export class PumpFunProvider implements DataProvider {
       label: cached?.symbol || '???',
       amount: solAmount,
       nativeSymbol: 'SOL',
-      address: raw.traderPublicKey || '',
+      address: traderPublicKey,
       tokenAddress: mint,
-      meta: { txType: raw.txType },
+      meta: { txType },
     });
 
     this.emitRaw({
@@ -269,13 +276,13 @@ export class PumpFunProvider implements DataProvider {
       data: {
         tokenAddress: mint,
         chain: 'solana',
-        signature: raw.signature || '',
-        traderAddress: raw.traderPublicKey || '',
-        txType: raw.txType,
-        tokenAmount: raw.tokenAmount || 0,
+        signature,
+        traderAddress: traderPublicKey,
+        txType,
+        tokenAmount: getNumber(raw, 'tokenAmount', 0),
         nativeAmount: solAmount,
         nativeSymbol: 'SOL',
-        marketCap: raw.marketCapSol || 0,
+        marketCap: getNumber(raw, 'marketCapSol', 0),
         timestamp: Date.now(),
         name: cached?.name,
         symbol: cached?.symbol,
@@ -284,53 +291,66 @@ export class PumpFunProvider implements DataProvider {
   }
 
   private connectClaims(): void {
-    if (this.claimsWs?.readyState === WebSocket.OPEN) return;
+    if (this.claimsWsManager?.isConnected) return;
     if (!this.rpcWsUrl) { this.claimsConnected = false; return; }
-    const ws = new WebSocket(this.rpcWsUrl);
-    this.claimsWs = ws;
-    ws.onopen = () => {
-      console.log('[PumpFunProvider] Claims WS connected');
-      this.claimsConnected = true;
-      this.claimsReconnectAttempts = 0;
-      for (const programId of [PUMP_PROGRAM_ID, PUMP_AMM_PROGRAM_ID, PUMP_FEE_PROGRAM_ID]) {
-        const id = this.solanaNextId++;
-        ws.send(JSON.stringify({ jsonrpc: '2.0', id, method: 'logsSubscribe', params: [{ mentions: [programId] }, { commitment: 'confirmed' }] }));
-      }
-    };
-    ws.onmessage = (event) => {
-      if (this._paused || !this._enabled) return;
-      try {
-        const msg = JSON.parse(event.data);
-        if (msg.result !== undefined && typeof msg.result === 'number') { this.solanaSubIds.push(msg.result); return; }
-        if (msg.method === 'logsNotification' && msg.params?.result?.value) {
-          const value = msg.params.result.value;
-          if (value.err !== null) return;
-          this.parseAndHandleClaim(value.logs || [], value.signature || '', msg.params.result.context?.slot || 0);
+    this.claimsWsManager?.disconnect();
+    this.claimsWsManager = new WebSocketManager({
+      url: this.rpcWsUrl,
+      baseReconnectMs: 3000,
+      maxReconnectMs: 60000,
+      onStateChange: (state) => {
+        this.claimsConnected = state === 'connected';
+        if (state !== 'connected') this.solanaSubIds = [];
+      },
+      onOpen: (ws) => {
+        console.log('[PumpFunProvider] Claims WS connected');
+        for (const programId of [PUMP_PROGRAM_ID, PUMP_AMM_PROGRAM_ID, PUMP_FEE_PROGRAM_ID]) {
+          const id = this.solanaNextId++;
+          ws.send(JSON.stringify({ jsonrpc: '2.0', id, method: 'logsSubscribe', params: [{ mentions: [programId] }, { commitment: 'confirmed' }] }));
         }
-      } catch { /* ignore */ }
-    };
-    ws.onclose = () => {
-      this.claimsConnected = false;
-      this.solanaSubIds = [];
-      this.claimsReconnectAttempts++;
-      const delay = Math.min(PumpFunProvider.BASE_RECONNECT_MS * Math.pow(2, this.claimsReconnectAttempts - 1), PumpFunProvider.MAX_RECONNECT_MS);
-      console.warn(`[PumpFunProvider] Claims WS closed — reconnecting in ${(delay / 1000).toFixed(0)}s`);
-      this.claimsReconnectTimer = setTimeout(() => this.connectClaims(), delay);
-    };
-    ws.onerror = () => { ws.close(); };
+      },
+      onMessage: (data) => {
+        if (this._paused || !this._enabled) return;
+        const msg = safeJsonParse(data);
+        if (!isObject(msg)) {
+          console.warn('[PumpFunProvider] Claims WS received non-object message');
+          return;
+        }
+        if (msg.result !== undefined && typeof msg.result === 'number') { this.solanaSubIds.push(msg.result); return; }
+        if (getString(msg, 'method', '') === 'logsNotification') {
+          const params = msg.params;
+          if (!isObject(params)) return;
+          const result = params.result;
+          if (!isObject(result)) return;
+          const value = result.value;
+          if (!isObject(value)) return;
+          if (value.err !== null) return;
+          const logs = Array.isArray(value.logs) ? value.logs as string[] : [];
+          const signature = getString(value, 'signature', '');
+          const context = isObject(result.context) ? result.context : {};
+          const slot = getNumber(context as Record<string, unknown>, 'slot', 0);
+          this.parseAndHandleClaim(logs, signature, slot);
+        }
+      },
+      onClose: (_code, _reason) => {
+        console.warn('[PumpFunProvider] Claims WS closed — will reconnect');
+      },
+      onError: (err) => {
+        console.warn('[PumpFunProvider] Claims WS error:', err.message);
+      },
+    });
+    this.claimsWsManager.connect();
   }
 
   private disconnectClaims(): void {
-    if (this.claimsReconnectTimer) { clearTimeout(this.claimsReconnectTimer); this.claimsReconnectTimer = null; }
-    const ws = this.claimsWs;
-    if (ws?.readyState === WebSocket.OPEN) {
+    if (this.claimsWsManager) {
       for (const subId of this.solanaSubIds) {
-        ws.send(JSON.stringify({ jsonrpc: '2.0', id: this.solanaNextId++, method: 'logsUnsubscribe', params: [subId] }));
+        this.claimsWsManager.send(JSON.stringify({ jsonrpc: '2.0', id: this.solanaNextId++, method: 'logsUnsubscribe', params: [subId] }));
       }
+      this.claimsWsManager.disconnect();
+      this.claimsWsManager = null;
     }
-    if (this.claimsWs) { this.claimsWs.close(); this.claimsWs = null; }
     this.claimsConnected = false;
-    this.claimsReconnectAttempts = 0;
     this.solanaSubIds = [];
   }
 
@@ -346,7 +366,9 @@ export class PumpFunProvider implements DataProvider {
           for (let i = 0; i < Math.min(8, bytes.length); i++) disc += bytes.charCodeAt(i).toString(16).padStart(2, '0');
           if (WALLET_CLAIM_DISCRIMINATORS.has(disc)) { claimType = 'wallet'; break; }
           if (disc === GITHUB_CLAIM_DISCRIMINATOR) { claimType = 'github'; break; }
-        } catch { /* ignore */ }
+        } catch (err) {
+          console.warn('[PumpFunProvider] Failed to decode base64 claim data:', err instanceof Error ? err.message : String(err));
+        }
       }
       if (log.includes(PUMP_FEE_PROGRAM_ID)) programId = PUMP_FEE_PROGRAM_ID;
       else if (log.includes(PUMP_AMM_PROGRAM_ID)) programId = PUMP_AMM_PROGRAM_ID;

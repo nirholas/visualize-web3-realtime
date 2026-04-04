@@ -2,6 +2,7 @@
 
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { formatStat } from './utils/shared';
 
 // ---------------------------------------------------------------------------
 // Animated Counter Hook
@@ -42,15 +43,8 @@ function useAnimatedValue(target: number, duration = 400): number {
   return display;
 }
 
-// ---------------------------------------------------------------------------
-// Number formatting
-// ---------------------------------------------------------------------------
-
-function formatNumber(n: number, prefix = ''): string {
-  if (n >= 1_000_000_000) return `${prefix}${(n / 1_000_000_000).toFixed(1)}B`;
-  if (n >= 1_000_000) return `${prefix}${(n / 1_000_000).toFixed(1)}M`;
-  return `${prefix}${n.toLocaleString()}`;
-}
+// formatStat imported from utils/shared
+const formatNumber = formatStat;
 
 // ---------------------------------------------------------------------------
 // Stat Pill

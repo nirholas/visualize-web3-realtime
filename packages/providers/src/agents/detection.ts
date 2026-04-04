@@ -1,9 +1,10 @@
 import type { DataProviderEvent } from '@web3viz/core';
+import { BoundedSet } from '../shared';
 
 const AGENT_KEYWORDS =
   /\b(agent|ai\b|gpt|bot|auto|llm|claude|openai|chatgpt|neural|sentient|autonomous|virtuals|eliza|ai16z|degenai|smart\s*agent|olas|fetch\.ai|singularity|ocean\s*protocol)\b/i;
 
-const KNOWN_AGENT_ADDRESSES = new Set<string>();
+const KNOWN_AGENT_ADDRESSES = new BoundedSet<string>(10000);
 
 /** Check if a DataProviderEvent looks like agent activity */
 export function isAgentEvent(event: DataProviderEvent): boolean {

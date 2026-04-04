@@ -5,31 +5,7 @@ import { memo, useEffect, useRef, useState } from 'react';
 
 import type { DataProviderEvent, CategoryConfig } from '@web3viz/core';
 import { CHAIN_COLORS } from './constants';
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function formatAmount(amount: number, symbol?: string): string {
-  const s = symbol || '';
-  const prefix = s === 'USD' || s === '$' ? '$' : '';
-  const suffix = prefix ? '' : s ? ` ${s}` : '';
-
-  if (amount < 0.001) return `${prefix}<0.001${suffix}`;
-  if (amount >= 1_000_000) return `${prefix}${(amount / 1_000_000).toFixed(1)}M${suffix}`;
-  if (amount >= 1000) return `${prefix}${(amount / 1000).toFixed(1)}k${suffix}`;
-  if (amount >= 1) return `${prefix}${amount.toFixed(2)}${suffix}`;
-  return `${prefix}${amount.toFixed(3)}${suffix}`;
-}
-
-function timeAgo(ts: number): string {
-  const diff = Date.now() - ts;
-  const secs = Math.floor(diff / 1000);
-  if (secs < 5) return 'just now';
-  if (secs < 60) return `${secs}s ago`;
-  const mins = Math.floor(secs / 60);
-  return `${mins}m ago`;
-}
+import { formatAmount, timeAgo } from './utils/shared';
 
 // ---------------------------------------------------------------------------
 // Event Card (unified events)

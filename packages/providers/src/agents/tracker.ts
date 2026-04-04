@@ -1,4 +1,6 @@
 import type { DataProviderEvent } from '@web3viz/core';
+import { BoundedMap } from '../shared';
+import { isObject, getString } from '../shared/validate';
 
 export interface TrackerConfig {
   onEvent: (event: DataProviderEvent) => void;
@@ -24,7 +26,7 @@ let _trackerId = 0;
 export class AgentTracker {
   private config: TrackerConfig;
   private interval: ReturnType<typeof setInterval> | null = null;
-  private knownAgents = new Map<string, TrackedAgent>();
+  private knownAgents = new BoundedMap<string, TrackedAgent>(1000);
   private pollCount = 0;
 
   constructor(config: TrackerConfig) {
@@ -77,14 +79,19 @@ export class AgentTracker {
         headers: { 'Accept': 'application/json' },
       });
       if (res.ok) {
-        const data = await res.json() as { ok?: { data?: Array<{ agentName?: string; contracts?: Array<{ contractAddress?: string; chain?: string }> }> } };
-        const agents = data?.ok?.data;
+        const data = await res.json();
+        if (!isObject(data)) return false;
+        const okObj = data.ok;
+        if (!isObject(okObj)) return false;
+        const agents = okObj.data;
         if (Array.isArray(agents) && agents.length > 0) {
           for (const agent of agents) {
-            const name = agent.agentName ?? 'Unknown';
-            const contract = agent.contracts?.[0];
-            const address = contract?.contractAddress ?? `agent_${name}`;
-            const chain = contract?.chain ?? 'solana';
+            if (!isObject(agent)) continue;
+            const name = getString(agent, 'agentName', 'Unknown');
+            const contracts = agent.contracts;
+            const contract = Array.isArray(contracts) && isObject(contracts[0]) ? contracts[0] as Record<string, unknown> : null;
+            const address = contract ? getString(contract, 'contractAddress', `agent_${name}`) : `agent_${name}`;
+            const chain = contract ? getString(contract, 'chain', 'solana') : 'solana';
 
             if (!this.knownAgents.has(address)) {
               this.knownAgents.set(address, { address, name, lastSeen: Date.now(), interactions: 0 });

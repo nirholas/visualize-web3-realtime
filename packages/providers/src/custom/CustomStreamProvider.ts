@@ -9,6 +9,8 @@ import type {
   TraderEdge,
   RawEvent,
 } from '@web3viz/core';
+import { BoundedMap, WebSocketManager } from '../shared';
+import { safeJsonParse } from '../shared/validate';
 
 // ============================================================================
 // Custom Stream Provider
@@ -115,13 +117,13 @@ export class CustomStreamProvider implements DataProvider {
   private _enabled = true;
   private _connected = false;
 
-  private ws: WebSocket | null = null;
+  private wsManager: WebSocketManager | null = null;
   private eventSource: EventSource | null = null;
   private pollTimer: ReturnType<typeof setInterval> | null = null;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
   private totalEvents = 0;
-  private tokenAcc = new Map<string, { name: string; symbol: string; volume: number; trades: number }>();
+  private tokenAcc = new BoundedMap<string, { name: string; symbol: string; volume: number; trades: number }>(10000);
   private traderEdges: TraderEdge[] = [];
 
   constructor(opts: CustomStreamProviderOptions) {
@@ -172,10 +174,9 @@ export class CustomStreamProvider implements DataProvider {
 
   disconnect(): void {
     this._connected = false;
-    if (this.ws) {
-      this.ws.onclose = null; // prevent reconnect
-      this.ws.close();
-      this.ws = null;
+    if (this.wsManager) {
+      this.wsManager.disconnect();
+      this.wsManager = null;
     }
     if (this.eventSource) {
       this.eventSource.close();
@@ -196,32 +197,21 @@ export class CustomStreamProvider implements DataProvider {
   // ------------------------------------------------------------------
 
   private connectWebSocket(): void {
-    try {
-      this.ws = new WebSocket(this.url);
-      this._connected = true;
-
-      this.ws.onmessage = (msg) => {
-        try {
-          const data = JSON.parse(msg.data as string);
+    this.wsManager = new WebSocketManager({
+      url: this.url,
+      onStateChange: (state) => {
+        this._connected = state === 'connected';
+      },
+      onMessage: (raw) => {
+        const data = safeJsonParse(raw);
+        if (data != null) {
           this.ingestPayload(data);
-        } catch {
-          // non-JSON message, ignore
         }
-      };
+      },
+    });
 
-      this.ws.onerror = () => {
-        // will trigger onclose
-      };
-
-      this.ws.onclose = () => {
-        this._connected = false;
-        this.ws = null;
-        // Reconnect after 3s
-        this.reconnectTimer = setTimeout(() => this.connectWebSocket(), 3000);
-      };
-    } catch {
-      this._connected = false;
-    }
+    this.wsManager.connect();
+    this._connected = true;
   }
 
   private connectSSE(): void {
@@ -230,11 +220,9 @@ export class CustomStreamProvider implements DataProvider {
       this._connected = true;
 
       this.eventSource.onmessage = (msg) => {
-        try {
-          const data = JSON.parse(msg.data);
+        const data = safeJsonParse(msg.data);
+        if (data != null) {
           this.ingestPayload(data);
-        } catch {
-          // ignore
         }
       };
 
@@ -242,6 +230,7 @@ export class CustomStreamProvider implements DataProvider {
         this._connected = false;
         this.eventSource?.close();
         this.eventSource = null;
+        // SSE doesn't use WebSocketManager, but we keep simple reconnect here
         this.reconnectTimer = setTimeout(() => this.connectSSE(), 3000);
       };
     } catch {

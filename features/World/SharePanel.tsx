@@ -1,6 +1,7 @@
 'use client';
 
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { isValidHex, normalizeHex } from './utils/shared';
 
 // ============================================================================
 // Types
@@ -51,26 +52,6 @@ const REMIX_ACCENT = [
   '#8165ee', '#e06c75', '#56b6c2', '#c678dd', '#98c379',
   '#d19a66', '#61afef', '#e5c07b', '#ff79c6', '#50fa7b',
 ];
-
-// ============================================================================
-// Hex validation
-// ============================================================================
-
-const HEX_RE = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
-
-function isValidHex(v: string): boolean {
-  return HEX_RE.test(v.startsWith('#') ? v : `#${v}`);
-}
-
-function normalizeHex(v: string): string {
-  const raw = v.startsWith('#') ? v : `#${v}`;
-  if (!HEX_RE.test(raw)) return '';
-  if (raw.length === 4) {
-    // Expand shorthand #abc → #aabbcc
-    return `#${raw[1]}${raw[1]}${raw[2]}${raw[2]}${raw[3]}${raw[3]}`;
-  }
-  return raw.toLowerCase();
-}
 
 // ============================================================================
 // ColorControl — reusable row (label + hex input + swatches)

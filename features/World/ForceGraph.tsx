@@ -554,8 +554,8 @@ const Edges = memo<{
 
       if (isHighlightEdge) {
         // Bright values > 1.0 trigger selective bloom via toneMapped={false}
-        cA.array[idx] = 0.48; cA.array[idx + 1] = 0.78; cA.array[idx + 2] = 2.0;
-        cA.array[idx + 3] = 0.48; cA.array[idx + 4] = 0.78; cA.array[idx + 5] = 2.0;
+        cA.array[idx] = EDGE_HIGHLIGHT_R; cA.array[idx + 1] = EDGE_HIGHLIGHT_G; cA.array[idx + 2] = EDGE_HIGHLIGHT_B;
+        cA.array[idx + 3] = EDGE_HIGHLIGHT_R; cA.array[idx + 4] = EDGE_HIGHLIGHT_G; cA.array[idx + 5] = EDGE_HIGHLIGHT_B;
       } else {
         let gray: number;
         if (activeProtocol) {
