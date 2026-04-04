@@ -247,20 +247,11 @@ const SharePanel = memo<SharePanelProps>(({
     <div
       ref={panelRef}
       style={{
-        animation: 'slideInRight 0.25s ease-out',
-        background: isDark ? 'rgba(14, 14, 22, 0.97)' : '#fff',
-        borderLeft: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid #e0e0e0',
-        boxShadow: isDark ? '-4px 0 24px rgba(0,0,0,0.4)' : '-4px 0 24px rgba(0,0,0,0.08)',
         display: 'flex',
         flexDirection: 'column',
-        height: '100%',
         overflowY: 'auto',
-        padding: '24px 20px',
-        position: 'absolute',
-        right: 0,
-        top: 0,
-        width: 320,
-        zIndex: 50,
+        padding: '16px 20px',
+        fontFamily: "'IBM Plex Mono', monospace",
       }}
     >
       {/* Header */}

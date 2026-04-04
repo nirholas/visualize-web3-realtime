@@ -193,70 +193,14 @@ const EmbedConfigurator = memo<EmbedConfiguratorProps>(({ onClose }) => {
   const previewUrl = buildEmbedUrl(config);
 
   return (
-    <div
-      style={{
-        backdropFilter: 'blur(8px)',
-        background: 'rgba(0,0,0,0.4)',
-        bottom: 0,
-        left: 0,
-        position: 'fixed',
-        right: 0,
-        top: 0,
-        zIndex: 100,
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
       <div
         style={{
-          background: '#ffffff',
-          borderRadius: 12,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
           display: 'flex',
           flexDirection: 'column',
           fontFamily: "'IBM Plex Mono', monospace",
-          gap: 0,
-          left: '50%',
-          maxHeight: '90vh',
-          maxWidth: 860,
           overflow: 'hidden',
-          position: 'absolute',
-          top: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '92vw',
         }}
       >
-        {/* Header */}
-        <div
-          style={{
-            alignItems: 'center',
-            borderBottom: '1px solid #e8e8e8',
-            display: 'flex',
-            justifyContent: 'space-between',
-            padding: '14px 20px',
-          }}
-        >
-          <span style={{ fontSize: 13, fontWeight: 500, color: '#161616' }}>
-            Embed Widget
-          </span>
-          <button
-            aria-label="Close embed configurator"
-            onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#999',
-              cursor: 'pointer',
-              fontSize: 18,
-              lineHeight: 1,
-              padding: '2px 6px',
-            }}
-            type="button"
-          >
-            ×
-          </button>
-        </div>
 
         <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'auto' }}>
           {/* Left: Controls */}
@@ -451,7 +395,6 @@ const EmbedConfigurator = memo<EmbedConfiguratorProps>(({ onClose }) => {
           </div>
         </div>
       </div>
-    </div>
   );
 });
 

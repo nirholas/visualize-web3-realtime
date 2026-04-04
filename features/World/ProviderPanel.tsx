@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AnimatePresence, m } from 'framer-motion';
+// AnimatePresence removed — panel renders inside a Window shell
 import type { DataProvider, ConnectionState, SourceConfig } from '@web3viz/core';
 import AddCustomProviderForm, { type CustomProviderFormData } from './AddCustomProviderForm';
 import { useDarkMode } from './DarkModeContext';
@@ -310,66 +310,19 @@ const ProviderPanel = memo<ProviderPanelProps>(({
     [stats.counts],
   );
 
+  if (!open) return null;
+
   return (
-    <AnimatePresence>
-      {open && (
-        <m.div
+        <div
           ref={panelRef}
-          initial={{ x: -320 }}
-          animate={{ x: 0 }}
-          exit={{ x: -320 }}
-          transition={{ type: 'tween', duration: 0.25, ease: 'easeOut' }}
           style={{
-            background: isDark ? 'rgba(14, 14, 22, 0.97)' : 'rgba(255, 255, 255, 0.95)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            borderRight: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid #e0e0e0',
-            boxShadow: isDark ? '4px 0 24px rgba(0,0,0,0.4)' : '4px 0 24px rgba(0,0,0,0.08)',
             display: 'flex',
             flexDirection: 'column',
-            height: '100%',
-            left: 0,
             overflowY: 'auto',
-            padding: '24px 20px',
-            position: 'absolute',
-            top: 0,
-            width: 320,
-            zIndex: 50,
+            padding: '16px 20px',
+            fontFamily: "'IBM Plex Mono', monospace",
           }}
         >
-          {/* Header */}
-          <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-            <h2
-              style={{
-                color: isDark ? '#e2e8f0' : '#1a1a1a',
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: 16,
-                fontWeight: 600,
-                margin: 0,
-              }}
-            >
-              Data Sources
-            </h2>
-            <button
-              onClick={onClose}
-              type="button"
-              aria-label="Close panel"
-              style={{
-                alignItems: 'center',
-                background: 'none',
-                border: 'none',
-                color: isDark ? '#64748b' : '#999',
-                cursor: 'pointer',
-                display: 'flex',
-                fontSize: 18,
-                height: 28,
-                justifyContent: 'center',
-                width: 28,
-              }}
-            >
-              &#x2715;
-            </button>
-          </div>
 
           <p
             style={{
@@ -495,9 +448,7 @@ const ProviderPanel = memo<ProviderPanelProps>(({
               </button>
             )}
           </div>
-        </m.div>
-      )}
-    </AnimatePresence>
+        </div>
   );
 });
 
