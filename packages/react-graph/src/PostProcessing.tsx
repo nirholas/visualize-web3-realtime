@@ -23,7 +23,7 @@ const PostProcessing = memo<PostProcessingProps>(({
   if (!enabled) return null;
 
   return (
-    <EffectComposer multisampling={0} stencilBuffer={false}>
+    <EffectComposer multisampling={0}>
       {/* SMAA replaces hardware MSAA — better quality, compatible with post-processing */}
       <SMAA />
 
