@@ -18,11 +18,19 @@ interface ChatAction {
   params: Record<string, unknown>;
 }
 
+interface AgentMetrics {
+  activeAgents: number;
+  activeTasks: number;
+  completedTasks: number;
+  recentToolCalls: string[];
+}
+
 interface WorldChatProps {
   graphRef: React.RefObject<ForceGraphHandle | null>;
   onColorChange: (colors: ShareColors) => void;
   onFilterChange: (filters: { protocols?: string[]; timeRange?: string }) => void;
   stats: { totalEvents: number; totalVolume: number; connections: number };
+  agentMetrics?: AgentMetrics;
 }
 
 // ---------------------------------------------------------------------------
@@ -34,6 +42,7 @@ export const WorldChat = memo<WorldChatProps>(function WorldChat({
   onColorChange,
   onFilterChange,
   stats,
+  agentMetrics,
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -125,6 +134,7 @@ export const WorldChat = memo<WorldChatProps>(function WorldChat({
             context: {
               stats,
               hubCount: graphRef.current?.getHubCount() ?? 0,
+              agentMetrics,
             },
           }),
         });

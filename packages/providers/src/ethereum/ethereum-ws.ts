@@ -91,71 +91,61 @@ interface EthLog {
 // ---------------------------------------------------------------------------
 
 export class EthereumWebSocket {
-  private ws: WebSocket | null = null;
+  private wsManager: WebSocketManager;
   private callbacks: EthereumWSCallbacks;
-  private wsUrl: string;
-  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
-  private reconnectAttempts = 0;
-  private _connected = false;
   private subscriptionId: string | null = null;
   private rpcId = 1;
 
   // Throttle: buffer events and flush at a controlled rate
+  private static readonly MAX_BUFFER_SIZE = 1000;
   private eventBuffer: Array<{ event: DataProviderEvent; swap?: EthereumWSCallbacks['onSwap'] extends (s: infer S) => void ? S : never }> = [];
   private flushTimer: ReturnType<typeof setInterval> | null = null;
   private static readonly MAX_EVENTS_PER_FLUSH = 10;
   private static readonly FLUSH_INTERVAL_MS = 1000;
 
-  private static readonly BASE_RECONNECT_MS = 3000;
-  private static readonly MAX_RECONNECT_MS = 60000;
-
   constructor(callbacks: EthereumWSCallbacks) {
     this.callbacks = callbacks;
-    this.wsUrl = process.env.NEXT_PUBLIC_ETH_WS_URL || 'wss://ethereum-rpc.publicnode.com';
-  }
+    const wsUrl = process.env.NEXT_PUBLIC_ETH_WS_URL || 'wss://ethereum-rpc.publicnode.com';
 
-  isConnected(): boolean {
-    return this._connected;
-  }
+    this.wsManager = new WebSocketManager({
+      url: wsUrl,
+      baseReconnectMs: 3000,
+      maxReconnectMs: 60000,
+      maxRetries: 50,
+      heartbeatIntervalMs: 30000,
 
-  connect(): void {
-    if (this.ws?.readyState === WebSocket.OPEN) return;
+      onOpen: (ws) => {
+        console.log('[EthereumProvider] WS connected');
 
-    const ws = new WebSocket(this.wsUrl);
-    this.ws = ws;
+        // Subscribe to logs matching our event topics
+        const id = this.rpcId++;
+        ws.send(JSON.stringify({
+          jsonrpc: '2.0',
+          id,
+          method: 'eth_subscribe',
+          params: [
+            'logs',
+            {
+              topics: [[
+                UNISWAP_V2_SWAP_TOPIC,
+                UNISWAP_V3_SWAP_TOPIC,
+                ERC20_TRANSFER_TOPIC,
+              ]],
+            },
+          ],
+        }));
 
-    ws.onopen = () => {
-      console.log('[EthereumProvider] WS connected');
-      this._connected = true;
-      this.reconnectAttempts = 0;
+        // Start the flush timer for rate-limiting
+        this.startFlushTimer();
+      },
 
-      // Subscribe to logs matching our event topics
-      const id = this.rpcId++;
-      ws.send(JSON.stringify({
-        jsonrpc: '2.0',
-        id,
-        method: 'eth_subscribe',
-        params: [
-          'logs',
-          {
-            topics: [[
-              UNISWAP_V2_SWAP_TOPIC,
-              UNISWAP_V3_SWAP_TOPIC,
-              ERC20_TRANSFER_TOPIC,
-            ]],
-          },
-        ],
-      }));
+      onMessage: (data) => {
+        if (this.callbacks.isPaused()) return;
 
-      // Start the flush timer for rate-limiting
-      this.startFlushTimer();
-    };
-
-    ws.onmessage = (event) => {
-      if (this.callbacks.isPaused()) return;
-
-      try {
-        const msg = JSON.parse(event.data);
+        const msg = safeJsonParse(data);
+        if (!isObject(msg)) {
+          return;
+        }
 
         // Subscription confirmation
         if (msg.id && msg.result && typeof msg.result === 'string') {
@@ -164,44 +154,43 @@ export class EthereumWebSocket {
         }
 
         // Log notification
-        if (msg.method === 'eth_subscription' && msg.params?.result) {
-          this.handleLog(msg.params.result as EthLog);
+        if (msg.method === 'eth_subscription' && isObject(msg.params)) {
+          const log = msg.params.result;
+          if (isValidEthLog(log)) {
+            this.handleLog(log);
+          }
         }
-      } catch {
-        // Ignore malformed messages
-      }
-    };
+      },
 
-    ws.onclose = () => {
-      this._connected = false;
-      this.subscriptionId = null;
-      this.stopFlushTimer();
-      this.reconnectAttempts++;
-      const delay = Math.min(
-        EthereumWebSocket.BASE_RECONNECT_MS * Math.pow(2, this.reconnectAttempts - 1),
-        EthereumWebSocket.MAX_RECONNECT_MS,
-      );
-      console.warn(`[EthereumProvider] WS closed — reconnecting in ${(delay / 1000).toFixed(0)}s (attempt ${this.reconnectAttempts})`);
-      this.reconnectTimer = setTimeout(() => this.connect(), delay);
-    };
+      onStateChange: (state) => {
+        if (state === 'disconnected' || state === 'reconnecting') {
+          this.subscriptionId = null;
+          this.stopFlushTimer();
+        }
+      },
 
-    ws.onerror = () => {
-      ws.close();
-    };
+      onError: (error) => {
+        console.warn(`[EthereumProvider] ${error.message}`);
+      },
+
+      onClose: () => {
+        this.subscriptionId = null;
+        this.stopFlushTimer();
+      },
+    });
+  }
+
+  isConnected(): boolean {
+    return this.wsManager.isConnected;
+  }
+
+  connect(): void {
+    this.wsManager.connect();
   }
 
   disconnect(): void {
     this.stopFlushTimer();
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = null;
-    }
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
-    }
-    this._connected = false;
-    this.reconnectAttempts = 0;
+    this.wsManager.disconnect();
     this.subscriptionId = null;
     this.eventBuffer = [];
   }
@@ -211,7 +200,6 @@ export class EthereumWebSocket {
   // -------------------------------------------------------------------------
 
   private handleLog(log: EthLog): void {
-    if (!log.topics || log.topics.length === 0) return;
 
     const topic0 = log.topics[0];
     const data = log.data.startsWith('0x') ? log.data.slice(2) : log.data;
@@ -393,7 +381,7 @@ export class EthereumWebSocket {
     }
 
     // If buffer is growing too large, drop oldest events
-    if (this.eventBuffer.length > 500) {
+    if (this.eventBuffer.length > EthereumWebSocket.MAX_BUFFER_SIZE) {
       this.eventBuffer = this.eventBuffer.slice(-200);
     }
   }

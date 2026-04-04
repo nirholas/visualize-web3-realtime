@@ -7,8 +7,9 @@ import { TaskQueue } from './TaskQueue.js';
 import { AgentManager } from './AgentManager.js';
 import { EventBroadcaster } from './EventBroadcaster.js';
 import { HealthMonitor } from './HealthMonitor.js';
-import { SperaxOSClient } from './SperaxOSClient.js';
+import { ClaudeAgentClient } from './ClaudeAgentClient.js';
 import { StateStore } from './StateStore.js';
+import { listResources } from '../../mcp/src/gizaServer.js';
 
 export const DEFAULT_AGENT_ROLES = ['coder', 'researcher', 'planner'];
 
@@ -17,7 +18,7 @@ export class ExecutorServer {
   private readonly agentManager: AgentManager;
   private readonly broadcaster: EventBroadcaster;
   private readonly health: HealthMonitor;
-  private readonly speraxos: SperaxOSClient;
+  private readonly claudeClient: ClaudeAgentClient;
   private readonly stateStore: StateStore;
 
   private startedAt = 0;
@@ -29,9 +30,19 @@ export class ExecutorServer {
   private recentEvents: AgentEvent[] = [];
 
   constructor(private readonly config: ExecutorConfig) {
-    this.speraxos = new SperaxOSClient(config.speraxosUrl, config.speraxosApiKey);
+    // Build MCP tool definitions from Giza resources
+    const mcpTools = listResources().map((r) => ({
+      name: r.name,
+      description: r.description,
+      input_schema: { type: 'object' as const, properties: {} },
+    }));
+
+    this.claudeClient = new ClaudeAgentClient({
+      apiKey: config.speraxosApiKey || process.env['ANTHROPIC_API_KEY'] || '',
+      tools: mcpTools,
+    });
     this.queue = new TaskQueue();
-    this.agentManager = new AgentManager(this.speraxos);
+    this.agentManager = new AgentManager(this.claudeClient);
     this.broadcaster = new EventBroadcaster(config.port);
     this.health = new HealthMonitor();
     this.stateStore = new StateStore(config.statePath);
@@ -200,10 +211,10 @@ export class ExecutorServer {
   }
 
   private setupHealthChecks(): void {
-    this.health.addCheck('speraxos', () => ({
-      name: 'speraxos',
-      status: 'pass' as const,
-      message: 'SperaxOS connection OK (mock mode)',
+    this.health.addCheck('claude', () => ({
+      name: 'claude',
+      status: this.claudeClient.isMockMode ? 'warn' as const : 'pass' as const,
+      message: this.claudeClient.isMockMode ? 'Claude: mock mode (no API key)' : 'Claude API connected',
       timestamp: Date.now(),
     }));
 

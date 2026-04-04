@@ -2,8 +2,8 @@ import { ExecutorServer } from './ExecutorServer.js';
 
 const config = {
   port: parseInt(process.env['EXECUTOR_PORT'] ?? '8765', 10),
-  speraxosUrl: process.env['SPERAXOS_URL'] ?? 'https://api.speraxos.io',
-  speraxosApiKey: process.env['SPERAXOS_API_KEY'] ?? '',
+  speraxosUrl: process.env['SPERAXOS_URL'] ?? '',
+  speraxosApiKey: process.env['ANTHROPIC_API_KEY'] ?? '',
   maxAgents: parseInt(process.env['MAX_AGENTS'] ?? '5', 10),
   taskPollInterval: 1000,
   heartbeatInterval: 30_000,

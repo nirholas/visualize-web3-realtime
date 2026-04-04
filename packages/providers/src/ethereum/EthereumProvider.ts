@@ -22,6 +22,7 @@ import type {
 } from '@web3viz/core';
 import { getCategoriesForSource, SOURCE_CONFIGS } from '@web3viz/core';
 
+import { BoundedMap } from '../shared';
 import { EthereumWebSocket } from './ethereum-ws';
 
 export interface EthereumProviderOptions {
@@ -56,8 +57,8 @@ export class EthereumProvider implements DataProvider {
   private ws: EthereumWebSocket;
 
   // Data accumulators
-  private tokenAcc = new Map<string, TopToken>();
-  private traderAcc = new Map<string, TraderEdge>();
+  private tokenAcc = new BoundedMap<string, TopToken>(10_000);
+  private traderAcc = new BoundedMap<string, TraderEdge>(50_000);
 
   // Recent events ring buffer
   private recentEvents: DataProviderEvent[] = [];

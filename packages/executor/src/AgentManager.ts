@@ -1,15 +1,8 @@
 import type { AgentIdentity, AgentTask, AgentEvent } from './types.js';
 import type { AgentSpawnConfig } from './types.js';
-import { SperaxOSClient } from './SperaxOSClient.js';
+import { ClaudeAgentClient } from './ClaudeAgentClient.js';
 
-const MOCK_TOOL_NAMES = ['read_file', 'grep_search', 'run_in_terminal', 'semantic_search', 'create_file'];
-const MOCK_CATEGORIES = ['filesystem', 'search', 'terminal', 'search', 'filesystem'] as const;
 const DEFAULT_AGENT_ROLES = ['coder', 'researcher', 'planner'];
-
-let _callId = 0;
-function uid(): string { return `call_${Date.now()}_${++_callId}`; }
-
-function randomFrom<T>(arr: T[]): T { return arr[Math.floor(Math.random() * arr.length)]; }
 
 interface AgentState {
   identity: AgentIdentity;
@@ -22,7 +15,7 @@ export class AgentManager {
   private agents = new Map<string, AgentState>();
   private eventListeners = new Set<(event: AgentEvent) => void>();
 
-  constructor(private readonly client: SperaxOSClient) {}
+  constructor(private readonly client: ClaudeAgentClient) {}
 
   onEvent(callback: (event: AgentEvent) => void): () => void {
     this.eventListeners.add(callback);
@@ -69,68 +62,44 @@ export class AgentManager {
       payload: { description: task.description, priority: task.priority },
     });
 
-    // In mock mode, simulate the task execution
-    this.simulateTaskExecution(task, agent);
+    // Execute the task using Claude (or mock if no API key)
+    this.executeTaskWithClaude(task, agent);
   }
 
-  private async simulateTaskExecution(task: AgentTask, agent: AgentState): Promise<void> {
-    const toolCallCount = 2 + Math.floor(Math.random() * 5);
-    const failed = Math.random() < 0.1;
+  private async executeTaskWithClaude(task: AgentTask, agent: AgentState): Promise<void> {
+    try {
+      const result = await this.client.executeTask(task.agentId, task);
 
-    // Simulate tool calls
-    for (let i = 0; i < toolCallCount; i++) {
-      await new Promise((r) => setTimeout(r, 500 + Math.random() * 1500));
-      const toolIdx = Math.floor(Math.random() * MOCK_TOOL_NAMES.length);
-      const callId = uid();
-
-      this.emit({
-        eventId: `evt_tool_${callId}`,
-        type: 'tool:started',
-        timestamp: Date.now(),
-        agentId: task.agentId,
-        taskId: task.taskId,
-        callId,
-        payload: {
-          callId,
-          toolName: MOCK_TOOL_NAMES[toolIdx],
-          toolCategory: MOCK_CATEGORIES[toolIdx],
-          inputSummary: `Executing ${MOCK_TOOL_NAMES[toolIdx]}`,
-        },
-      });
-
-      await new Promise((r) => setTimeout(r, 100 + Math.random() * 400));
-
-      this.emit({
-        eventId: `evt_tool_done_${callId}`,
-        type: 'tool:completed',
-        timestamp: Date.now(),
-        agentId: task.agentId,
-        taskId: task.taskId,
-        callId,
-        payload: { callId, outputSummary: 'Done.' },
-      });
-    }
-
-    await new Promise((r) => setTimeout(r, 200));
-
-    // Complete or fail the task
-    if (failed) {
+      if (result.success) {
+        this.emit({
+          eventId: `evt_task_done_${task.taskId}`,
+          type: 'task:completed',
+          timestamp: Date.now(),
+          agentId: task.agentId,
+          taskId: task.taskId,
+          payload: {
+            result: result.result,
+            toolCallCount: result.toolCalls.length,
+          },
+        });
+      } else {
+        this.emit({
+          eventId: `evt_task_fail_${task.taskId}`,
+          type: 'task:failed',
+          timestamp: Date.now(),
+          agentId: task.agentId,
+          taskId: task.taskId,
+          payload: { error: result.result },
+        });
+      }
+    } catch (err) {
       this.emit({
         eventId: `evt_task_fail_${task.taskId}`,
         type: 'task:failed',
         timestamp: Date.now(),
         agentId: task.agentId,
         taskId: task.taskId,
-        payload: { error: 'Simulated task failure' },
-      });
-    } else {
-      this.emit({
-        eventId: `evt_task_done_${task.taskId}`,
-        type: 'task:completed',
-        timestamp: Date.now(),
-        agentId: task.agentId,
-        taskId: task.taskId,
-        payload: { result: 'Task completed successfully' },
+        payload: { error: err instanceof Error ? err.message : 'Unknown error' },
       });
     }
 

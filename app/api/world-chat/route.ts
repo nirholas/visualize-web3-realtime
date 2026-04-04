@@ -28,6 +28,13 @@ const tools: Anthropic.Messages.Tool[] = getToolDefinitions().map((t) => ({
 // Route handler
 // ---------------------------------------------------------------------------
 
+interface AgentMetrics {
+  activeAgents: number;
+  activeTasks: number;
+  completedTasks: number;
+  recentToolCalls: string[];
+}
+
 interface ChatContext {
   stats: {
     totalEvents: number;
@@ -35,6 +42,7 @@ interface ChatContext {
     connections: number;
   };
   hubCount: number;
+  agentMetrics?: AgentMetrics;
 }
 
 interface IncomingMessage {
@@ -57,21 +65,31 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Messages array is required' }, { status: 400 });
   }
 
+  // Build agent context section if metrics are available
+  const agentSection = context.agentMetrics
+    ? `\nAgent System Status:
+- ${context.agentMetrics.activeAgents} active AI agents
+- ${context.agentMetrics.activeTasks} tasks in progress, ${context.agentMetrics.completedTasks} completed
+- Recent tool calls: ${context.agentMetrics.recentToolCalls.slice(0, 5).join(', ') || 'none'}
+Agents use Claude to autonomously analyze DeFi data via MCP tools (protocol_stats, recent_trades, agent_activity, proof_status).`
+    : '';
+
   // Build system prompt with live context
   const systemPrompt = `You are the AI agent controlling a 3D visualization of Web3 activity.
 You can see ${context.stats.totalEvents} events across ${context.hubCount} protocol hubs.
 Total volume: $${context.stats.totalVolume.toLocaleString()}.
-Active connections: ${context.stats.connections}.
+Active connections: ${context.stats.connections}.${agentSection}
 
 You can use tools to modify the scene:
 - sceneColorUpdate: Change background, protocol, and user node colors (hex strings)
 - cameraFocus: Focus camera on a specific hub by index (0-based) or position
 - dataFilter: Filter visible data by protocols, volume, or time range
-- agentSummary: Display a summary card (Phase 2)
-- tradeVisualization: Highlight specific trades (Phase 2)
+- agentSummary: Display a summary card with agent metrics
+- tradeVisualization: Highlight specific trades in the 3D scene
 
 Be concise. When the user asks to change visual elements, use the appropriate tool.
 When answering questions about the data, reference the stats you have.
+You can discuss agent activity, verification proofs, and protocol health.
 Always respond with a brief text message in addition to any tool calls.`;
 
   try {
