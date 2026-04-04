@@ -4,6 +4,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, m } from 'framer-motion';
 import type { DataProvider, ConnectionState, SourceConfig } from '@web3viz/core';
 import AddCustomProviderForm, { type CustomProviderFormData } from './AddCustomProviderForm';
+import { useDarkMode } from './DarkModeContext';
 
 // ============================================================================
 // Types
@@ -122,12 +123,13 @@ const ProviderCard = memo<{
   isCustom?: boolean;
   onRemove?: () => void;
 }>(({ provider, enabled, onToggle, connectionStatus, eventCount, categoryCount, isCustom, onRemove }) => {
+  const isDark = useDarkMode();
   const src = provider.sourceConfig;
 
   return (
     <div
       style={{
-        background: '#f8f8f8',
+        background: isDark ? 'rgba(255,255,255,0.03)' : '#f8f8f8',
         borderRadius: 8,
         display: 'flex',
         flexDirection: 'column',
@@ -143,7 +145,7 @@ const ProviderCard = memo<{
           <StatusDot status={connectionStatus} />
           <span
             style={{
-              color: '#1a1a1a',
+              color: isDark ? '#e2e8f0' : '#1a1a1a',
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: 13,
               fontWeight: 600,
@@ -183,7 +185,7 @@ const ProviderCard = memo<{
       {src.description && (
         <span
           style={{
-            color: '#888',
+            color: isDark ? '#64748b' : '#888',
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 10,
             lineHeight: 1.4,
@@ -198,7 +200,7 @@ const ProviderCard = memo<{
         <ChainBadge label={src.label} color={src.color} />
         <span
           style={{
-            color: '#999',
+            color: isDark ? '#64748b' : '#999',
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 9,
             letterSpacing: '0.04em',
@@ -209,7 +211,7 @@ const ProviderCard = memo<{
         </span>
         <span
           style={{
-            color: '#999',
+            color: isDark ? '#64748b' : '#999',
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 9,
             letterSpacing: '0.04em',
@@ -251,6 +253,7 @@ const ProviderPanel = memo<ProviderPanelProps>(({
   onRemoveCustomProvider,
   customProviderIds,
 }) => {
+  const isDark = useDarkMode();
   const [showAddForm, setShowAddForm] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -317,11 +320,11 @@ const ProviderPanel = memo<ProviderPanelProps>(({
           exit={{ x: -320 }}
           transition={{ type: 'tween', duration: 0.25, ease: 'easeOut' }}
           style={{
-            background: 'rgba(255, 255, 255, 0.95)',
+            background: isDark ? 'rgba(14, 14, 22, 0.97)' : 'rgba(255, 255, 255, 0.95)',
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
-            borderRight: '1px solid #e0e0e0',
-            boxShadow: '4px 0 24px rgba(0,0,0,0.08)',
+            borderRight: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid #e0e0e0',
+            boxShadow: isDark ? '4px 0 24px rgba(0,0,0,0.4)' : '4px 0 24px rgba(0,0,0,0.08)',
             display: 'flex',
             flexDirection: 'column',
             height: '100%',
@@ -338,7 +341,7 @@ const ProviderPanel = memo<ProviderPanelProps>(({
           <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
             <h2
               style={{
-                color: '#1a1a1a',
+                color: isDark ? '#e2e8f0' : '#1a1a1a',
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: 16,
                 fontWeight: 600,
@@ -355,7 +358,7 @@ const ProviderPanel = memo<ProviderPanelProps>(({
                 alignItems: 'center',
                 background: 'none',
                 border: 'none',
-                color: '#999',
+                color: isDark ? '#64748b' : '#999',
                 cursor: 'pointer',
                 display: 'flex',
                 fontSize: 18,
@@ -370,7 +373,7 @@ const ProviderPanel = memo<ProviderPanelProps>(({
 
           <p
             style={{
-              color: '#888',
+              color: isDark ? '#64748b' : '#888',
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: 11,
               lineHeight: 1.5,
@@ -384,7 +387,7 @@ const ProviderPanel = memo<ProviderPanelProps>(({
           <div
             style={{
               alignItems: 'center',
-              background: '#f0f0f0',
+              background: isDark ? 'rgba(255,255,255,0.03)' : '#f0f0f0',
               borderRadius: 6,
               display: 'flex',
               gap: 12,
@@ -395,7 +398,7 @@ const ProviderPanel = memo<ProviderPanelProps>(({
           >
             <span
               style={{
-                color: '#666',
+                color: isDark ? '#64748b' : '#666',
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: 10,
                 letterSpacing: '0.04em',
@@ -406,7 +409,7 @@ const ProviderPanel = memo<ProviderPanelProps>(({
             </span>
             <span
               style={{
-                color: '#1a1a1a',
+                color: isDark ? '#e2e8f0' : '#1a1a1a',
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: 14,
                 fontWeight: 600,
@@ -453,7 +456,7 @@ const ProviderPanel = memo<ProviderPanelProps>(({
           {/* Add Custom Provider */}
           <div
             style={{
-              borderTop: '1px solid #e0e0e0',
+              borderTop: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid #e0e0e0',
               paddingTop: 16,
             }}
           >
@@ -471,8 +474,8 @@ const ProviderPanel = memo<ProviderPanelProps>(({
                 onClick={() => setShowAddForm(true)}
                 style={{
                   alignItems: 'center',
-                  background: '#1a1a1a',
-                  border: '1px solid #1a1a1a',
+                  background: isDark ? '#3d63ff' : '#1a1a1a',
+                  border: isDark ? '1px solid #3d63ff' : '1px solid #1a1a1a',
                   borderRadius: 8,
                   color: '#fff',
                   cursor: 'pointer',

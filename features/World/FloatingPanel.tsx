@@ -2,6 +2,7 @@
 
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
+import { useDarkMode } from './DarkModeContext';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -79,6 +80,7 @@ const FloatingPanel = memo<FloatingPanelProps>(function FloatingPanel({
   style,
   disableMinimize = false,
 }) {
+  const isDark = useDarkMode();
   const saved = useRef(loadState(id));
 
   const [minimized, setMinimized] = useState(saved.current?.minimized ?? defaultMinimized);
@@ -180,11 +182,11 @@ const FloatingPanel = memo<FloatingPanelProps>(function FloatingPanel({
           onPointerUp={onPointerUp}
           style={{
             alignItems: 'center',
-            background: 'rgba(255, 255, 255, 0.9)',
+            background: isDark ? 'rgba(18, 18, 28, 0.9)' : 'rgba(255, 255, 255, 0.9)',
             backdropFilter: 'blur(12px)',
-            border: '1px solid #e8e8e8',
+            border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e8e8e8',
             borderRadius: 10,
-            boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+            boxShadow: isDark ? '0 1px 4px rgba(0,0,0,0.3)' : '0 1px 4px rgba(0,0,0,0.08)',
             cursor: locked ? 'pointer' : 'grab',
             display: 'flex',
             fontFamily: "'IBM Plex Mono', monospace",
@@ -194,7 +196,7 @@ const FloatingPanel = memo<FloatingPanelProps>(function FloatingPanel({
             padding: '5px 12px',
             textTransform: 'uppercase',
             userSelect: 'none',
-            color: '#666',
+            color: isDark ? '#94a3b8' : '#666',
           }}
         >
           {icon && <span style={{ display: 'flex', alignItems: 'center' }}>{icon}</span>}
@@ -204,7 +206,7 @@ const FloatingPanel = memo<FloatingPanelProps>(function FloatingPanel({
             style={{
               background: 'none',
               border: 'none',
-              color: '#999',
+              color: isDark ? '#64748b' : '#999',
               cursor: 'pointer',
               fontSize: 14,
               lineHeight: 1,
@@ -238,9 +240,9 @@ const FloatingPanel = memo<FloatingPanelProps>(function FloatingPanel({
         onPointerUp={onPointerUp}
         style={{
           alignItems: 'center',
-          background: 'rgba(255, 255, 255, 0.6)',
+          background: isDark ? 'rgba(18, 18, 28, 0.8)' : 'rgba(255, 255, 255, 0.6)',
           backdropFilter: 'blur(8px)',
-          borderBottom: '1px solid rgba(0,0,0,0.05)',
+          borderBottom: isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.05)',
           borderRadius: '10px 10px 0 0',
           cursor: locked ? 'default' : 'grab',
           display: 'flex',
@@ -252,12 +254,12 @@ const FloatingPanel = memo<FloatingPanelProps>(function FloatingPanel({
           padding: '3px 8px',
           textTransform: 'uppercase',
           userSelect: 'none',
-          color: '#999',
+          color: isDark ? '#64748b' : '#999',
         }}
       >
         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           {!locked && (
-            <span style={{ color: '#bbb', fontSize: 8, cursor: 'grab' }}>⠿</span>
+            <span style={{ color: isDark ? '#475569' : '#bbb', fontSize: 8, cursor: 'grab' }}>⠿</span>
           )}
           {title}
         </span>
@@ -268,7 +270,7 @@ const FloatingPanel = memo<FloatingPanelProps>(function FloatingPanel({
             style={{
               background: 'none',
               border: 'none',
-              color: locked ? '#bbb' : '#3d63ff',
+              color: locked ? (isDark ? '#475569' : '#bbb') : '#3d63ff',
               cursor: 'pointer',
               fontSize: 11,
               lineHeight: 1,
@@ -286,7 +288,7 @@ const FloatingPanel = memo<FloatingPanelProps>(function FloatingPanel({
               style={{
                 background: 'none',
                 border: 'none',
-                color: '#bbb',
+                color: isDark ? '#475569' : '#bbb',
                 cursor: 'pointer',
                 fontSize: 14,
                 lineHeight: 1,

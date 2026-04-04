@@ -3,6 +3,7 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { formatStat } from './utils/shared';
+import { useDarkMode } from './DarkModeContext';
 
 // ---------------------------------------------------------------------------
 // Animated Counter Hook
@@ -52,6 +53,7 @@ const formatNumber = formatStat;
 
 const BottomStatPill = memo<{ label: string; value: number; prefix?: string }>(
   ({ label, value, prefix = '' }) => {
+    const isDark = useDarkMode();
     const animated = useAnimatedValue(value);
     return (
       <div
@@ -60,18 +62,18 @@ const BottomStatPill = memo<{ label: string; value: number; prefix?: string }>(
           flexDirection: 'column',
           alignItems: 'flex-start',
           padding: '6px 16px',
-          background: '#ffffff',
-          border: '1px solid #e8e8e8',
+          background: isDark ? 'rgba(25, 25, 40, 0.8)' : '#ffffff',
+          border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e8e8e8',
           borderRadius: 8,
           minWidth: 100,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          boxShadow: isDark ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.08)',
         }}
       >
         <span
           style={{
             fontSize: 10,
             fontWeight: 400,
-            color: '#666',
+            color: isDark ? '#64748b' : '#666',
             textTransform: 'uppercase',
             letterSpacing: '0.08em',
             lineHeight: 1,
@@ -83,7 +85,7 @@ const BottomStatPill = memo<{ label: string; value: number; prefix?: string }>(
           style={{
             fontSize: 14,
             fontWeight: 500,
-            color: '#161616',
+            color: isDark ? '#e2e8f0' : '#161616',
             lineHeight: 1.4,
             fontVariantNumeric: 'tabular-nums',
           }}
@@ -112,6 +114,7 @@ const AddressSearch = memo<{
   onSearch: (address: string) => void;
   externalError?: boolean;
 }>(({ onSearch, highlightedAddress, onDismiss, externalError }) => {
+  const isDark = useDarkMode();
   const [value, setValue] = useState('');
   const [error, setError] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -160,7 +163,7 @@ const AddressSearch = memo<{
         style={{
           fontSize: 10,
           fontWeight: 400,
-          color: '#666',
+          color: isDark ? '#64748b' : '#666',
           textTransform: 'uppercase',
           letterSpacing: '0.08em',
           marginRight: 2,
@@ -179,15 +182,15 @@ const AddressSearch = memo<{
           padding: '5px 10px',
           fontSize: 11,
           fontFamily: 'inherit',
-          color: '#161616',
+          color: isDark ? '#e2e8f0' : '#161616',
           background: highlightedAddress
             ? 'rgba(61,99,255,0.08)'
-            : '#ffffff',
-          border: `1px solid ${error ? 'rgba(239,68,68,0.7)' : highlightedAddress ? 'rgba(61,99,255,0.3)' : '#e8e8e8'}`,
+            : isDark ? 'rgba(255,255,255,0.04)' : '#ffffff',
+          border: `1px solid ${error ? 'rgba(239,68,68,0.7)' : highlightedAddress ? 'rgba(61,99,255,0.3)' : isDark ? 'rgba(255,255,255,0.08)' : '#e8e8e8'}`,
           borderRadius: 8,
           outline: 'none',
           transition: 'border-color 0.3s ease',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          boxShadow: isDark ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.08)',
         }}
       />
       {highlightedAddress ? (
@@ -199,9 +202,9 @@ const AddressSearch = memo<{
             fontSize: 10,
             fontWeight: 600,
             fontFamily: 'inherit',
-            color: '#666',
-            background: '#ffffff',
-            border: '1px solid #e8e8e8',
+            color: isDark ? '#94a3b8' : '#666',
+            background: isDark ? 'rgba(255,255,255,0.04)' : '#ffffff',
+            border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e8e8e8',
             borderRadius: 8,
             cursor: 'pointer',
           }}
@@ -219,17 +222,17 @@ const AddressSearch = memo<{
           textTransform: 'uppercase',
           letterSpacing: '0.06em',
           color: '#fff',
-          background: '#1a1a1a',
+          background: isDark ? '#3d63ff' : '#1a1a1a',
           border: 'none',
           borderRadius: 8,
           cursor: 'pointer',
           transition: 'background 0.15s ease',
         }}
         onMouseEnter={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background = '#333';
+          (e.currentTarget as HTMLButtonElement).style.background = isDark ? '#5577ff' : '#333';
         }}
         onMouseLeave={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background = '#1a1a1a';
+          (e.currentTarget as HTMLButtonElement).style.background = isDark ? '#3d63ff' : '#1a1a1a';
         }}
       >
         Go
@@ -292,6 +295,7 @@ export default memo<StatsBarProps>(function StatsBar({
   onDismissHighlight,
   searchError,
 }) {
+  const isDark = useDarkMode();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -326,10 +330,10 @@ export default memo<StatsBarProps>(function StatsBar({
         padding: '6px 12px',
         fontFamily: "'IBM Plex Mono', monospace",
         borderRadius: '0 0 12px 12px',
-        background: 'rgba(255,255,255,0.85)',
+        background: isDark ? 'rgba(14, 14, 22, 0.85)' : 'rgba(255,255,255,0.85)',
         backdropFilter: 'blur(12px)',
-        border: '1px solid #e8e8e8',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+        border: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid #e8e8e8',
+        boxShadow: isDark ? '0 2px 8px rgba(0,0,0,0.3)' : '0 2px 8px rgba(0,0,0,0.06)',
         flexWrap: 'wrap',
         justifyContent: 'center',
       }}
@@ -341,18 +345,18 @@ export default memo<StatsBarProps>(function StatsBar({
           flexDirection: 'column',
           alignItems: 'flex-start',
           padding: '6px 16px',
-          background: '#ffffff',
-          border: '1px solid #e8e8e8',
+          background: isDark ? 'rgba(25, 25, 40, 0.8)' : '#ffffff',
+          border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e8e8e8',
           borderRadius: 8,
           minWidth: 100,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          boxShadow: isDark ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.08)',
         }}
       >
         <span
           style={{
             fontSize: 10,
             fontWeight: 400,
-            color: '#666',
+            color: isDark ? '#64748b' : '#666',
             textTransform: 'uppercase',
             letterSpacing: '0.08em',
             lineHeight: 1,
@@ -364,7 +368,7 @@ export default memo<StatsBarProps>(function StatsBar({
           style={{
             fontSize: 14,
             fontWeight: 500,
-            color: '#161616',
+            color: isDark ? '#e2e8f0' : '#161616',
             lineHeight: 1.4,
             fontVariantNumeric: 'tabular-nums',
           }}
@@ -379,7 +383,7 @@ export default memo<StatsBarProps>(function StatsBar({
         style={{
           width: 1,
           height: 28,
-          background: '#e0e0e0',
+          background: isDark ? 'rgba(255,255,255,0.08)' : '#e0e0e0',
           margin: '0 4px',
         }}
       />

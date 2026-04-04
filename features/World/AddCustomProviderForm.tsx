@@ -2,6 +2,7 @@
 
 import { memo, useCallback, useState } from 'react';
 import type { StreamType } from '@web3viz/providers';
+import { useDarkMode } from './DarkModeContext';
 
 // ============================================================================
 // Add Custom Provider Form
@@ -31,28 +32,32 @@ interface AddCustomProviderFormProps {
 
 const MONO = "'IBM Plex Mono', monospace";
 
-const inputStyle: React.CSSProperties = {
-  background: '#fff',
-  border: '1px solid #d0d0d0',
-  borderRadius: 6,
-  color: '#1a1a1a',
-  fontFamily: MONO,
-  fontSize: 11,
-  outline: 'none',
-  padding: '8px 10px',
-  width: '100%',
-  boxSizing: 'border-box',
-};
+function getInputStyle(isDark: boolean): React.CSSProperties {
+  return {
+    background: isDark ? 'rgba(255,255,255,0.04)' : '#fff',
+    border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #d0d0d0',
+    borderRadius: 6,
+    color: isDark ? '#e2e8f0' : '#1a1a1a',
+    fontFamily: MONO,
+    fontSize: 11,
+    outline: 'none',
+    padding: '8px 10px',
+    width: '100%',
+    boxSizing: 'border-box',
+  };
+}
 
-const labelStyle: React.CSSProperties = {
-  color: '#666',
-  fontFamily: MONO,
-  fontSize: 9,
-  letterSpacing: '0.06em',
-  marginBottom: 4,
-  textTransform: 'uppercase',
-  display: 'block',
-};
+function getLabelStyle(isDark: boolean): React.CSSProperties {
+  return {
+    color: isDark ? '#64748b' : '#666',
+    fontFamily: MONO,
+    fontSize: 9,
+    letterSpacing: '0.06em',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    display: 'block',
+  };
+}
 
 const STREAM_TYPES: { value: StreamType; label: string; hint: string }[] = [
   { value: 'websocket', label: 'WebSocket', hint: 'wss:// or ws://' },
@@ -61,6 +66,7 @@ const STREAM_TYPES: { value: StreamType; label: string; hint: string }[] = [
 ];
 
 const AddCustomProviderForm = memo<AddCustomProviderFormProps>(({ onSubmit, onCancel }) => {
+  const isDark = useDarkMode();
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
   const [streamType, setStreamType] = useState<StreamType>('websocket');
@@ -113,7 +119,7 @@ const AddCustomProviderForm = memo<AddCustomProviderFormProps>(({ onSubmit, onCa
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: '#1a1a1a' }}>
+        <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: isDark ? '#e2e8f0' : '#1a1a1a' }}>
           Add Custom Source
         </span>
         <button
@@ -125,15 +131,15 @@ const AddCustomProviderForm = memo<AddCustomProviderFormProps>(({ onSubmit, onCa
         </button>
       </div>
 
-      <p style={{ fontFamily: MONO, fontSize: 10, color: '#888', margin: 0, lineHeight: 1.5 }}>
+      <p style={{ fontFamily: MONO, fontSize: 10, color: isDark ? '#64748b' : '#888', margin: 0, lineHeight: 1.5 }}>
         Connect a custom WebSocket, SSE, or REST API that emits JSON events.
       </p>
 
       {/* Name */}
       <div>
-        <label style={labelStyle}>Source Name</label>
+        <label style={getLabelStyle(isDark)}>Source Name</label>
         <input
-          style={inputStyle}
+          style={getInputStyle(isDark)}
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="My Data Stream"
@@ -142,7 +148,7 @@ const AddCustomProviderForm = memo<AddCustomProviderFormProps>(({ onSubmit, onCa
 
       {/* Stream type selector */}
       <div>
-        <label style={labelStyle}>Transport</label>
+        <label style={getLabelStyle(isDark)}>Transport</label>
         <div style={{ display: 'flex', gap: 4 }}>
           {STREAM_TYPES.map((st) => (
             <button
@@ -151,11 +157,11 @@ const AddCustomProviderForm = memo<AddCustomProviderFormProps>(({ onSubmit, onCa
               onClick={() => setStreamType(st.value)}
               title={st.hint}
               style={{
-                background: streamType === st.value ? '#1a1a1a' : '#f0f0f0',
+                background: streamType === st.value ? (isDark ? '#3d63ff' : '#1a1a1a') : (isDark ? 'rgba(255,255,255,0.04)' : '#f0f0f0'),
                 border: '1px solid',
-                borderColor: streamType === st.value ? '#1a1a1a' : '#d0d0d0',
+                borderColor: streamType === st.value ? (isDark ? '#3d63ff' : '#1a1a1a') : (isDark ? 'rgba(255,255,255,0.08)' : '#d0d0d0'),
                 borderRadius: 4,
-                color: streamType === st.value ? '#fff' : '#666',
+                color: streamType === st.value ? '#fff' : (isDark ? '#94a3b8' : '#666'),
                 cursor: 'pointer',
                 flex: 1,
                 fontFamily: MONO,
@@ -174,9 +180,9 @@ const AddCustomProviderForm = memo<AddCustomProviderFormProps>(({ onSubmit, onCa
 
       {/* URL */}
       <div>
-        <label style={labelStyle}>URL</label>
+        <label style={getLabelStyle(isDark)}>URL</label>
         <input
-          style={inputStyle}
+          style={getInputStyle(isDark)}
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder={streamType === 'websocket' ? 'wss://example.com/stream' : 'https://api.example.com/events'}
@@ -185,14 +191,14 @@ const AddCustomProviderForm = memo<AddCustomProviderFormProps>(({ onSubmit, onCa
 
       {/* JSON Path */}
       <div>
-        <label style={labelStyle}>JSON Path (optional)</label>
+        <label style={getLabelStyle(isDark)}>JSON Path (optional)</label>
         <input
-          style={inputStyle}
+          style={getInputStyle(isDark)}
           value={jsonPath}
           onChange={(e) => setJsonPath(e.target.value)}
           placeholder="data.events"
         />
-        <span style={{ fontFamily: MONO, fontSize: 9, color: '#aaa', marginTop: 2, display: 'block' }}>
+        <span style={{ fontFamily: MONO, fontSize: 9, color: isDark ? '#475569' : '#aaa', marginTop: 2, display: 'block' }}>
           Dot-notation path to event array in response
         </span>
       </div>
@@ -204,7 +210,7 @@ const AddCustomProviderForm = memo<AddCustomProviderFormProps>(({ onSubmit, onCa
         style={{
           background: 'none',
           border: 'none',
-          color: '#888',
+          color: isDark ? '#64748b' : '#888',
           cursor: 'pointer',
           fontFamily: MONO,
           fontSize: 10,
@@ -218,8 +224,8 @@ const AddCustomProviderForm = memo<AddCustomProviderFormProps>(({ onSubmit, onCa
       </button>
 
       {showAdvanced && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '0 0 0 8px', borderLeft: '2px solid #e8e8e8' }}>
-          <span style={{ fontFamily: MONO, fontSize: 9, color: '#aaa', lineHeight: 1.4 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '0 0 0 8px', borderLeft: isDark ? '2px solid rgba(255,255,255,0.06)' : '2px solid #e8e8e8' }}>
+          <span style={{ fontFamily: MONO, fontSize: 9, color: isDark ? '#475569' : '#aaa', lineHeight: 1.4 }}>
             Map your JSON fields to the visualization schema. Leave blank for defaults.
           </span>
           {[
@@ -230,9 +236,9 @@ const AddCustomProviderForm = memo<AddCustomProviderFormProps>(({ onSubmit, onCa
             { label: 'Timestamp', value: fieldTimestamp, set: setFieldTimestamp, placeholder: 'timestamp (or time, ts)' },
           ].map((f) => (
             <div key={f.label}>
-              <label style={labelStyle}>{f.label}</label>
+              <label style={getLabelStyle(isDark)}>{f.label}</label>
               <input
-                style={{ ...inputStyle, fontSize: 10 }}
+                style={{ ...getInputStyle(isDark), fontSize: 10 }}
                 value={f.value}
                 onChange={(e) => f.set(e.target.value)}
                 placeholder={f.placeholder}
@@ -255,10 +261,10 @@ const AddCustomProviderForm = memo<AddCustomProviderFormProps>(({ onSubmit, onCa
           type="button"
           onClick={onCancel}
           style={{
-            background: '#f0f0f0',
-            border: '1px solid #d0d0d0',
+            background: isDark ? 'rgba(255,255,255,0.04)' : '#f0f0f0',
+            border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #d0d0d0',
             borderRadius: 6,
-            color: '#666',
+            color: isDark ? '#94a3b8' : '#666',
             cursor: 'pointer',
             flex: 1,
             fontFamily: MONO,
@@ -274,8 +280,8 @@ const AddCustomProviderForm = memo<AddCustomProviderFormProps>(({ onSubmit, onCa
           type="button"
           onClick={handleSubmit}
           style={{
-            background: '#1a1a1a',
-            border: '1px solid #1a1a1a',
+            background: isDark ? '#3d63ff' : '#1a1a1a',
+            border: isDark ? '1px solid #3d63ff' : '1px solid #1a1a1a',
             borderRadius: 6,
             color: '#fff',
             cursor: 'pointer',

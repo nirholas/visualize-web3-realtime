@@ -1,6 +1,7 @@
 'use client';
 
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { useDarkMode } from './DarkModeContext';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -107,6 +108,7 @@ function formatScrubDate(ts: number): string {
 
 const TimelineBar = memo<TimelineBarProps>(
   ({ eventTimestamps, isLive, isPlaying, timeFilter, onInfoClick, onTimeChange, onTogglePlay }) => {
+    const isDark = useDarkMode();
     const trackRef = useRef<HTMLDivElement>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [hoverInfo, setHoverInfo] = useState<{ x: number; ts: number } | null>(null);
@@ -186,9 +188,9 @@ const TimelineBar = memo<TimelineBarProps>(
       <div
         style={{
           alignItems: 'center',
-          background: '#ffffff',
-          borderBottom: '1px solid #e8e8e8',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+          background: isDark ? 'rgba(14, 14, 22, 0.95)' : '#ffffff',
+          borderBottom: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid #e8e8e8',
+          boxShadow: isDark ? '0 1px 4px rgba(0,0,0,0.3)' : '0 1px 4px rgba(0,0,0,0.06)',
           display: 'flex',
           gap: 12,
           height: BAR_HEIGHT,
@@ -204,7 +206,7 @@ const TimelineBar = memo<TimelineBarProps>(
         <div style={{ alignItems: 'center', display: 'flex', flexShrink: 0, gap: 8 }}>
           {/* Logo */}
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="10" stroke="#ccc" strokeWidth="1.5" />
+            <circle cx="12" cy="12" r="10" stroke={isDark ? '#475569' : '#ccc'} strokeWidth="1.5" />
             <circle cx="12" cy="12" r="4" fill="#1a1a2e" />
             <circle cx="12" cy="5" r="2" fill="#0f3460" />
             <circle cx="18" cy="15" r="2" fill="#16213e" />
@@ -214,10 +216,10 @@ const TimelineBar = memo<TimelineBarProps>(
           {/* App name pill */}
           <div
             style={{
-              background: '#f5f5f5',
-              border: '1px solid #e8e8e8',
+              background: isDark ? 'rgba(255,255,255,0.04)' : '#f5f5f5',
+              border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e8e8e8',
               borderRadius: 12,
-              color: '#666',
+              color: isDark ? '#94a3b8' : '#666',
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: 11,
               letterSpacing: '0.04em',
@@ -233,10 +235,10 @@ const TimelineBar = memo<TimelineBarProps>(
             onClick={onInfoClick}
             style={{
               alignItems: 'center',
-              background: 'rgba(0,0,0,0.04)',
-              border: '1px solid rgba(0,0,0,0.12)',
+              background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+              border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.12)',
               borderRadius: '50%',
-              color: '#161616',
+              color: isDark ? '#94a3b8' : '#161616',
               cursor: 'pointer',
               display: 'flex',
               flexShrink: 0,
@@ -258,7 +260,7 @@ const TimelineBar = memo<TimelineBarProps>(
           onClick={onTogglePlay}
           style={{
             alignItems: 'center',
-            background: '#1a1a2e',
+            background: isDark ? '#2a2a4e' : '#1a1a2e',
             border: 'none',
             borderRadius: 8,
             color: '#ffffff',
@@ -294,7 +296,7 @@ const TimelineBar = memo<TimelineBarProps>(
             onPointerUp={handlePointerUp}
             style={{
               alignItems: 'flex-end',
-              background: '#e8e8e8',
+              background: isDark ? 'rgba(255,255,255,0.06)' : '#e8e8e8',
               borderRadius: 4,
               cursor: 'pointer',
               display: 'flex',
@@ -307,7 +309,9 @@ const TimelineBar = memo<TimelineBarProps>(
             {/* Progress fill */}
             <div
               style={{
-                background: 'linear-gradient(90deg, rgba(26,26,46,0.08), rgba(15,52,96,0.10))',
+                background: isDark
+                  ? 'linear-gradient(90deg, rgba(100,120,200,0.15), rgba(60,100,200,0.10))'
+                  : 'linear-gradient(90deg, rgba(26,26,46,0.08), rgba(15,52,96,0.10))',
                 bottom: 0,
                 left: 0,
                 position: 'absolute',
@@ -326,9 +330,13 @@ const TimelineBar = memo<TimelineBarProps>(
                 <div
                   key={i}
                   style={{
-                    background: filled
-                      ? `rgba(26,26,46,${0.15 + h * 0.65})`
-                      : `rgba(0,0,0,${0.04 + h * 0.12})`,
+                    background: isDark
+                      ? (filled
+                        ? `rgba(120,140,220,${0.2 + h * 0.6})`
+                        : `rgba(255,255,255,${0.04 + h * 0.1})`)
+                      : (filled
+                        ? `rgba(26,26,46,${0.15 + h * 0.65})`
+                        : `rgba(0,0,0,${0.04 + h * 0.12})`),
                     borderRadius: 1,
                     flex: 1,
                     height: `${Math.max(12, h * 100)}%`,
@@ -344,9 +352,9 @@ const TimelineBar = memo<TimelineBarProps>(
             {/* Playhead */}
             <div
               style={{
-                background: '#1a1a2e',
+                background: isDark ? '#7b8eea' : '#1a1a2e',
                 bottom: 0,
-                boxShadow: '0 0 4px rgba(26,26,46,0.3)',
+                boxShadow: isDark ? '0 0 4px rgba(123,142,234,0.4)' : '0 0 4px rgba(26,26,46,0.3)',
                 left: `${progress * 100}%`,
                 position: 'absolute',
                 top: 0,
@@ -361,12 +369,12 @@ const TimelineBar = memo<TimelineBarProps>(
           {hoverInfo && (
             <div
               style={{
-                background: '#fff',
-                border: '1px solid #e0e0e0',
+                background: isDark ? 'rgba(20, 20, 35, 0.95)' : '#fff',
+                border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e0e0e0',
                 borderRadius: 6,
                 bottom: TRACK_HEIGHT + 6,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                color: '#161616',
+                boxShadow: isDark ? '0 2px 8px rgba(0,0,0,0.4)' : '0 2px 8px rgba(0,0,0,0.1)',
+                color: isDark ? '#e2e8f0' : '#161616',
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: 10,
                 left: Math.max(

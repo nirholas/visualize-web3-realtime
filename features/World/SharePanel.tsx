@@ -2,6 +2,7 @@
 
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { isValidHex, normalizeHex } from './utils/shared';
+import { useDarkMode } from './DarkModeContext';
 
 // ============================================================================
 // Types
@@ -65,6 +66,7 @@ interface ColorControlProps {
 }
 
 const ColorControl = memo<ColorControlProps>(({ label, value, swatches, onChange }) => {
+  const isDark = useDarkMode();
   const [inputVal, setInputVal] = useState(value);
 
   // Sync external value changes
@@ -89,7 +91,7 @@ const ColorControl = memo<ColorControlProps>(({ label, value, swatches, onChange
     <div style={{ marginBottom: 18 }}>
       <div
         style={{
-          color: '#999',
+          color: isDark ? '#64748b' : '#999',
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: 9,
           letterSpacing: '0.1em',
@@ -107,10 +109,10 @@ const ColorControl = memo<ColorControlProps>(({ label, value, swatches, onChange
         onKeyDown={handleKey}
         placeholder="Enter a custom HEX code"
         style={{
-          background: '#f5f5f5',
-          border: '1px solid #e0e0e0',
+          background: isDark ? 'rgba(255,255,255,0.04)' : '#f5f5f5',
+          border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e0e0e0',
           borderRadius: 6,
-          color: '#333',
+          color: isDark ? '#e2e8f0' : '#333',
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: 12,
           marginBottom: 8,
@@ -132,9 +134,9 @@ const ColorControl = memo<ColorControlProps>(({ label, value, swatches, onChange
               onClick={() => onChange(hex)}
               style={{
                 background: hex,
-                border: `2px solid ${selected ? '#333' : '#e0e0e0'}`,
+                border: `2px solid ${selected ? (isDark ? '#e2e8f0' : '#333') : (isDark ? 'rgba(255,255,255,0.12)' : '#e0e0e0')}`,
                 borderRadius: '50%',
-                boxShadow: selected ? '0 0 0 2px #fff, 0 0 0 4px #333' : 'none',
+                boxShadow: selected ? (isDark ? '0 0 0 2px #0a0a0f, 0 0 0 4px #e2e8f0' : '0 0 0 2px #fff, 0 0 0 4px #333') : 'none',
                 cursor: 'pointer',
                 height: 24,
                 transition: 'box-shadow 0.15s ease, border-color 0.15s ease',
@@ -162,16 +164,18 @@ interface FooterButtonProps {
   disabled?: boolean;
 }
 
-const FooterButton = memo<FooterButtonProps>(({ label, onClick, disabled = false }) => (
+const FooterButton = memo<FooterButtonProps>(({ label, onClick, disabled = false }) => {
+  const isDark = useDarkMode();
+  return (
   <button
     disabled={disabled}
     onClick={onClick}
     style={{
       alignItems: 'center',
-      background: disabled ? '#e8e8e8' : '#f0f0f0',
-      border: '1px solid #d0d0d0',
+      background: disabled ? (isDark ? 'rgba(255,255,255,0.04)' : '#e8e8e8') : (isDark ? 'rgba(255,255,255,0.06)' : '#f0f0f0'),
+      border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #d0d0d0',
       borderRadius: 6,
-      color: disabled ? '#aaa' : '#333',
+      color: disabled ? (isDark ? '#475569' : '#aaa') : (isDark ? '#e2e8f0' : '#333'),
       cursor: disabled ? 'not-allowed' : 'pointer',
       display: 'flex',
       fontFamily: "'IBM Plex Mono', monospace",
@@ -186,7 +190,8 @@ const FooterButton = memo<FooterButtonProps>(({ label, onClick, disabled = false
   >
     {label}
   </button>
-));
+  );
+});
 
 FooterButton.displayName = 'FooterButton';
 
@@ -204,6 +209,7 @@ const SharePanel = memo<SharePanelProps>(({
   onShareLinkedIn,
   downloading = null,
 }) => {
+  const isDark = useDarkMode();
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Close on click outside
@@ -242,9 +248,9 @@ const SharePanel = memo<SharePanelProps>(({
       ref={panelRef}
       style={{
         animation: 'slideInRight 0.25s ease-out',
-        background: '#fff',
-        borderLeft: '1px solid #e0e0e0',
-        boxShadow: '-4px 0 24px rgba(0,0,0,0.08)',
+        background: isDark ? 'rgba(14, 14, 22, 0.97)' : '#fff',
+        borderLeft: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid #e0e0e0',
+        boxShadow: isDark ? '-4px 0 24px rgba(0,0,0,0.4)' : '-4px 0 24px rgba(0,0,0,0.08)',
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
@@ -260,7 +266,7 @@ const SharePanel = memo<SharePanelProps>(({
       {/* Header */}
       <h2
         style={{
-          color: '#1a1a1a',
+          color: isDark ? '#e2e8f0' : '#1a1a1a',
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: 16,
           fontWeight: 600,
@@ -271,7 +277,7 @@ const SharePanel = memo<SharePanelProps>(({
       </h2>
       <p
         style={{
-          color: '#888',
+          color: isDark ? '#64748b' : '#888',
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: 11,
           lineHeight: 1.5,
@@ -291,10 +297,10 @@ const SharePanel = memo<SharePanelProps>(({
         onClick={handleRemix}
         style={{
           alignItems: 'center',
-          background: '#f5f5f5',
-          border: '1px solid #e0e0e0',
+          background: isDark ? 'rgba(255,255,255,0.04)' : '#f5f5f5',
+          border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e0e0e0',
           borderRadius: 8,
-          color: '#555',
+          color: isDark ? '#94a3b8' : '#555',
           cursor: 'pointer',
           display: 'flex',
           fontFamily: "'IBM Plex Mono', monospace",
@@ -316,9 +322,9 @@ const SharePanel = memo<SharePanelProps>(({
         onClick={onClose}
         style={{
           background: 'none',
-          border: '1px solid #e0e0e0',
+          border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e0e0e0',
           borderRadius: 8,
-          color: '#888',
+          color: isDark ? '#64748b' : '#888',
           cursor: 'pointer',
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: 12,
@@ -337,7 +343,7 @@ const SharePanel = memo<SharePanelProps>(({
       {/* Share / Download footer */}
       <div
         style={{
-          borderTop: '1px solid #e0e0e0',
+          borderTop: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid #e0e0e0',
           display: 'flex',
           flexWrap: 'wrap',
           gap: 8,

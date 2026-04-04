@@ -6,6 +6,7 @@ import { memo, useEffect, useRef, useState } from 'react';
 import type { DataProviderEvent, CategoryConfig } from '@web3viz/core';
 import { CHAIN_COLORS } from './constants';
 import { formatAmount, timeAgo } from './utils/shared';
+import { useDarkMode } from './DarkModeContext';
 
 // ---------------------------------------------------------------------------
 // Event Card (unified events)
@@ -18,6 +19,7 @@ interface EventCardProps {
 }
 
 const EventCard = memo<EventCardProps>(({ event, isNew, categoryMap }) => {
+  const isDark = useDarkMode();
   const cfg = categoryMap.get(event.category);
   const color = cfg?.color || '#9090b8';
   const typeLabel = cfg?.label || event.category;
@@ -42,11 +44,11 @@ const EventCard = memo<EventCardProps>(({ event, isNew, categoryMap }) => {
         padding: '4px 12px',
         fontFamily: "'IBM Plex Mono', monospace",
         fontSize: 11,
-        color: '#4a4a4a',
-        background: '#ffffff',
-        border: '1px solid #e8e8e8',
+        color: isDark ? '#c8d0dc' : '#4a4a4a',
+        background: isDark ? 'rgba(18, 18, 28, 0.9)' : '#ffffff',
+        border: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid #e8e8e8',
         borderRadius: 6,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+        boxShadow: isDark ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.06)',
       }}
     >
       <span
@@ -85,7 +87,7 @@ const EventCard = memo<EventCardProps>(({ event, isNew, categoryMap }) => {
       {amount && (
         <span style={{ flexShrink: 0, color, fontWeight: 500 }}>{amount}</span>
       )}
-      <span style={{ flexShrink: 0, fontSize: 9, color: '#999' }}>
+      <span style={{ flexShrink: 0, fontSize: 9, color: isDark ? '#64748b' : '#999' }}>
         {'>'}
         {timeAgo(event.timestamp)}
       </span>
@@ -109,6 +111,7 @@ interface LiveFeedProps {
 }
 
 const LiveFeed = memo<LiveFeedProps>(({ events, categories = [] }) => {
+  const isDark = useDarkMode();
   const prevKeysRef = useRef<Set<string>>(new Set());
   const [newKeys, setNewKeys] = useState<Set<string>>(new Set());
 
@@ -152,7 +155,7 @@ const LiveFeed = memo<LiveFeedProps>(({ events, categories = [] }) => {
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: 10,
           fontWeight: 600,
-          color: '#999',
+          color: isDark ? '#64748b' : '#999',
           textTransform: 'uppercase',
           letterSpacing: 1,
         }}

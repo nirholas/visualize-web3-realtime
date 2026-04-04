@@ -573,6 +573,13 @@ export default function WorldPage() {
   }), [stats.totalTransactions, totalVolume, connectionEntries.length]);
 
   const effectiveBg = shareOpen ? shareColors.background : '#0a0a0f';
+  const isDark = useMemo(() => {
+    const h = effectiveBg.replace('#', '');
+    const r = parseInt(h.substring(0, 2), 16) / 255;
+    const g = parseInt(h.substring(2, 4), 16) / 255;
+    const b = parseInt(h.substring(4, 6), 16) / 255;
+    return 0.299 * r + 0.587 * g + 0.114 * b < 0.45;
+  }, [effectiveBg]);
 
   return (
     <DarkModeProvider background={effectiveBg}>
@@ -620,6 +627,7 @@ export default function WorldPage() {
           onDismissHighlight={handleDismissHighlight}
           height="100%"
           shareColors={shareOpen ? shareColors : undefined}
+          isDark={isDark}
           idle={!hasActiveProvider}
         />
       </div>

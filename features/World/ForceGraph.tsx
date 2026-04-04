@@ -235,6 +235,7 @@ function HubNodeMesh({
   onPointerOut,
   onClick,
   colorOverride,
+  isDark = true,
 }: {
   sim: ForceGraphSimulation;
   nodeId: string;
@@ -493,7 +494,8 @@ const Edges = memo<{
   highlightedHubId?: string | null;
   /** When set, only the edge from this agent address is highlighted (not all hub edges) */
   highlightedAddress?: string | null;
-}>(({ sim, activeProtocol, highlightedHubId, highlightedAddress }) => {
+  isDark?: boolean;
+}>(({ sim, activeProtocol, highlightedHubId, highlightedAddress, isDark = true }) => {
   const lineRef = useRef<THREE.LineSegments>(null);
   const posAttr = useRef<THREE.Float32BufferAttribute | null>(null);
   const colorAttr = useRef<THREE.Float32BufferAttribute | null>(null);
@@ -567,9 +569,13 @@ const Edges = memo<{
         if (activeProtocol) {
           const srcRelated = src.id === activeProtocol || src.hubTokenAddress === activeProtocol;
           const tgtRelated = tgt.id === activeProtocol || tgt.hubTokenAddress === activeProtocol;
-          gray = (srcRelated || tgtRelated) ? (isHubEdge ? 0.45 : 0.35) : 0.08;
+          if (isDark) {
+            gray = (srcRelated || tgtRelated) ? (isHubEdge ? 0.45 : 0.35) : 0.08;
+          } else {
+            gray = (srcRelated || tgtRelated) ? (isHubEdge ? 0.3 : 0.4) : 0.75;
+          }
         } else {
-          gray = isHubEdge ? 0.4 : 0.2;
+          gray = isDark ? (isHubEdge ? 0.4 : 0.2) : (isHubEdge ? 0.35 : 0.55);
         }
         cA.array[idx] = gray; cA.array[idx + 1] = gray; cA.array[idx + 2] = gray;
         cA.array[idx + 3] = gray; cA.array[idx + 4] = gray; cA.array[idx + 5] = gray;
@@ -764,6 +770,7 @@ const NetworkScene = memo<{
         activeProtocol={activeProtocol}
         highlightedHubId={highlightedHubId}
         highlightedAddress={highlightedAddress}
+        isDark={isDark}
       />
       {hubIds.map((hub, i) => (
         <HubNodeMesh

@@ -2,6 +2,7 @@
 
 import { memo, useState, useCallback } from 'react';
 import type { CategoryConfig, SourceConfig } from '@web3viz/core';
+import { useDarkMode } from './DarkModeContext';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -53,6 +54,7 @@ interface CategoryRowProps {
 }
 
 const CategoryRow = memo<CategoryRowProps>(({ category, isActive, onClick }) => {
+  const isDark = useDarkMode();
   const [hovered, setHovered] = useState(false);
 
   return (
@@ -64,7 +66,7 @@ const CategoryRow = memo<CategoryRowProps>(({ category, isActive, onClick }) => 
       onMouseLeave={() => setHovered(false)}
       style={{
         alignItems: 'center',
-        background: hovered ? 'rgba(0,0,0,0.03)' : 'transparent',
+        background: hovered ? (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)') : 'transparent',
         border: 'none',
         borderRadius: 6,
         cursor: 'pointer',
@@ -80,7 +82,7 @@ const CategoryRow = memo<CategoryRowProps>(({ category, isActive, onClick }) => 
       {/* Color dot */}
       <span
         style={{
-          background: isActive ? category.color : '#d0d0d4',
+          background: isActive ? category.color : (isDark ? '#475569' : '#d0d0d4'),
           borderRadius: '50%',
           boxShadow: isActive ? `0 0 6px ${category.color}50` : 'none',
           display: 'inline-block',
@@ -93,7 +95,7 @@ const CategoryRow = memo<CategoryRowProps>(({ category, isActive, onClick }) => 
       {/* Label */}
       <span
         style={{
-          color: isActive ? '#333' : '#999',
+          color: isActive ? (isDark ? '#e2e8f0' : '#333') : (isDark ? '#64748b' : '#999'),
           fontSize: 11,
           fontWeight: isActive ? 600 : 400,
           letterSpacing: '0.02em',
@@ -125,6 +127,7 @@ interface SourceGroupProps {
 
 const SourceGroup = memo<SourceGroupProps>(
   ({ source, categories, enabledCategories, onToggleCategory, providerActive, onToggleProvider }) => {
+    const isDark = useDarkMode();
     const [open, setOpen] = useState(true);
     const [headerHovered, setHeaderHovered] = useState(false);
 
@@ -149,7 +152,7 @@ const SourceGroup = memo<SourceGroupProps>(
               onClick={onToggleProvider}
               style={{
                 alignItems: 'center',
-                background: providerActive ? source.color : '#d0d0d4',
+                background: providerActive ? source.color : (isDark ? '#475569' : '#d0d0d4'),
                 border: 'none',
                 borderRadius: '50%',
                 boxShadow: providerActive ? `0 0 8px ${source.color}40` : 'none',
@@ -179,7 +182,7 @@ const SourceGroup = memo<SourceGroupProps>(
               alignItems: 'center',
               background: 'none',
               border: 'none',
-              color: headerHovered ? '#333' : '#666',
+              color: headerHovered ? (isDark ? '#e2e8f0' : '#333') : (isDark ? '#94a3b8' : '#666'),
               cursor: 'pointer',
               display: 'flex',
               flex: 1,
@@ -246,6 +249,7 @@ SourceGroup.displayName = 'SourceGroup';
 
 const ProtocolFilterSidebar = memo<ProtocolFilterSidebarProps>(
   ({ categories, sources, enabledCategories, onToggleCategory, enabledProviders, onToggleProvider }) => {
+    const isDark = useDarkMode();
     const [mobileOpen, setMobileOpen] = useState(false);
 
     if (categories.length === 0) return null;
@@ -277,12 +281,12 @@ const ProtocolFilterSidebar = memo<ProtocolFilterSidebarProps>(
         {/* Header */}
         <div
           style={{
-            borderBottom: '1px solid rgba(0,0,0,0.06)',
+            borderBottom: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.06)',
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 9,
             fontWeight: 700,
             letterSpacing: '0.12em',
-            color: '#aaa',
+            color: isDark ? '#64748b' : '#aaa',
             padding: '8px 8px 6px',
             textTransform: 'uppercase',
           }}
@@ -300,7 +304,7 @@ const ProtocolFilterSidebar = memo<ProtocolFilterSidebarProps>(
               {isAgentSection && cryptoSources.length > 0 && (
                 <div
                   style={{
-                    borderTop: '1px solid rgba(0,0,0,0.06)',
+                    borderTop: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.06)',
                     margin: '4px 8px',
                   }}
                 />
@@ -340,12 +344,12 @@ const ProtocolFilterSidebar = memo<ProtocolFilterSidebarProps>(
           aria-label="Filter categories and providers"
           className="sidebar-desktop"
           style={{
-            background: 'rgba(255,255,255,0.85)',
+            background: isDark ? 'rgba(14, 14, 22, 0.9)' : 'rgba(255,255,255,0.85)',
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
-            border: '1px solid rgba(0,0,0,0.06)',
+            border: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(0,0,0,0.06)',
             borderRadius: '0 0 12px 12px',
-            boxShadow: '0 2px 16px rgba(0,0,0,0.06)',
+            boxShadow: isDark ? '0 2px 16px rgba(0,0,0,0.3)' : '0 2px 16px rgba(0,0,0,0.06)',
             display: 'flex',
             flexDirection: 'column',
             maxHeight: 'calc(100vh - 120px)',
@@ -362,11 +366,11 @@ const ProtocolFilterSidebar = memo<ProtocolFilterSidebarProps>(
           onClick={() => setMobileOpen(true)}
           style={{
             alignItems: 'center',
-            background: '#ffffff',
-            border: '1px solid #e8e8e8',
+            background: isDark ? 'rgba(18, 18, 28, 0.9)' : '#ffffff',
+            border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e8e8e8',
             borderRadius: 8,
-            boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-            color: '#666',
+            boxShadow: isDark ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.08)',
+            color: isDark ? '#94a3b8' : '#666',
             cursor: 'pointer',
             display: 'none',
             fontFamily: "'IBM Plex Mono', monospace",
@@ -382,7 +386,7 @@ const ProtocolFilterSidebar = memo<ProtocolFilterSidebarProps>(
           type="button"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M2 4h12M2 8h12M2 12h12" stroke="#666" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M2 4h12M2 8h12M2 12h12" stroke={isDark ? '#94a3b8' : '#666'} strokeWidth="1.5" strokeLinecap="round" />
           </svg>
         </button>
 
@@ -402,11 +406,11 @@ const ProtocolFilterSidebar = memo<ProtocolFilterSidebarProps>(
               onClick={(e) => e.stopPropagation()}
               style={{
                 animation: 'slideInLeft 0.25s ease-out',
-                background: 'rgba(255,255,255,0.97)',
+                background: isDark ? 'rgba(14, 14, 22, 0.97)' : 'rgba(255,255,255,0.97)',
                 backdropFilter: 'blur(16px)',
                 WebkitBackdropFilter: 'blur(16px)',
-                borderRight: '1px solid #e0e0e0',
-                boxShadow: '4px 0 24px rgba(0,0,0,0.08)',
+                borderRight: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid #e0e0e0',
+                boxShadow: isDark ? '4px 0 24px rgba(0,0,0,0.4)' : '4px 0 24px rgba(0,0,0,0.08)',
                 display: 'flex',
                 flexDirection: 'column',
                 height: '100%',
@@ -423,7 +427,7 @@ const ProtocolFilterSidebar = memo<ProtocolFilterSidebarProps>(
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#999',
+                  color: isDark ? '#64748b' : '#999',
                   cursor: 'pointer',
                   fontSize: 18,
                   left: 8,
