@@ -10,8 +10,10 @@ import LoadingScreen from '@/features/World/LoadingScreen';
 import ProtocolFilterSidebar from '@/features/World/ProtocolFilterSidebar';
 import ShareOverlay from '@/features/World/ShareOverlay';
 import SharePanel, { type ShareColors } from '@/features/World/SharePanel';
-import { useProviders } from '@web3viz/providers';
-import { providers } from './providers';
+import { useProviders, CustomStreamProvider } from '@web3viz/providers';
+import type { DataProvider } from '@web3viz/core';
+import { providers as builtInProviders } from './providers';
+import type { CustomProviderFormData } from '@/features/World/AddCustomProviderForm';
 import LiveFeed from '@/features/World/LiveFeed';
 import TimelineBar from '@/features/World/TimelineBar';
 import StartJourney from '@/features/World/StartJourney';
@@ -229,6 +231,36 @@ export default function WorldPage() {
   const graphRef = useRef<ForceGraphHandle>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState<'world' | 'snapshot' | null>(null);
+
+  // Custom providers added by the user at runtime
+  const [customProviders, setCustomProviders] = useState<DataProvider[]>([]);
+  const customProviderIds = useMemo(() => new Set(customProviders.map((p) => p.id)), [customProviders]);
+
+  const providers = useMemo(
+    () => [...builtInProviders, ...customProviders],
+    [customProviders],
+  );
+
+  const handleAddCustomProvider = useCallback((data: CustomProviderFormData) => {
+    const id = `custom_${data.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${Date.now()}`;
+    const provider = new CustomStreamProvider({
+      id,
+      name: data.name,
+      url: data.url,
+      streamType: data.streamType,
+      jsonPath: data.jsonPath || undefined,
+      fieldMap: data.fieldMap,
+    });
+    setCustomProviders((prev) => [...prev, provider]);
+  }, []);
+
+  const handleRemoveCustomProvider = useCallback((id: string) => {
+    setCustomProviders((prev) => {
+      const provider = prev.find((p) => p.id === id);
+      if (provider) provider.disconnect();
+      return prev.filter((p) => p.id !== id);
+    });
+  }, []);
 
   const {
     stats, filteredEvents, allEvents, enabledCategories, toggleCategory,
@@ -841,6 +873,9 @@ export default function WorldPage() {
         onToggleProvider={toggleProvider}
         connections={connections}
         stats={stats}
+        onAddCustomProvider={handleAddCustomProvider}
+        onRemoveCustomProvider={handleRemoveCustomProvider}
+        customProviderIds={customProviderIds}
       />
 
       {/* AI Chat interface — bottom left */}

@@ -1,8 +1,9 @@
 'use client';
 
-import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, m } from 'framer-motion';
 import type { DataProvider, ConnectionState, SourceConfig } from '@web3viz/core';
+import AddCustomProviderForm, { type CustomProviderFormData } from './AddCustomProviderForm';
 
 // ============================================================================
 // Types
@@ -16,6 +17,9 @@ interface ProviderPanelProps {
   onToggleProvider: (id: string) => void;
   connections: Record<string, ConnectionState[]>;
   stats: { counts: Record<string, number> };
+  onAddCustomProvider?: (data: CustomProviderFormData) => void;
+  onRemoveCustomProvider?: (id: string) => void;
+  customProviderIds?: Set<string>;
 }
 
 // ============================================================================
@@ -115,7 +119,9 @@ const ProviderCard = memo<{
   connectionStatus: 'connected' | 'disconnected' | 'disabled';
   eventCount: number;
   categoryCount: number;
-}>(({ provider, enabled, onToggle, connectionStatus, eventCount, categoryCount }) => {
+  isCustom?: boolean;
+  onRemove?: () => void;
+}>(({ provider, enabled, onToggle, connectionStatus, eventCount, categoryCount, isCustom, onRemove }) => {
   const src = provider.sourceConfig;
 
   return (
@@ -146,7 +152,31 @@ const ProviderCard = memo<{
             {src.icon} {provider.name}
           </span>
         </div>
-        <ToggleSwitch enabled={enabled} onToggle={onToggle} />
+        <div style={{ alignItems: 'center', display: 'flex', gap: 6 }}>
+          {isCustom && onRemove && (
+            <button
+              onClick={onRemove}
+              type="button"
+              title="Remove custom source"
+              style={{
+                alignItems: 'center',
+                background: 'none',
+                border: 'none',
+                color: '#ccc',
+                cursor: 'pointer',
+                display: 'flex',
+                fontSize: 14,
+                padding: 0,
+                transition: 'color 150ms',
+              }}
+              onMouseEnter={(e) => { (e.target as HTMLElement).style.color = '#ef4444'; }}
+              onMouseLeave={(e) => { (e.target as HTMLElement).style.color = '#ccc'; }}
+            >
+              &#x2715;
+            </button>
+          )}
+          <ToggleSwitch enabled={enabled} onToggle={onToggle} />
+        </div>
       </div>
 
       {/* Description */}
@@ -217,7 +247,11 @@ const ProviderPanel = memo<ProviderPanelProps>(({
   onToggleProvider,
   connections,
   stats,
+  onAddCustomProvider,
+  onRemoveCustomProvider,
+  customProviderIds,
 }) => {
+  const [showAddForm, setShowAddForm] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Close on Escape
@@ -406,6 +440,8 @@ const ProviderPanel = memo<ProviderPanelProps>(({
                   connectionStatus={getConnectionStatus(provider.id)}
                   eventCount={getEventCount(provider)}
                   categoryCount={provider.categories.length}
+                  isCustom={customProviderIds?.has(provider.id)}
+                  onRemove={customProviderIds?.has(provider.id) ? () => onRemoveCustomProvider?.(provider.id) : undefined}
                 />
               ))
             )}
@@ -414,50 +450,47 @@ const ProviderPanel = memo<ProviderPanelProps>(({
           {/* Spacer */}
           <div style={{ flex: 1, minHeight: 16 }} />
 
-          {/* Add Custom Provider (future) */}
+          {/* Add Custom Provider */}
           <div
             style={{
               borderTop: '1px solid #e0e0e0',
               paddingTop: 16,
             }}
           >
-            <button
-              disabled
-              type="button"
-              style={{
-                alignItems: 'center',
-                background: '#e8e8e8',
-                border: '1px solid #d0d0d0',
-                borderRadius: 8,
-                color: '#aaa',
-                cursor: 'not-allowed',
-                display: 'flex',
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: 11,
-                gap: 6,
-                justifyContent: 'center',
-                letterSpacing: '0.04em',
-                padding: '10px 0',
-                textTransform: 'uppercase',
-                width: '100%',
-              }}
-            >
-              + Add Custom Provider
-            </button>
-            <span
-              style={{
-                color: '#bbb',
-                display: 'block',
-                fontFamily: "'IBM Plex Mono', monospace",
-                fontSize: 9,
-                letterSpacing: '0.04em',
-                marginTop: 6,
-                textAlign: 'center',
-                textTransform: 'uppercase',
-              }}
-            >
-              Coming soon
-            </span>
+            {showAddForm && onAddCustomProvider ? (
+              <AddCustomProviderForm
+                onSubmit={(data) => {
+                  onAddCustomProvider(data);
+                  setShowAddForm(false);
+                }}
+                onCancel={() => setShowAddForm(false)}
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowAddForm(true)}
+                style={{
+                  alignItems: 'center',
+                  background: '#1a1a1a',
+                  border: '1px solid #1a1a1a',
+                  borderRadius: 8,
+                  color: '#fff',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontSize: 11,
+                  gap: 6,
+                  justifyContent: 'center',
+                  letterSpacing: '0.04em',
+                  padding: '10px 0',
+                  textTransform: 'uppercase',
+                  width: '100%',
+                  transition: 'opacity 150ms',
+                }}
+              >
+                + Add Custom Source
+              </button>
+            )}
           </div>
         </m.div>
       )}
