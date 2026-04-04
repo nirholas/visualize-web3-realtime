@@ -9,3 +9,5 @@ packages/*/data/
 *.db
 *.db-wal
 *.db-shm
+extracted/
+.tmp-sourcemap-extract/

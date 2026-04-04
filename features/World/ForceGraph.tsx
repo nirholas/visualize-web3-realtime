@@ -2,8 +2,8 @@
 
 import React, { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { ContactShadows, Environment, MapControls } from '@react-three/drei';
-import type { MapControls as MapControlsImpl } from 'three-stdlib';
+import { ContactShadows, Environment, CameraControls } from '@react-three/drei';
+import CameraControlsImpl from 'camera-controls';
 import * as THREE from 'three';
 import {
   forceSimulation,
@@ -837,49 +837,65 @@ NetworkScene.displayName = 'NetworkScene';
 // Camera animation state
 // ---------------------------------------------------------------------------
 
-interface CameraAnimation {
-  durationMs: number;
-  fromPos: THREE.Vector3;
-  toPos: THREE.Vector3;
-  fromLookAt: THREE.Vector3;
-  toLookAt: THREE.Vector3;
-  startedAt: number;
-  onDone?: () => void;
-}
-
 interface CameraApi {
   animateTo: (pos: [number, number, number], lookAt: [number, number, number], durationMs: number) => Promise<void>;
   setOrbitEnabled: (enabled: boolean) => void;
 }
 
-/** Camera controller: top-down with pan/zoom, no rotation */
+/** Camera controller: unrestricted 360° spherical rotation with smooth damping */
 const CameraSetup = memo<{ apiRef: React.MutableRefObject<CameraApi | null> }>(({ apiRef }) => {
-  const { camera } = useThree();
-  const controlsRef = useRef<MapControlsImpl>(null);
-  const animRef = useRef<CameraAnimation | null>(null);
+  const controlsRef = useRef<CameraControlsImpl>(null);
 
   useEffect(() => {
-    camera.position.set(0, 55, 12);
-    camera.lookAt(0, 0, 0);
-  }, [camera]);
+    const controls = controlsRef.current;
+    if (!controls) return;
+
+    // Set initial position: elevated view looking down at origin
+    controls.setLookAt(0, 55, 12, 0, 0, 0, false);
+
+    // Smooth damping for premium feel
+    controls.smoothTime = 0.35;
+    controls.draggingSmoothTime = 0.15;
+
+    // Distance constraints
+    controls.minDistance = 10;
+    controls.maxDistance = 150;
+
+    // Unrestricted polar angle — full 360° vertical rotation (no floor clamp)
+    controls.minPolarAngle = 0;
+    controls.maxPolarAngle = Math.PI;
+
+    // Unrestricted azimuth
+    controls.minAzimuthAngle = -Infinity;
+    controls.maxAzimuthAngle = Infinity;
+
+    // Dolly speed
+    controls.dollySpeed = 0.5;
+  }, []);
 
   useEffect(() => {
     apiRef.current = {
       animateTo: (pos, lookAt, durationMs) =>
         new Promise<void>((resolve) => {
-          const fromPos = camera.position.clone();
-          const dir = new THREE.Vector3();
-          camera.getWorldDirection(dir);
-          const fromLookAt = fromPos.clone().add(dir.multiplyScalar(50));
-          animRef.current = {
-            durationMs,
-            fromPos,
-            toPos: new THREE.Vector3(...pos),
-            fromLookAt,
-            toLookAt: new THREE.Vector3(...lookAt),
-            startedAt: performance.now(),
-            onDone: resolve,
-          };
+          const controls = controlsRef.current;
+          if (!controls) { resolve(); return; }
+
+          // Use camera-controls built-in smooth transition
+          controls.setLookAt(
+            pos[0], pos[1], pos[2],
+            lookAt[0], lookAt[1], lookAt[2],
+            true, // enable transition
+          ).then(() => resolve());
+
+          // Override transition duration
+          controls.smoothTime = durationMs / 1000;
+
+          // Restore default smooth time after animation
+          setTimeout(() => {
+            if (controlsRef.current) {
+              controlsRef.current.smoothTime = 0.35;
+            }
+          }, durationMs + 50);
         }),
       setOrbitEnabled: (enabled) => {
         if (controlsRef.current) {
@@ -890,39 +906,12 @@ const CameraSetup = memo<{ apiRef: React.MutableRefObject<CameraApi | null> }>((
     return () => {
       apiRef.current = null;
     };
-  }, [apiRef, camera]);
-
-  useFrame(() => {
-    const anim = animRef.current;
-    if (!anim) return;
-
-    const elapsed = performance.now() - anim.startedAt;
-    const t = Math.min(elapsed / anim.durationMs, 1);
-    const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-    camera.position.lerpVectors(anim.fromPos, anim.toPos, eased);
-    const lookTarget = new THREE.Vector3().lerpVectors(anim.fromLookAt, anim.toLookAt, eased);
-    camera.lookAt(lookTarget);
-
-    if (controlsRef.current) {
-      controlsRef.current.target.copy(lookTarget);
-    }
-
-    if (t >= 1) {
-      animRef.current = null;
-      anim.onDone?.();
-    }
-  });
+  }, [apiRef]);
 
   return (
-    <MapControls
+    <CameraControls
       ref={controlsRef}
-      enableRotate={false}
-      enableDamping
-      dampingFactor={0.15}
-      minDistance={10}
-      maxDistance={150}
-      screenSpacePanning
+      makeDefault
     />
   );
 });

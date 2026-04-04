@@ -241,6 +241,9 @@ export default function WorldPage() {
     [customProviders],
   );
 
+  // We need a ref to toggleProvider since it's defined after this callback
+  const toggleProviderRef = useRef<(id: string) => void>(() => {});
+
   const handleAddCustomProvider = useCallback((data: CustomProviderFormData) => {
     const id = `custom_${data.name.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${Date.now()}`;
     const provider = new CustomStreamProvider({
@@ -252,6 +255,8 @@ export default function WorldPage() {
       fieldMap: data.fieldMap,
     });
     setCustomProviders((prev) => [...prev, provider]);
+    // Auto-enable after a tick so the provider is in the array when toggle fires
+    setTimeout(() => toggleProviderRef.current(id), 0);
   }, []);
 
   const handleRemoveCustomProvider = useCallback((id: string) => {
@@ -287,6 +292,9 @@ export default function WorldPage() {
       window.history.replaceState({}, '', url.toString());
     }
   }, [rawToggleProvider, enabledProviders]);
+
+  // Keep ref in sync for use in handleAddCustomProvider's setTimeout
+  toggleProviderRef.current = toggleProvider;
 
   const hasActiveProvider = enabledProviders.size > 0;
 

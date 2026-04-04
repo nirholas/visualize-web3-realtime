@@ -11,6 +11,8 @@ const LoadingScreen = memo<LoadingScreenProps>(({ ready = false }) => {
 
   useEffect(() => {
     if (!ready) return;
+    // Dispatch event to dismiss the inline boot loader in layout.tsx
+    window.dispatchEvent(new Event('webgl-ready'));
     const timer = setTimeout(() => setVisible(false), 180);
     return () => clearTimeout(timer);
   }, [ready]);
