@@ -270,7 +270,7 @@ function HubNodeMesh({
 
   useEffect(() => {
     if (isHighlighted) {
-      targetColor.current.set('#3d63ff');
+      targetColor.current.set('#818cf8');
       targetOpacity.current = 1;
       targetRingOpacity.current = isAgentHub ? 0.8 : 0;
     } else if (isActive) {
@@ -450,7 +450,7 @@ const AgentNodes = memo<{
         tempObj.scale.setScalar(node.radius * 3 * pulse);
         tempObj.updateMatrix();
         mesh.setMatrixAt(i, tempObj.matrix);
-        tempColor.set('#3d63ff');
+        tempColor.set('#818cf8');
       } else {
         tempObj.position.set(node.x ?? 0, 0, node.y ?? 0);
         tempObj.scale.setScalar(node.radius);
@@ -458,7 +458,7 @@ const AgentNodes = memo<{
         mesh.setMatrixAt(i, tempObj.matrix);
 
         if (highlightedHubId && node.hubTokenAddress === highlightedHubId) {
-          tempColor.set('#3d63ff').multiplyScalar(0.8);
+          tempColor.set('#818cf8').multiplyScalar(0.8);
         } else if (hasFilter) {
           if (ac && node.hubTokenAddress === activeProtocol) {
             // Agents near active protocol get a tint of its palette color
@@ -1070,7 +1070,7 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#0a0a0f',
+          background: '#0a0a12',
           flexDirection: 'column',
           gap: 12,
         }}
@@ -1104,7 +1104,7 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
     <div ref={containerRef} style={{ width: '100%', height, position: 'relative' }}>
       <Canvas
         camera={{ fov: 45, near: 0.1, far: 500, position: [0, 30, 50] }}
-        style={{ background: shareColors?.background ?? '#0a0a0f' }}
+        style={{ background: shareColors?.background ?? '#0a0a12' }}
         gl={{ antialias: false, alpha: false, stencil: false }}
         dpr={[1, 1.5]}
         onCreated={({ gl }) => {

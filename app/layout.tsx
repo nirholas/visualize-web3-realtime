@@ -48,7 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             align-items: center;
             justify-content: center;
             gap: 20px;
-            background: #0a0a0f;
+            background: #0a0a12;
             transition: opacity 300ms ease;
           }
           #boot-loader.hide {

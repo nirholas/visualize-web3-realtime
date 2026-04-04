@@ -84,7 +84,7 @@ function Platform({ rows, cols }: { rows: number; cols: number }) {
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
       <planeGeometry args={[cols * 0.7, rows * 0.7]} />
-      <meshStandardMaterial color="#111118" roughness={0.9} />
+      <meshStandardMaterial color="#0e0e18" roughness={0.9} />
     </mesh>
   );
 }

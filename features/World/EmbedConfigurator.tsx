@@ -86,7 +86,7 @@ const SwatchRow = memo<{
         onClick={() => onChange(s)}
         style={{
           background: s,
-          border: value === s ? '2px solid #3d63ff' : '1px solid #d0d0d0',
+          border: value === s ? '2px solid #818cf8' : '1px solid #d0d0d0',
           borderRadius: 4,
           cursor: 'pointer',
           height: 22,

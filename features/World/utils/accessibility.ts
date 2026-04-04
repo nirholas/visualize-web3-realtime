@@ -30,7 +30,7 @@ export function usePrefersReducedMotion(): boolean {
  * Apply via onFocus/onBlur or CSS :focus-visible equivalent.
  */
 export const FOCUS_RING: React.CSSProperties = {
-  outline: '2px solid #3d63ff',
+  outline: '2px solid #818cf8',
   outlineOffset: 2,
 };
 

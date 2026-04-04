@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  --w3v-bg: #0a0a0f;
+  --w3v-bg: #0a0a12;
   --w3v-surface: #141420;
   --w3v-border: #2a2a3a;
   --w3v-text: #e2e2f0;

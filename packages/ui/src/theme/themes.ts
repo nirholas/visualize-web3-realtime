@@ -25,9 +25,9 @@ export const lightTheme: Theme = {
   name: 'light',
   cssVars: {
     ...buildCssVars('light'),
-    '--w3v-backdrop': 'rgba(8,8,15,0.6)',
+    '--w3v-backdrop': 'rgba(10,10,18,0.6)',
     '--w3v-backdrop-blur': '12px',
-    '--w3v-graph-ground': '#f8f8fa',
+    '--w3v-graph-ground': '#f4f4fa',
     // Agent-specific theme tokens
     '--w3v-agent-bg': agentThemeTokens.light.background,
     '--w3v-agent-hub': agentThemeTokens.light.agentHub,
@@ -47,9 +47,9 @@ export const darkTheme: Theme = {
   name: 'dark',
   cssVars: {
     ...buildCssVars('dark'),
-    '--w3v-backdrop': 'rgba(255,255,255,0.06)',
+    '--w3v-backdrop': 'rgba(140,140,200,0.06)',
     '--w3v-backdrop-blur': '12px',
-    '--w3v-graph-ground': '#111118',
+    '--w3v-graph-ground': '#0e0e18',
     // Agent-specific theme tokens
     '--w3v-agent-bg': agentThemeTokens.dark.background,
     '--w3v-agent-hub': agentThemeTokens.dark.agentHub,

@@ -215,7 +215,7 @@ function BlockchainScene({ peerCount, packetRate }: { peerCount: number; packetR
 
   return (
     <>
-      <color attach="background" args={['#0a0a0f']} />
+      <color attach="background" args={['#0a0a12']} />
       <ambientLight intensity={0.5} />
       <NetworkEdges peers={peers} connections={connections} />
       <NetworkNodes peers={peers} />

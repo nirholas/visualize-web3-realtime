@@ -222,7 +222,7 @@ const AddressSearch = memo<{
           textTransform: 'uppercase',
           letterSpacing: '0.06em',
           color: '#fff',
-          background: isDark ? '#3d63ff' : '#1a1a1a',
+          background: isDark ? '#818cf8' : '#1a1a1a',
           border: 'none',
           borderRadius: 8,
           cursor: 'pointer',
@@ -232,7 +232,7 @@ const AddressSearch = memo<{
           (e.currentTarget as HTMLButtonElement).style.background = isDark ? '#5577ff' : '#333';
         }}
         onMouseLeave={(e) => {
-          (e.currentTarget as HTMLButtonElement).style.background = isDark ? '#3d63ff' : '#1a1a1a';
+          (e.currentTarget as HTMLButtonElement).style.background = isDark ? '#818cf8' : '#1a1a1a';
         }}
       >
         Go

@@ -65,7 +65,7 @@ export default function ToolsHub() {
       style={{
         width: '100vw',
         minHeight: '100vh',
-        background: '#0a0a0f',
+        background: '#0a0a12',
         color: '#e5e5e5',
         fontFamily: "'IBM Plex Mono', monospace",
         overflow: 'auto',

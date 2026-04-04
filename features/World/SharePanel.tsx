@@ -136,7 +136,7 @@ const ColorControl = memo<ColorControlProps>(({ label, value, swatches, onChange
                 background: hex,
                 border: `2px solid ${selected ? (isDark ? '#e2e8f0' : '#333') : (isDark ? 'rgba(255,255,255,0.12)' : '#e0e0e0')}`,
                 borderRadius: '50%',
-                boxShadow: selected ? (isDark ? '0 0 0 2px #0a0a0f, 0 0 0 4px #e2e8f0' : '0 0 0 2px #fff, 0 0 0 4px #333') : 'none',
+                boxShadow: selected ? (isDark ? '0 0 0 2px #0a0a12, 0 0 0 4px #e2e8f0' : '0 0 0 2px #fff, 0 0 0 4px #333') : 'none',
                 cursor: 'pointer',
                 height: 24,
                 transition: 'box-shadow 0.15s ease, border-color 0.15s ease',

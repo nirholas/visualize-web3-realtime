@@ -12,7 +12,7 @@ export interface BadgeProps {
 
 export const Badge = memo<BadgeProps>(({
   children,
-  color = 'var(--w3v-accent, #3d63ff)',
+  color = 'var(--w3v-accent, #818cf8)',
   style,
 }) => (
   <span

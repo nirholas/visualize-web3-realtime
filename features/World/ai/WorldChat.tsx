@@ -296,7 +296,7 @@ export const WorldChat = memo<WorldChatProps>(function WorldChat({
             </span>{' '}
             <span
               style={{
-                color: msg.role === 'user' ? '#3d63ff' : '#161616',
+                color: msg.role === 'user' ? '#818cf8' : '#161616',
                 fontFamily: "'IBM Plex Mono', monospace",
                 fontSize: 12,
                 lineHeight: 1.4,
@@ -365,7 +365,7 @@ export const WorldChat = memo<WorldChatProps>(function WorldChat({
           style={{
             background: 'none',
             border: 'none',
-            color: isStreaming || !input.trim() ? '#ccc' : '#3d63ff',
+            color: isStreaming || !input.trim() ? '#ccc' : '#818cf8',
             cursor: isStreaming || !input.trim() ? 'default' : 'pointer',
             fontFamily: "'IBM Plex Mono', monospace",
             fontSize: 11,

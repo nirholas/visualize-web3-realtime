@@ -7,51 +7,55 @@
 // ============================================================================
 
 export const colors = {
-  // Core
-  bg: { var: '--w3v-bg', light: '#ffffff', dark: '#08080f' },
-  fg: { var: '--w3v-fg', light: '#161616', dark: '#e8e8e8' },
-  muted: { var: '--w3v-muted', light: '#666666', dark: '#9090b8' },
-  border: { var: '--w3v-border', light: '#e8e8e8', dark: 'rgba(255,255,255,0.08)' },
-  surface: { var: '--w3v-surface', light: '#f5f5f5', dark: 'rgba(255,255,255,0.04)' },
-  accent: { var: '--w3v-accent', light: '#3d63ff', dark: '#7b8eea' },
+  // Core — optimized contrast ratios for reduced eye strain
+  // Dark bg uses subtle blue-purple undertone to complement accent palette
+  // Text uses off-white (#d8d8e8) to avoid halation against near-black
+  bg: { var: '--w3v-bg', light: '#fafafa', dark: '#0a0a12' },
+  fg: { var: '--w3v-fg', light: '#1a1a2e', dark: '#d8d8e8' },
+  muted: { var: '--w3v-muted', light: '#5a5a72', dark: '#8888a8' },
+  border: { var: '--w3v-border', light: '#e2e2ea', dark: 'rgba(140,140,200,0.1)' },
+  surface: { var: '--w3v-surface', light: '#f0f0f6', dark: 'rgba(140,140,200,0.05)' },
+  accent: { var: '--w3v-accent', light: '#4f46e5', dark: '#818cf8' },
 
-  // Protocol / category colors
-  launches: { var: '--w3v-launches', light: '#a78bfa', dark: '#a78bfa' },
-  agentLaunches: { var: '--w3v-agent-launches', light: '#f472b6', dark: '#f472b6' },
-  trades: { var: '--w3v-trades', light: '#60a5fa', dark: '#60a5fa' },
-  claimsWallet: { var: '--w3v-claims-wallet', light: '#fbbf24', dark: '#fbbf24' },
-  claimsGithub: { var: '--w3v-claims-github', light: '#34d399', dark: '#34d399' },
-  claimsFirst: { var: '--w3v-claims-first', light: '#f87171', dark: '#f87171' },
+  // Protocol / category colors — tuned per mode for optimal vibrancy
+  // Dark mode: slightly desaturated to glow without searing
+  // Light mode: deeper saturation for readability on bright backgrounds
+  launches: { var: '--w3v-launches', light: '#8b5cf6', dark: '#a78bfa' },
+  agentLaunches: { var: '--w3v-agent-launches', light: '#db2777', dark: '#f472b6' },
+  trades: { var: '--w3v-trades', light: '#3b82f6', dark: '#60a5fa' },
+  claimsWallet: { var: '--w3v-claims-wallet', light: '#d97706', dark: '#fbbf24' },
+  claimsGithub: { var: '--w3v-claims-github', light: '#059669', dark: '#34d399' },
+  claimsFirst: { var: '--w3v-claims-first', light: '#dc2626', dark: '#f87171' },
 
-  // Status / feedback
-  success: { var: '--w3v-success', light: '#22c55e', dark: '#22c55e' },
-  error: { var: '--w3v-error', light: '#ef4444', dark: '#ef4444' },
-  warning: { var: '--w3v-warning', light: '#f59e0b', dark: '#f59e0b' },
+  // Status / feedback — adjusted per mode
+  success: { var: '--w3v-success', light: '#16a34a', dark: '#22c55e' },
+  error: { var: '--w3v-error', light: '#dc2626', dark: '#ef4444' },
+  warning: { var: '--w3v-warning', light: '#d97706', dark: '#f59e0b' },
 
-  // Graph-specific
+  // Graph-specific — richer hub colors with purple undertones
   hubColors: [
-    '#1a1a2e', '#16213e', '#0f3460', '#2c2c54',
-    '#1b1b2f', '#3d3d6b', '#2a2d3e', '#1e3163',
+    '#12122a', '#141430', '#0e2a52', '#242448',
+    '#161628', '#2e2e58', '#222336', '#1a2850',
   ],
-  graphAgent: '#555566',
-  graphGround: { light: '#f8f8fa', dark: '#111118' },
-  graphEdge: { light: 'rgba(0,0,0,0.25)', dark: 'rgba(255,255,255,0.15)' },
+  graphAgent: '#4a4a62',
+  graphGround: { light: '#f4f4fa', dark: '#0e0e18' },
+  graphEdge: { light: 'rgba(20,20,60,0.2)', dark: 'rgba(140,140,220,0.12)' },
 } as const;
 
-/** Flat color palette for quick access (light theme defaults) */
+/** Flat color palette for quick access */
 export const palette = {
-  white: '#ffffff',
-  black: '#08080f',
-  gray50: '#fafafa',
-  gray100: '#f5f5f5',
-  gray200: '#e8e8e8',
-  gray300: '#d0d0d0',
-  gray400: '#999999',
-  gray500: '#666666',
-  gray600: '#444444',
-  gray700: '#333333',
-  gray800: '#1a1a1a',
-  gray900: '#0a0a0a',
+  white: '#fafafa',
+  black: '#0a0a12',
+  gray50: '#f6f6fa',
+  gray100: '#f0f0f6',
+  gray200: '#e2e2ea',
+  gray300: '#c8c8d4',
+  gray400: '#8888a8',
+  gray500: '#5a5a72',
+  gray600: '#3a3a50',
+  gray700: '#2a2a3e',
+  gray800: '#1a1a2e',
+  gray900: '#0e0e18',
 
   purple400: '#a78bfa',
   pink400: '#f472b6',
@@ -59,7 +63,7 @@ export const palette = {
   amber400: '#fbbf24',
   emerald400: '#34d399',
   red400: '#f87171',
-  indigo500: '#3d63ff',
+  indigo500: '#4f46e5',
   green500: '#22c55e',
 } as const;
 

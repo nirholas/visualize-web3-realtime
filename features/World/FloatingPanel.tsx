@@ -270,7 +270,7 @@ const FloatingPanel = memo<FloatingPanelProps>(function FloatingPanel({
             style={{
               background: 'none',
               border: 'none',
-              color: locked ? (isDark ? '#475569' : '#bbb') : '#3d63ff',
+              color: locked ? (isDark ? '#475569' : '#bbb') : '#818cf8',
               cursor: 'pointer',
               fontSize: 11,
               lineHeight: 1,

@@ -22,7 +22,7 @@ export default function ToolPageShell({ title, description, externalUrl, childre
         height: '100vh',
         display: 'flex',
         flexDirection: 'column',
-        background: '#0a0a0f',
+        background: '#0a0a12',
         color: '#e5e5e5',
         fontFamily: "'IBM Plex Mono', monospace",
         overflow: 'hidden',

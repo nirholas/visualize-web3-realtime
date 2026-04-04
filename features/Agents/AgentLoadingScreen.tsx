@@ -25,7 +25,7 @@ const AgentLoadingScreen = memo<AgentLoadingScreenProps>(({ ready }) => {
       style={{
         position: 'fixed',
         inset: 0,
-        background: '#0a0a0f',
+        background: '#0a0a12',
         zIndex: 100,
         display: 'flex',
         flexDirection: 'column',

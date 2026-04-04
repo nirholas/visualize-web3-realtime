@@ -33,7 +33,7 @@ import { formatStat } from '@/features/World/utils/shared';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ForceGraph = dynamic(() => import('@/features/World/ForceGraph'), {
   ssr: false,
-  loading: () => <div style={{ width: '100%', height: '100%', background: '#0a0a0f' }} />,
+  loading: () => <div style={{ width: '100%', height: '100%', background: '#0a0a12' }} />,
 }) as any;
 
 // Compute total volume across all chains
@@ -572,7 +572,7 @@ export default function WorldPage() {
     connections: connectionEntries.length,
   }), [stats.totalTransactions, totalVolume, connectionEntries.length]);
 
-  const effectiveBg = shareOpen ? shareColors.background : '#0a0a0f';
+  const effectiveBg = shareOpen ? shareColors.background : '#0a0a12';
   const isDark = useMemo(() => {
     const h = effectiveBg.replace('#', '');
     const r = parseInt(h.substring(0, 2), 16) / 255;
@@ -583,7 +583,7 @@ export default function WorldPage() {
 
   return (
     <DarkModeProvider background={effectiveBg}>
-    <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: '#0a0a0f' }}>
+    <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: '#0a0a12' }}>
       {/* Loading screen — only show when a provider is enabled */}
       {hasActiveProvider && <LoadingScreen ready={canvasReady} />}
 

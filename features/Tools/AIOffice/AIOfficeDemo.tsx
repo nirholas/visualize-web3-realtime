@@ -122,7 +122,7 @@ function ProceduralRoom() {
       {/* Floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]}>
         <planeGeometry args={[16, 16]} />
-        <meshStandardMaterial color="#111118" roughness={0.9} />
+        <meshStandardMaterial color="#0e0e18" roughness={0.9} />
       </mesh>
 
       {/* Grid lines on floor */}

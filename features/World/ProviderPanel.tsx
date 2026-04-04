@@ -474,8 +474,8 @@ const ProviderPanel = memo<ProviderPanelProps>(({
                 onClick={() => setShowAddForm(true)}
                 style={{
                   alignItems: 'center',
-                  background: isDark ? '#3d63ff' : '#1a1a1a',
-                  border: isDark ? '1px solid #3d63ff' : '1px solid #1a1a1a',
+                  background: isDark ? '#818cf8' : '#1a1a1a',
+                  border: isDark ? '1px solid #818cf8' : '1px solid #1a1a1a',
                   borderRadius: 8,
                   color: '#fff',
                   cursor: 'pointer',

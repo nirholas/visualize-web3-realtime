@@ -24,7 +24,7 @@ export default function StartJourney({ disabled = false, isRunning, onClick, res
         (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none';
       }}
       onFocus={(e) => {
-        e.currentTarget.style.outline = '2px solid #3d63ff';
+        e.currentTarget.style.outline = '2px solid #818cf8';
         e.currentTarget.style.outlineOffset = '2px';
       }}
       onBlur={(e) => {

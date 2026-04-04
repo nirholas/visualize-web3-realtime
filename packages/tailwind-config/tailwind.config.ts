@@ -8,13 +8,13 @@ const config: Omit<Config, 'content'> = {
         sans: ['"Inter"', 'system-ui', 'sans-serif'],
       },
       colors: {
-        // Core brand
-        'w3v-bg': 'var(--w3v-bg, #ffffff)',
-        'w3v-fg': 'var(--w3v-fg, #161616)',
-        'w3v-muted': 'var(--w3v-muted, #666666)',
-        'w3v-border': 'var(--w3v-border, #e8e8e8)',
-        'w3v-surface': 'var(--w3v-surface, #f5f5f5)',
-        'w3v-accent': 'var(--w3v-accent, #3d63ff)',
+        // Core brand — dark-first defaults
+        'w3v-bg': 'var(--w3v-bg, #0a0a12)',
+        'w3v-fg': 'var(--w3v-fg, #d8d8e8)',
+        'w3v-muted': 'var(--w3v-muted, #8888a8)',
+        'w3v-border': 'var(--w3v-border, rgba(140,140,200,0.1))',
+        'w3v-surface': 'var(--w3v-surface, rgba(140,140,200,0.05))',
+        'w3v-accent': 'var(--w3v-accent, #818cf8)',
 
         // Category / protocol colors
         'w3v-launches': 'var(--w3v-launches, #a78bfa)',

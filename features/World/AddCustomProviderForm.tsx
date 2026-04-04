@@ -157,9 +157,9 @@ const AddCustomProviderForm = memo<AddCustomProviderFormProps>(({ onSubmit, onCa
               onClick={() => setStreamType(st.value)}
               title={st.hint}
               style={{
-                background: streamType === st.value ? (isDark ? '#3d63ff' : '#1a1a1a') : (isDark ? 'rgba(255,255,255,0.04)' : '#f0f0f0'),
+                background: streamType === st.value ? (isDark ? '#818cf8' : '#1a1a1a') : (isDark ? 'rgba(255,255,255,0.04)' : '#f0f0f0'),
                 border: '1px solid',
-                borderColor: streamType === st.value ? (isDark ? '#3d63ff' : '#1a1a1a') : (isDark ? 'rgba(255,255,255,0.08)' : '#d0d0d0'),
+                borderColor: streamType === st.value ? (isDark ? '#818cf8' : '#1a1a1a') : (isDark ? 'rgba(255,255,255,0.08)' : '#d0d0d0'),
                 borderRadius: 4,
                 color: streamType === st.value ? '#fff' : (isDark ? '#94a3b8' : '#666'),
                 cursor: 'pointer',
@@ -280,8 +280,8 @@ const AddCustomProviderForm = memo<AddCustomProviderFormProps>(({ onSubmit, onCa
           type="button"
           onClick={handleSubmit}
           style={{
-            background: isDark ? '#3d63ff' : '#1a1a1a',
-            border: isDark ? '1px solid #3d63ff' : '1px solid #1a1a1a',
+            background: isDark ? '#818cf8' : '#1a1a1a',
+            border: isDark ? '1px solid #818cf8' : '1px solid #1a1a1a',
             borderRadius: 6,
             color: '#fff',
             cursor: 'pointer',

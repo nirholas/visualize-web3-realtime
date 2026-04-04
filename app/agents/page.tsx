@@ -27,7 +27,7 @@ const AgentForceGraph = dynamicImport(() => import('@/features/Agents/AgentForce
       style={{
         width: '100%',
         height: '100%',
-        background: '#0a0a0f',
+        background: '#0a0a12',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -671,7 +671,7 @@ function AgentsPageInner() {
 // Export wrapped with Suspense for useSearchParams compatibility
 export default function AgentsPage() {
   return (
-    <Suspense fallback={<div style={{ width: '100%', height: '100vh', background: '#0a0a0f' }} />}>
+    <Suspense fallback={<div style={{ width: '100%', height: '100vh', background: '#0a0a12' }} />}>
       <AgentsPageInner />
     </Suspense>
   );

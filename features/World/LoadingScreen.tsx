@@ -29,7 +29,7 @@ const LoadingScreen = memo<LoadingScreenProps>(({ ready = false }) => {
     <div
       style={{
         alignItems: 'center',
-        background: '#0a0a0f',
+        background: '#0a0a12',
         display: 'flex',
         flexDirection: 'column',
         gap: 16,

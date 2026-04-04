@@ -89,7 +89,7 @@ export default function PlaygroundPage() {
         {/* 3D Graph */}
         <div className="flex-1 relative">
           <ForceGraph
-            background="#0a0a0f"
+            background="#0a0a12"
             groundColor="#1a1a2f"
             showLabels
             showGround

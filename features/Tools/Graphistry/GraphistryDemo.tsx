@@ -285,7 +285,7 @@ export default function GraphistryDemo() {
       {mode === 'local' && (
         <canvas
           ref={canvasRef}
-          style={{ width: '100%', height: '100%', display: 'block', background: '#0a0a0f' }}
+          style={{ width: '100%', height: '100%', display: 'block', background: '#0a0a12' }}
         />
       )}
 

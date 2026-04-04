@@ -3,7 +3,7 @@
  */
 
 export const COLOR_PALETTE = [
-  '#3d63ff', // Blue
+  '#818cf8', // Blue
   '#b6509e', // Purple
   '#00d395', // Green
   '#00b88d', // Teal
@@ -15,7 +15,7 @@ export const COLOR_PALETTE = [
 
 export const PROTOCOL_COLORS = {
   default: '#a0c4ff',
-  highlight: '#3d63ff',
+  highlight: '#818cf8',
   agentDefault: '#7dd3fc',
 } as const;
 
