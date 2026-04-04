@@ -25,6 +25,7 @@ import { captureCanvas, captureSnapshot, downloadBlob, timestampedFilename } fro
 import { buildShareUrl, buildShareText, parseShareParams, shareOnX, shareOnLinkedIn } from '@/features/World/utils/shareUrl';
 import type { ForceGraphHandle } from '@/features/World/ForceGraph';
 import { WorldChat } from '@/features/World/ai/WorldChat';
+import FloatingPanel from '@/features/World/FloatingPanel';
 import { formatStat } from '@/features/World/utils/shared';
 
 // Lazy-load the 3D force graph to avoid SSR issues with Three.js
@@ -579,7 +580,12 @@ export default function WorldPage() {
       <WelcomeOverlay visible={!hasActiveProvider} />
 
       {/* Timeline scrubber — top bar (fade in when active) */}
-      <div
+      <FloatingPanel
+        id="timeline"
+        title="Timeline"
+        defaultAnchor={{ top: 0, left: 0, right: 0 }}
+        zIndex={30}
+        icon={<span style={{ fontSize: 10 }}>▶</span>}
         style={{
           opacity: hasActiveProvider ? 1 : 0,
           pointerEvents: hasActiveProvider ? 'auto' : 'none',
@@ -595,7 +601,7 @@ export default function WorldPage() {
           onTogglePlay={handleTogglePlay}
           timeFilter={timeFilter}
         />
-      </div>
+      </FloatingPanel>
 
       {/* 3D Force Graph — full screen, offset for timeline bar */}
       <div style={{ position: 'absolute', top: hasActiveProvider ? 48 : 0, left: 0, right: 0, bottom: 0, transition: 'top 500ms ease' }}>
@@ -766,33 +772,68 @@ export default function WorldPage() {
       )}
 
       {/* Category filter sidebar — left */}
-      <ProtocolFilterSidebar
-        categories={allCategories}
-        sources={allSources}
-        enabledCategories={enabledCategories}
-        onToggleCategory={toggleCategory}
-        enabledProviders={enabledProviders}
-        onToggleProvider={toggleProvider}
-      />
+      <FloatingPanel
+        id="filters"
+        title="Filters"
+        defaultAnchor={{ left: 16, top: '50%', transform: 'translateY(-50%)' }}
+        zIndex={20}
+        icon={<span style={{ fontSize: 10 }}>⚡</span>}
+      >
+        <ProtocolFilterSidebar
+          categories={allCategories}
+          sources={allSources}
+          enabledCategories={enabledCategories}
+          onToggleCategory={toggleCategory}
+          enabledProviders={enabledProviders}
+          onToggleProvider={toggleProvider}
+        />
+      </FloatingPanel>
 
       {/* Bottom stats bar (fade in when active) */}
       {hasActiveProvider && (
-        <Suspense fallback={null}>
-          <StatsBar
-            totalTokens={(stats.counts.launches ?? 0) + (stats.counts.agentLaunches ?? 0)}
-            totalVolume={stats.totalVolume ?? {}}
-            totalTrades={stats.totalTransactions}
-            highlightedAddress={highlightedAddress}
-            onAddressSearch={handleAddressSearch}
-            onDismissHighlight={handleDismissHighlight}
-            searchError={searchError}
-          />
-        </Suspense>
+        <FloatingPanel
+          id="stats"
+          title="Stats"
+          defaultAnchor={{ bottom: 16, left: '50%', transform: 'translateX(-50%)' }}
+          zIndex={20}
+          icon={<span style={{ fontSize: 10 }}>📊</span>}
+        >
+          <Suspense fallback={null}>
+            <StatsBar
+              totalTokens={(stats.counts.launches ?? 0) + (stats.counts.agentLaunches ?? 0)}
+              totalVolume={stats.totalVolume ?? {}}
+              totalTrades={stats.totalTransactions}
+              highlightedAddress={highlightedAddress}
+              onAddressSearch={handleAddressSearch}
+              onDismissHighlight={handleDismissHighlight}
+              searchError={searchError}
+            />
+          </Suspense>
+        </FloatingPanel>
       )}
 
       {/* Live trade feed — bottom right (fade in when active) */}
       {hasActiveProvider && (
-        <LiveFeed events={displayFilteredEvents} categories={categories} />
+        <FloatingPanel
+          id="livefeed"
+          title="Live Feed"
+          defaultAnchor={{ right: 12, bottom: 60 }}
+          zIndex={10}
+          icon={
+            <span
+              style={{
+                display: 'inline-block',
+                width: 6,
+                height: 6,
+                background: '#22c55e',
+                borderRadius: '50%',
+                animation: 'pulse 2s ease-in-out infinite',
+              }}
+            />
+          }
+        >
+          <LiveFeed events={displayFilteredEvents} categories={categories} />
+        </FloatingPanel>
       )}
 
       {hasActiveProvider && (
@@ -878,12 +919,24 @@ export default function WorldPage() {
 
       {/* AI Chat interface — bottom left */}
       {hasActiveProvider && (
-        <WorldChat
-          graphRef={graphRef}
-          onColorChange={setShareColors}
-          onFilterChange={handleChatFilterChange}
-          stats={chatStats}
-        />
+        <FloatingPanel
+          id="aichat"
+          title="AI Agent"
+          defaultAnchor={{ left: 12, bottom: 130 }}
+          zIndex={25}
+          icon={
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+          }
+        >
+          <WorldChat
+            graphRef={graphRef}
+            onColorChange={setShareColors}
+            onFilterChange={handleChatFilterChange}
+            stats={chatStats}
+          />
+        </FloatingPanel>
       )}
 
       {/* Embed button — bottom left, above pause */}

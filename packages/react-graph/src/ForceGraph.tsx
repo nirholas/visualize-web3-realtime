@@ -507,7 +507,7 @@ const ForceGraph = forwardRef<GraphHandle, ForceGraphProps>(function ForceGraph(
       <Canvas
         camera={{ fov, near: 0.1, far: 500, position: cameraPosition }}
         style={{ background }}
-        gl={{ antialias: false, alpha: false }}
+        gl={{ antialias: false, alpha: false, stencil: false }}
         dpr={[1, 1.5]}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;

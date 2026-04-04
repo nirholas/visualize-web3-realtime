@@ -1087,7 +1087,7 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
       <Canvas
         camera={{ fov: 45, near: 0.1, far: 500, position: [0, 30, 50] }}
         style={{ background: shareColors?.background ?? '#0a0a0f' }}
-        gl={{ antialias: false, alpha: false }}
+        gl={{ antialias: false, alpha: false, stencil: false }}
         dpr={[1, 1.5]}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.ACESFilmicToneMapping;

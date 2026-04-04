@@ -135,10 +135,6 @@ const LiveFeed = memo<LiveFeedProps>(({ events, categories = [] }) => {
   return (
     <div
       style={{
-        position: 'absolute',
-        right: 12,
-        bottom: 60,
-        zIndex: 10,
         display: 'flex',
         flexDirection: 'column',
         gap: 2,

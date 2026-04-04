@@ -320,17 +320,12 @@ export default memo<StatsBarProps>(function StatsBar({
   return (
     <div
       style={{
-        position: 'absolute',
-        bottom: 16,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 20,
         display: 'flex',
         alignItems: 'center',
         gap: 12,
         padding: '6px 12px',
         fontFamily: "'IBM Plex Mono', monospace",
-        borderRadius: 12,
+        borderRadius: '0 0 12px 12px',
         background: 'rgba(255,255,255,0.85)',
         backdropFilter: 'blur(12px)',
         border: '1px solid #e8e8e8',

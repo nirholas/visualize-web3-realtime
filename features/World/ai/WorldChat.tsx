@@ -179,7 +179,6 @@ export const WorldChat = memo<WorldChatProps>(function WorldChat({
           background: '#ffffff',
           border: '1px solid #e8e8e8',
           borderRadius: 12,
-          bottom: 130,
           boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
           color: '#666',
           cursor: 'pointer',
@@ -187,12 +186,9 @@ export const WorldChat = memo<WorldChatProps>(function WorldChat({
           fontFamily: "'IBM Plex Mono', monospace",
           fontSize: 11,
           gap: 6,
-          left: 12,
           letterSpacing: '0.06em',
           padding: '8px 14px',
-          position: 'absolute',
           textTransform: 'uppercase',
-          zIndex: 25,
         }}
         type="button"
       >
@@ -210,16 +206,12 @@ export const WorldChat = memo<WorldChatProps>(function WorldChat({
         background: 'rgba(255, 255, 255, 0.95)',
         backdropFilter: 'blur(12px)',
         border: '1px solid #e8e8e8',
-        borderRadius: 12,
-        bottom: 130,
+        borderRadius: '0 0 12px 12px',
         boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
         display: 'flex',
         flexDirection: 'column',
-        left: 12,
         overflow: 'hidden',
-        position: 'absolute',
         width: 320,
-        zIndex: 25,
       }}
     >
       {/* Header */}

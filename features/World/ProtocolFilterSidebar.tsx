@@ -344,17 +344,12 @@ const ProtocolFilterSidebar = memo<ProtocolFilterSidebarProps>(
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
             border: '1px solid rgba(0,0,0,0.06)',
-            borderRadius: 12,
+            borderRadius: '0 0 12px 12px',
             boxShadow: '0 2px 16px rgba(0,0,0,0.06)',
             display: 'flex',
             flexDirection: 'column',
-            left: 16,
             maxHeight: 'calc(100vh - 120px)',
-            position: 'absolute',
-            top: '50%',
-            transform: 'translateY(-50%)',
             width: 180,
-            zIndex: 20,
           }}
         >
           {content}
