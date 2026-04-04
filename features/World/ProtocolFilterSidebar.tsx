@@ -1,8 +1,7 @@
 'use client';
 
-import { memo, useState } from 'react';
+import { memo, useState, useCallback } from 'react';
 import type { CategoryConfig, SourceConfig } from '@web3viz/core';
-import { COLOR_PALETTE } from './constants';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -24,16 +23,36 @@ export interface ProtocolFilterSidebarProps {
 }
 
 // ---------------------------------------------------------------------------
-// Single Category Button
+// Chevron icon
 // ---------------------------------------------------------------------------
 
-interface CategoryButtonProps {
+const ChevronIcon = ({ open }: { open: boolean }) => (
+  <svg
+    width="10"
+    height="10"
+    viewBox="0 0 10 10"
+    fill="none"
+    style={{
+      transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
+      transition: 'transform 150ms ease',
+      flexShrink: 0,
+    }}
+  >
+    <path d="M3 1.5L7 5L3 8.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+// ---------------------------------------------------------------------------
+// Category toggle row
+// ---------------------------------------------------------------------------
+
+interface CategoryRowProps {
   category: CategoryConfig;
   isActive: boolean;
   onClick: () => void;
 }
 
-const CategoryButton = memo<CategoryButtonProps>(({ category, isActive, onClick }) => {
+const CategoryRow = memo<CategoryRowProps>(({ category, isActive, onClick }) => {
   const [hovered, setHovered] = useState(false);
 
   return (
@@ -43,93 +62,186 @@ const CategoryButton = memo<CategoryButtonProps>(({ category, isActive, onClick 
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      title={category.label}
       style={{
         alignItems: 'center',
-        background: isActive ? category.color : '#c0c0c8',
-        border: isActive ? `2px solid ${category.color}` : '2px solid transparent',
-        borderRadius: '50%',
-        boxShadow: isActive
-          ? `0 2px 12px ${category.color}60`
-          : hovered
-          ? '0 2px 8px rgba(0,0,0,0.18)'
-          : 'none',
-        color: isActive ? '#fff' : '#222',
+        background: hovered ? 'rgba(0,0,0,0.03)' : 'transparent',
+        border: 'none',
+        borderRadius: 6,
         cursor: 'pointer',
         display: 'flex',
         fontFamily: "'IBM Plex Mono', monospace",
-        fontSize: 14,
-        fontWeight: 700,
-        height: 40,
-        justifyContent: 'center',
-        lineHeight: 1,
+        gap: 8,
         outline: 'none',
-        padding: 0,
-        transform: hovered && !isActive ? 'scale(1.05)' : 'scale(1)',
-        transition: 'all 150ms ease',
-        width: 40,
+        padding: '4px 8px',
+        transition: 'background 120ms ease',
+        width: '100%',
       }}
     >
-      {category.icon}
+      {/* Color dot */}
+      <span
+        style={{
+          background: isActive ? category.color : '#d0d0d4',
+          borderRadius: '50%',
+          boxShadow: isActive ? `0 0 6px ${category.color}50` : 'none',
+          display: 'inline-block',
+          flexShrink: 0,
+          height: 8,
+          transition: 'all 150ms ease',
+          width: 8,
+        }}
+      />
+      {/* Label */}
+      <span
+        style={{
+          color: isActive ? '#333' : '#999',
+          fontSize: 11,
+          fontWeight: isActive ? 600 : 400,
+          letterSpacing: '0.02em',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          transition: 'color 150ms ease',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {category.label}
+      </span>
     </button>
   );
 });
-
-CategoryButton.displayName = 'CategoryButton';
+CategoryRow.displayName = 'CategoryRow';
 
 // ---------------------------------------------------------------------------
-// Provider Toggle Button
+// Source group (collapsible section)
 // ---------------------------------------------------------------------------
 
-interface ProviderToggleProps {
+interface SourceGroupProps {
   source: SourceConfig;
-  active: boolean;
-  onClick: () => void;
+  categories: CategoryConfig[];
+  enabledCategories: Set<string>;
+  onToggleCategory: (categoryId: string) => void;
+  providerActive: boolean;
+  onToggleProvider?: () => void;
 }
 
-const ProviderToggle = memo<ProviderToggleProps>(({ source, active, onClick }) => {
-  const [hovered, setHovered] = useState(false);
+const SourceGroup = memo<SourceGroupProps>(
+  ({ source, categories, enabledCategories, onToggleCategory, providerActive, onToggleProvider }) => {
+    const [open, setOpen] = useState(true);
+    const [headerHovered, setHeaderHovered] = useState(false);
 
-  return (
-    <button
-      aria-label={`Toggle ${source.label}`}
-      aria-pressed={active}
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      title={active ? `Hide ${source.label}` : `Show ${source.label}`}
-      style={{
-        alignItems: 'center',
-        background: active ? source.color : '#c0c0c8',
-        border: active ? `2px solid ${source.color}` : '2px solid transparent',
-        borderRadius: '50%',
-        boxShadow: active
-          ? `0 2px 12px ${source.color}60`
-          : hovered
-          ? '0 2px 8px rgba(0,0,0,0.18)'
-          : 'none',
-        color: active ? '#fff' : '#222',
-        cursor: 'pointer',
-        display: 'flex',
-        fontSize: 14,
-        height: 40,
-        justifyContent: 'center',
-        lineHeight: 1,
-        outline: 'none',
-        padding: 0,
-        transform: hovered && !active ? 'scale(1.05)' : 'scale(1)',
-        transition: 'all 150ms ease',
-        width: 40,
-      }}
-    >
-      {source.icon}
-    </button>
-  );
-});
-ProviderToggle.displayName = 'ProviderToggle';
+    const activeCount = categories.filter((c) => enabledCategories.has(c.id)).length;
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        {/* Group header */}
+        <div
+          style={{
+            alignItems: 'center',
+            display: 'flex',
+            gap: 6,
+            padding: '6px 4px',
+            userSelect: 'none',
+          }}
+        >
+          {/* Provider on/off toggle */}
+          {onToggleProvider && (
+            <button
+              aria-label={`Toggle ${source.label}`}
+              onClick={onToggleProvider}
+              style={{
+                alignItems: 'center',
+                background: providerActive ? source.color : '#d0d0d4',
+                border: 'none',
+                borderRadius: '50%',
+                boxShadow: providerActive ? `0 0 8px ${source.color}40` : 'none',
+                color: providerActive ? '#fff' : '#888',
+                cursor: 'pointer',
+                display: 'flex',
+                flexShrink: 0,
+                fontSize: 12,
+                height: 22,
+                justifyContent: 'center',
+                outline: 'none',
+                padding: 0,
+                transition: 'all 150ms ease',
+                width: 22,
+              }}
+            >
+              {source.icon}
+            </button>
+          )}
+
+          {/* Clickable label + chevron to expand/collapse */}
+          <button
+            onClick={() => setOpen((o) => !o)}
+            onMouseEnter={() => setHeaderHovered(true)}
+            onMouseLeave={() => setHeaderHovered(false)}
+            style={{
+              alignItems: 'center',
+              background: 'none',
+              border: 'none',
+              color: headerHovered ? '#333' : '#666',
+              cursor: 'pointer',
+              display: 'flex',
+              flex: 1,
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 10,
+              fontWeight: 600,
+              gap: 4,
+              letterSpacing: '0.08em',
+              outline: 'none',
+              padding: 0,
+              textTransform: 'uppercase',
+              transition: 'color 120ms ease',
+            }}
+          >
+            <ChevronIcon open={open} />
+            {source.label}
+          </button>
+
+          {/* Active count badge */}
+          <span
+            style={{
+              background: activeCount > 0 ? `${source.color}18` : 'transparent',
+              borderRadius: 8,
+              color: activeCount > 0 ? source.color : '#bbb',
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 9,
+              fontWeight: 600,
+              lineHeight: 1,
+              padding: '2px 5px',
+              transition: 'all 150ms ease',
+            }}
+          >
+            {activeCount}/{categories.length}
+          </span>
+        </div>
+
+        {/* Collapsible category list */}
+        <div
+          style={{
+            display: open ? 'flex' : 'none',
+            flexDirection: 'column',
+            gap: 1,
+            paddingLeft: onToggleProvider ? 30 : 16,
+          }}
+        >
+          {categories.map((cat) => (
+            <CategoryRow
+              key={cat.id}
+              category={cat}
+              isActive={enabledCategories.has(cat.id)}
+              onClick={() => onToggleCategory(cat.id)}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  },
+);
+SourceGroup.displayName = 'SourceGroup';
 
 // ---------------------------------------------------------------------------
-// Sidebar
+// Main Sidebar
 // ---------------------------------------------------------------------------
 
 const ProtocolFilterSidebar = memo<ProtocolFilterSidebarProps>(
@@ -138,97 +250,87 @@ const ProtocolFilterSidebar = memo<ProtocolFilterSidebarProps>(
 
     if (categories.length === 0) return null;
 
-    // Group categories by source if multiple sources exist
-    const hasMultipleSources = sources && sources.length > 1;
+    // Group categories by source
     const categoryBySource = new Map<string | undefined, CategoryConfig[]>();
-
     for (const cat of categories) {
-      const sourceId = cat.sourceId;
-      if (!categoryBySource.has(sourceId)) {
-        categoryBySource.set(sourceId, []);
-      }
-      categoryBySource.get(sourceId)!.push(cat);
+      const key = cat.sourceId;
+      if (!categoryBySource.has(key)) categoryBySource.set(key, []);
+      categoryBySource.get(key)!.push(cat);
     }
 
-    const buttons = (
-      <>
-        {/* Render provider toggles — separate crypto and agent sources */}
-        {sources && sources.length > 0 && onToggleProvider && (() => {
-          const cryptoSources = sources.filter((s) => s.id !== 'agents');
-          const agentSource = sources.find((s) => s.id === 'agents');
+    // Separate sources: crypto vs agents
+    const cryptoSources = sources?.filter((s) => s.id !== 'agents') ?? [];
+    const agentSources = sources?.filter((s) => s.id === 'agents') ?? [];
+    const allGroupedSources = [...cryptoSources, ...agentSources];
+
+    const content = (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          flex: 1,
+        }}
+      >
+        {/* Header */}
+        <div
+          style={{
+            borderBottom: '1px solid rgba(0,0,0,0.06)',
+            fontFamily: "'IBM Plex Mono', monospace",
+            fontSize: 9,
+            fontWeight: 700,
+            letterSpacing: '0.12em',
+            color: '#aaa',
+            padding: '8px 8px 6px',
+            textTransform: 'uppercase',
+          }}
+        >
+          Sources
+        </div>
+
+        {/* Grouped sources */}
+        {allGroupedSources.map((source, i) => {
+          const sourceCats = categoryBySource.get(source.id) || [];
+          if (sourceCats.length === 0) return null;
+          const isAgentSection = source.id === 'agents';
           return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {cryptoSources.map((source) => (
-                <ProviderToggle
-                  key={source.id}
-                  source={source}
-                  active={enabledProviders?.has(source.id) ?? true}
-                  onClick={() => onToggleProvider(source.id)}
+            <div key={source.id}>
+              {isAgentSection && cryptoSources.length > 0 && (
+                <div
+                  style={{
+                    borderTop: '1px solid rgba(0,0,0,0.06)',
+                    margin: '4px 8px',
+                  }}
                 />
-              ))}
-              {agentSource && (
-                <>
-                  {/* Separator between crypto and agent sources */}
-                  <div
-                    style={{
-                      borderTop: '1px solid rgba(0,0,0,0.1)',
-                      margin: '4px 4px',
-                    }}
-                  />
-                  <span
-                    style={{
-                      color: '#999',
-                      fontFamily: "'IBM Plex Mono', monospace",
-                      fontSize: 8,
-                      letterSpacing: '0.1em',
-                      textAlign: 'center',
-                      textTransform: 'uppercase',
-                    }}
-                  >
-                    AI Agents
-                  </span>
-                  <ProviderToggle
-                    source={agentSource}
-                    active={enabledProviders?.has(agentSource.id) ?? true}
-                    onClick={() => onToggleProvider(agentSource.id)}
-                  />
-                </>
               )}
+              <SourceGroup
+                source={source}
+                categories={sourceCats}
+                enabledCategories={enabledCategories}
+                onToggleCategory={onToggleCategory}
+                providerActive={enabledProviders?.has(source.id) ?? true}
+                onToggleProvider={onToggleProvider ? () => onToggleProvider(source.id) : undefined}
+              />
             </div>
           );
-        })()}
+        })}
 
-        {/* Render categories grouped by source or flat */}
-        {hasMultipleSources && sources ? (
-          // Grouped view
-          sources.map((source) => {
-            const sourceCats = categoryBySource.get(source.id) || [];
-            if (sourceCats.length === 0) return null;
-            return (
-              <div key={source.id} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                {sourceCats.map((cat) => (
-                  <CategoryButton
-                    key={cat.id}
-                    category={cat}
-                    isActive={enabledCategories.has(cat.id)}
-                    onClick={() => onToggleCategory(cat.id)}
-                  />
-                ))}
-              </div>
-            );
-          })
-        ) : (
-          // Flat view for single source
-          categories.map((cat) => (
-            <CategoryButton
-              key={cat.id}
-              category={cat}
-              isActive={enabledCategories.has(cat.id)}
-              onClick={() => onToggleCategory(cat.id)}
-            />
-          ))
+        {/* Ungrouped categories (no sourceId) */}
+        {categoryBySource.has(undefined) && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 1, padding: '4px 8px' }}>
+            {categoryBySource.get(undefined)!.map((cat) => (
+              <CategoryRow
+                key={cat.id}
+                category={cat}
+                isActive={enabledCategories.has(cat.id)}
+                onClick={() => onToggleCategory(cat.id)}
+              />
+            ))}
+          </div>
         )}
-      </>
+      </div>
     );
 
     return (
@@ -238,20 +340,27 @@ const ProtocolFilterSidebar = memo<ProtocolFilterSidebarProps>(
           aria-label="Filter categories and providers"
           className="sidebar-desktop"
           style={{
+            background: 'rgba(255,255,255,0.85)',
+            backdropFilter: 'blur(16px)',
+            WebkitBackdropFilter: 'blur(16px)',
+            border: '1px solid rgba(0,0,0,0.06)',
+            borderRadius: 12,
+            boxShadow: '0 2px 16px rgba(0,0,0,0.06)',
             display: 'flex',
             flexDirection: 'column',
-            gap: 10,
             left: 16,
+            maxHeight: 'calc(100vh - 120px)',
             position: 'absolute',
             top: '50%',
             transform: 'translateY(-50%)',
+            width: 180,
             zIndex: 20,
           }}
         >
-          {buttons}
+          {content}
         </nav>
 
-        {/* Mobile hamburger button (visible below 768px) */}
+        {/* Mobile hamburger button */}
         <button
           aria-label="Open filters"
           className="sidebar-mobile-toggle"
@@ -282,7 +391,7 @@ const ProtocolFilterSidebar = memo<ProtocolFilterSidebarProps>(
           </svg>
         </button>
 
-        {/* Mobile sidebar drawer */}
+        {/* Mobile drawer */}
         {mobileOpen && (
           <div
             onClick={() => setMobileOpen(false)}
@@ -298,19 +407,19 @@ const ProtocolFilterSidebar = memo<ProtocolFilterSidebarProps>(
               onClick={(e) => e.stopPropagation()}
               style={{
                 animation: 'slideInLeft 0.25s ease-out',
-                background: 'rgba(255,255,255,0.95)',
-                backdropFilter: 'blur(12px)',
+                background: 'rgba(255,255,255,0.97)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
                 borderRight: '1px solid #e0e0e0',
                 boxShadow: '4px 0 24px rgba(0,0,0,0.08)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 10,
                 height: '100%',
                 left: 0,
-                padding: '60px 16px 16px',
+                padding: '48px 0 0',
                 position: 'absolute',
                 top: 0,
-                width: 72,
+                width: 200,
               }}
             >
               <button
@@ -322,16 +431,16 @@ const ProtocolFilterSidebar = memo<ProtocolFilterSidebarProps>(
                   color: '#999',
                   cursor: 'pointer',
                   fontSize: 18,
-                  left: 24,
+                  left: 8,
                   lineHeight: 1,
                   position: 'absolute',
-                  top: 16,
+                  top: 14,
                 }}
                 type="button"
               >
                 &times;
               </button>
-              {buttons}
+              {content}
             </nav>
           </div>
         )}
