@@ -69,6 +69,16 @@ function AgentsPageInner() {
   );
   const [downloading, setDownloading] = useState<boolean>(false);
   const [demoActive, setDemoActive] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  // Detect prefers-reduced-motion
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setReducedMotion(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   const { stats, agents, flows, executorState, agentStats, connected, events } = useAgentProvider({
     mock: process.env.NEXT_PUBLIC_AGENT_MOCK !== 'false',
@@ -293,6 +303,8 @@ function AgentsPageInner() {
           speed={playbackSpeed}
           onSpeedChange={setPlaybackSpeed}
           onAgentSelect={handleSelectAgent}
+          sidebarWidth={sidebarWidth}
+          feedWidth={feedVisible ? feedWidth : 0}
         />
       )}
 
@@ -319,12 +331,13 @@ function AgentsPageInner() {
             backgroundColor={themeTokens.background}
             colorScheme={colorScheme}
             height="100%"
+            reducedMotion={reducedMotion}
           />
         </Suspense>
       </div>
 
-      {/* Live event feed — right */}
-      {feedVisible && (
+      {/* Live event feed — right (hidden on mobile) */}
+      {feedVisible && !isMobile && (
         <AgentLiveFeed
           events={recentAgentEvents}
           agents={agents}
@@ -441,7 +454,7 @@ function AgentsPageInner() {
         style={{
           position: 'absolute',
           top: BANNER_H + 4,
-          left: 208,
+          left: sidebarWidth + 8,
           zIndex: 20,
           display: 'flex',
           alignItems: 'center',
@@ -538,6 +551,61 @@ function AgentsPageInner() {
           recentEvents={recentAgentEvents}
           onClose={() => setSelectedTaskId(null)}
         />
+      )}
+
+      {/* Mobile bottom tab bar for agent selection */}
+      {isMobile && demoActive && agents.size > 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 25,
+            background: `${themeTokens.sidebar}`,
+            backdropFilter: 'blur(12px)',
+            borderTop: `1px solid ${themeTokens.edge}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 4,
+            padding: '8px 12px',
+            overflowX: 'auto',
+            fontFamily: "'IBM Plex Mono', monospace",
+          }}
+          role="tablist"
+          aria-label="Agent selector"
+        >
+          {Array.from(agents.values()).map((agent) => (
+            <button
+              key={agent.agentId}
+              role="tab"
+              aria-selected={activeAgentId === agent.agentId}
+              aria-label={`Select agent ${agent.name}`}
+              onClick={() => handleSelectAgent(activeAgentId === agent.agentId ? null : agent.agentId)}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 2,
+                padding: '4px 10px',
+                background: activeAgentId === agent.agentId ? `${themeTokens.agentHubActive}20` : 'transparent',
+                border: activeAgentId === agent.agentId ? `1px solid ${themeTokens.agentHubActive}50` : '1px solid transparent',
+                borderRadius: 6,
+                cursor: 'pointer',
+                color: themeTokens.text,
+                fontSize: 8,
+                whiteSpace: 'nowrap',
+                outline: 'none',
+              }}
+              onFocus={(e) => { e.currentTarget.style.outline = `2px solid ${themeTokens.agentHubActive}`; }}
+              onBlur={(e) => { e.currentTarget.style.outline = 'none'; }}
+            >
+              <span style={{ fontSize: 14 }}>⬡</span>
+              <span>{agent.name.slice(0, 8)}</span>
+            </button>
+          ))}
+        </div>
       )}
 
       {/* Dormant state — shown when no demo/connection is active */}

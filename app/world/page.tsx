@@ -656,6 +656,27 @@ export default function WorldPage() {
         >
           ⬡ Agents
         </Link>
+        {/* Agent overlay toggle — shows/hides agent nodes in the world graph */}
+        <button
+          onClick={() => toggleProvider('agents')}
+          style={{
+            fontSize: 10,
+            fontFamily: "'IBM Plex Mono', monospace",
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase',
+            color: enabledProviders.has('agents') ? '#fff' : '#999',
+            background: enabledProviders.has('agents') ? '#c084fc' : 'transparent',
+            padding: '2px 8px',
+            border: enabledProviders.has('agents') ? '1px solid #c084fc' : '1px solid rgba(0,0,0,0.12)',
+            borderRadius: 10,
+            cursor: 'pointer',
+            transition: 'all 200ms ease',
+          }}
+          title={enabledProviders.has('agents') ? 'Hide agent overlay' : 'Show agent overlay on world graph'}
+          type="button"
+        >
+          {enabledProviders.has('agents') ? '⬡ Overlay On' : '⬡ Overlay'}
+        </button>
         <div style={{ position: 'relative' }}>
           <button
             aria-controls="world-info-popover"

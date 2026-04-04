@@ -491,7 +491,7 @@ const ForceGraph = forwardRef<GraphHandle, ForceGraphProps>(function ForceGraph(
     },
   }));
 
-  const tokenKey = topTokens.map((t) => `${t.mint}:${t.trades}`).join(',');
+  const tokenKey = topTokens.map((t) => `${t.tokenAddress}:${t.trades}`).join(',');
   const edgeCount = traderEdges.length;
   useEffect(() => {
     sim.update(topTokens, traderEdges);

@@ -24,6 +24,7 @@ export class ExecutorServer {
   private running = false;
   private pollTimer?: ReturnType<typeof setInterval>;
   private heartbeatTimer?: ReturnType<typeof setInterval>;
+  private autoSpawnTimer?: ReturnType<typeof setInterval>;
   private httpServer?: ReturnType<typeof createServer>;
   private recentEvents: AgentEvent[] = [];
 
@@ -146,8 +147,23 @@ export class ExecutorServer {
           res.end(JSON.stringify({ error: 'Invalid request body' }));
         });
     } else if (path.match(/^\/api\/tasks\/[^/]+$/) && method === 'DELETE') {
-      res.writeHead(501);
-      res.end(JSON.stringify({ error: 'Task cancellation not yet implemented' }));
+      const taskId = path.split('/').pop()!;
+      this.queue.fail(taskId, 'Cancelled by user');
+      const tasks = this.queue.getAll();
+      const task = tasks.find((t) => t.taskId === taskId);
+      if (task) {
+        this.stateStore.saveTask(task);
+        this.broadcaster.broadcast({
+          eventId: `evt_cancel_${taskId}`,
+          type: 'task:cancelled',
+          timestamp: Date.now(),
+          agentId: task.agentId || 'executor',
+          taskId,
+          payload: { reason: 'Cancelled by user' },
+        });
+      }
+      res.writeHead(200);
+      res.end(JSON.stringify({ taskId, status: 'cancelled' }));
     } else if (path === '/api/agents/spawn' && method === 'POST') {
       this.parseRequestBody(req)
         .then((body: Record<string, unknown>) => {
@@ -309,7 +325,43 @@ export class ExecutorServer {
     // Start health monitoring
     this.health.start();
 
+    // Start autonomous task generation loop
+    this.autoSpawnTimer = setInterval(() => this.autoGenerateTasks(), 10_000);
+
     console.log(`[ExecutorServer] Ready. WS port: ${this.config.port}`);
+  }
+
+  /**
+   * Background autonomous task generation loop.
+   * Ensures agents always have work to do by generating synthetic tasks
+   * when the queue is empty and agents are idle.
+   */
+  private async autoGenerateTasks(): Promise<void> {
+    if (!this.running) return;
+
+    const queueLength = this.queue.getQueueLength();
+    const inProgress = this.queue.getInProgressCount();
+    const idleAgents = this.agentManager.getAgentCount() - this.agentManager.getBusyCount();
+
+    // Only generate tasks when idle agents exist and queue is nearly empty
+    if (queueLength > 2 || idleAgents === 0) return;
+
+    const AUTONOMOUS_TASKS: TaskDefinition[] = [
+      { description: 'Scan network for new token deployments', requiredRole: 'researcher', priority: 3 },
+      { description: 'Analyze trending contract patterns', requiredRole: 'researcher', priority: 4 },
+      { description: 'Review and optimize gas usage', requiredRole: 'coder', priority: 5 },
+      { description: 'Monitor liquidity pool changes', requiredRole: 'researcher', priority: 2 },
+      { description: 'Generate daily activity report', requiredRole: 'planner', priority: 6 },
+      { description: 'Audit smart contract security', requiredRole: 'coder', priority: 1 },
+      { description: 'Update risk assessment models', requiredRole: 'planner', priority: 4 },
+      { description: 'Check for anomalous trading patterns', requiredRole: 'researcher', priority: 2 },
+      { description: 'Refactor indexer query pipeline', requiredRole: 'coder', priority: 5 },
+      { description: 'Plan next sprint objectives', requiredRole: 'planner', priority: 7 },
+    ];
+
+    // Pick a random task and enqueue it
+    const task = AUTONOMOUS_TASKS[Math.floor(Math.random() * AUTONOMOUS_TASKS.length)];
+    this.enqueueTask(task);
   }
 
   private async processTasks(): Promise<void> {
@@ -397,6 +449,7 @@ export class ExecutorServer {
     this.running = false;
     if (this.pollTimer) clearInterval(this.pollTimer);
     if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+    if (this.autoSpawnTimer) clearInterval(this.autoSpawnTimer);
     this.health.stop();
     this.broadcaster.stop();
 

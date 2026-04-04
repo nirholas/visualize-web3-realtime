@@ -29,6 +29,6 @@ export const providers = [
     rpcWsUrl: process.env.NEXT_PUBLIC_SOLANA_WS_URL || undefined,
   }),
   // Uncomment to test multi-provider:
-  // new MockProvider({ interval: 1000 }),
+  // new MockProvider(1000),
   new AgentProvider(),
 ];

@@ -70,14 +70,14 @@ export interface Trade {
 export interface TopToken {
   tokenAddress: string;
   /** Alias for tokenAddress — used by ForceGraph as the hub node ID */
-  mint: string;
+  mint?: string;
   symbol: string;
   name: string;
   chain: string;
   trades: number;
   volume: number;
-  /** Volume in native currency (e.g. SOL, TASKS) */
-  volumeSol: number;
+  /** Volume in native currency (e.g. SOL, ETH, TASKS) */
+  volumeSol?: number;
   nativeSymbol: string;
   /** USD volume if available */
   volumeUsd?: number;
@@ -90,12 +90,12 @@ export interface TraderEdge {
   trader: string;
   tokenAddress: string;
   /** Alias for tokenAddress — used by ForceGraph for hub matching */
-  mint: string;
+  mint?: string;
   chain: string;
   trades: number;
   volume: number;
   /** Volume in native currency */
-  volumeSol: number;
+  volumeSol?: number;
   /** Provider source identifier */
   source?: string;
 }

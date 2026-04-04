@@ -143,7 +143,7 @@ function EventCard({ event }: { event: RawEvent }) {
         </div>
         <div className="text-[var(--w3v-text-muted)] truncate">
           {truncateAddress(
-            (data.traderPublicKey as string) || (data.wallet as string) || '',
+            (data.creatorAddress as string) || (data.traderAddress as string) || (data.claimer as string) || '',
             6,
           )}
         </div>

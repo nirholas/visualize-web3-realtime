@@ -27,6 +27,8 @@ interface AgentTimelineProps {
   onSpeedChange?: (speed: PlaybackSpeed) => void;
   /** Called when a task block is clicked, with the agentId */
   onAgentSelect?: (agentId: string) => void;
+  sidebarWidth?: number;
+  feedWidth?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -60,6 +62,8 @@ const AgentTimeline = memo<AgentTimelineProps>(({
   speed = 1,
   onSpeedChange,
   onAgentSelect,
+  sidebarWidth = 200,
+  feedWidth = 260,
 }) => {
   const tokens = agentThemeTokens[colorScheme];
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -223,8 +227,8 @@ const AgentTimeline = memo<AgentTimelineProps>(({
       style={{
         position: 'absolute',
         top: 24,
-        left: 200,
-        right: 260,
+        left: sidebarWidth,
+        right: feedWidth,
         zIndex: 15,
         background: 'rgba(10,10,15,0.88)',
         backdropFilter: 'blur(8px)',

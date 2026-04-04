@@ -2,32 +2,3 @@
 > @web3viz/providers@0.1.0 typecheck
 > tsc --noEmit
 
-src/agents/AgentProvider.ts(251,5): error TS2322: Type '{ tokenAddress: string; symbol: string; name: string; chain: string; trades: number; volume: number; nativeSymbol: string; }[]' is not assignable to type 'TopToken[]'.
-  Type '{ tokenAddress: string; symbol: string; name: string; chain: string; trades: number; volume: number; nativeSymbol: string; }' is missing the following properties from type 'TopToken': mint, volumeSol
-src/agents/AgentProvider.ts(263,5): error TS2322: Type '{ trader: string; tokenAddress: string; chain: string; trades: number; volume: number; }[]' is not assignable to type 'TraderEdge[]'.
-  Type '{ trader: string; tokenAddress: string; chain: string; trades: number; volume: number; }' is missing the following properties from type 'TraderEdge': mint, volumeSol
-src/cex-volume/index.ts(156,40): error TS2345: Argument of type '{ tokenAddress: string; symbol: string; name: string; chain: string; trades: number; volume: number; nativeSymbol: string; volumeUsd: number; }' is not assignable to parameter of type 'TopToken'.
-  Type '{ tokenAddress: string; symbol: string; name: string; chain: string; trades: number; volume: number; nativeSymbol: string; volumeUsd: number; }' is missing the following properties from type 'TopToken': mint, volumeSol
-src/ethereum/EthereumProvider.ts(246,44): error TS2345: Argument of type '{ tokenAddress: string; symbol: string; name: string; chain: string; trades: number; volume: number; nativeSymbol: string; }' is not assignable to parameter of type 'TopToken'.
-  Type '{ tokenAddress: string; symbol: string; name: string; chain: string; trades: number; volume: number; nativeSymbol: string; }' is missing the following properties from type 'TopToken': mint, volumeSol
-src/ethereum/EthereumProvider.ts(264,35): error TS2345: Argument of type '{ trader: string; tokenAddress: string; chain: string; trades: number; volume: number; }' is not assignable to parameter of type 'TraderEdge'.
-  Type '{ trader: string; tokenAddress: string; chain: string; trades: number; volume: number; }' is missing the following properties from type 'TraderEdge': mint, volumeSol
-src/mock/MockProvider.ts(132,7): error TS2322: Type '{ tokenAddress: string; name: string; symbol: string; chain: string; trades: number; volume: number; nativeSymbol: string; }[]' is not assignable to type 'TopToken[]'.
-  Type '{ tokenAddress: string; name: string; symbol: string; chain: string; trades: number; volume: number; nativeSymbol: string; }' is missing the following properties from type 'TopToken': mint, volumeSol
-src/mock/MockProvider.ts(178,41): error TS2345: Argument of type '{ name: string; symbol: string; volume: number; trades: number; }' is not assignable to parameter of type '{ name: string; symbol: string; volume: number; volumeSol: number; trades: number; }'.
-  Property 'volumeSol' is missing in type '{ name: string; symbol: string; volume: number; trades: number; }' but required in type '{ name: string; symbol: string; volume: number; volumeSol: number; trades: number; }'.
-src/mock/MockProvider.ts(221,39): error TS2345: Argument of type '{ name: string; symbol: string; volume: number; volumeSol: number; trades: number; } | { name: string; symbol: string; volume: number; trades: number; }' is not assignable to parameter of type '{ name: string; symbol: string; volume: number; volumeSol: number; trades: number; }'.
-  Property 'volumeSol' is missing in type '{ name: string; symbol: string; volume: number; trades: number; }' but required in type '{ name: string; symbol: string; volume: number; volumeSol: number; trades: number; }'.
-src/mock/MockProvider.ts(230,31): error TS2345: Argument of type '{ trader: string; tokenAddress: string; chain: string; trades: number; volume: number; }' is not assignable to parameter of type '{ trader: string; tokenAddress: string; mint: string; chain: string; trades: number; volume: number; volumeSol: number; source: string; }'.
-  Type '{ trader: string; tokenAddress: string; chain: string; trades: number; volume: number; }' is missing the following properties from type '{ trader: string; tokenAddress: string; mint: string; chain: string; trades: number; volume: number; volumeSol: number; source: string; }': mint, volumeSol, source
-src/pump-fun/PumpFunProvider.ts(369,39): error TS2345: Argument of type '{ tokenAddress: string; chain: string; name: string; symbol: string; trades: number; volume: number; nativeSymbol: string; }' is not assignable to parameter of type 'TopToken'.
-  Type '{ tokenAddress: string; chain: string; name: string; symbol: string; trades: number; volume: number; nativeSymbol: string; }' is missing the following properties from type 'TopToken': mint, volumeSol
-src/pump-fun/PumpFunProvider.ts(387,37): error TS2345: Argument of type '{ trader: any; tokenAddress: string; chain: string; trades: number; volume: number; }' is not assignable to parameter of type 'TraderEdge'.
-  Type '{ trader: any; tokenAddress: string; chain: string; trades: number; volume: number; }' is missing the following properties from type 'TraderEdge': mint, volumeSol
-npm error Lifecycle script `typecheck` failed with error:
-npm error code 2
-npm error path /workspaces/visualize-web3-realtime/packages/providers
-npm error workspace @web3viz/providers@0.1.0
-npm error location /workspaces/visualize-web3-realtime/packages/providers
-npm error command failed
-npm error command sh -c tsc --noEmit

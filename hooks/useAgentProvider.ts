@@ -61,17 +61,14 @@ function agentsToTopTokens(agents: Map<string, AgentIdentity>, flows: Map<string
     const toolCalls = flow?.totalToolCalls ?? 0;
     const tasksCompleted = flow?.totalTasksCompleted ?? 0;
     return {
-      mint: agent.agentId,
       tokenAddress: agent.agentId,
       symbol: agent.name,
       name: `${agent.name} (${agent.role})`,
       chain: 'agents',
       trades: toolCalls,
-      volumeSol: tasksCompleted,
       volume: tasksCompleted,
       nativeSymbol: 'TASKS',
       source: 'agents',
-      // Store agent color in a custom field via the record shape
     } satisfies TopToken;
   });
 }
@@ -92,13 +89,10 @@ function flowsToTraderEdges(flows: Map<string, AgentFlowTrace>): TraderEdge[] {
     for (const [toolName, { count }] of toolCounts.entries()) {
       edges.push({
         trader: toolName,
-        mint: flow.agent.agentId,
         tokenAddress: flow.agent.agentId,
         chain: 'agents',
         trades: count,
-        volumeSol: count,
         volume: count,
-        source: 'agents',
       });
     }
   }
@@ -149,7 +143,6 @@ function agentEventsToProviderEvents(
 
     return {
       id: evt.eventId,
-      source: 'agents',
       providerId: 'agents',
       category,
       chain: 'agents',
@@ -199,7 +192,7 @@ export function useAgentProvider(options: UseAgentProviderOptions = {}): UseAgen
     if (!enabled) {
       return {
         counts: {},
-        totalVolumeSol: 0,
+        totalVolume: {} as Record<string, number>,
         totalTransactions: 0,
         totalAgents: 0,
         recentEvents: [],
@@ -219,7 +212,7 @@ export function useAgentProvider(options: UseAgentProviderOptions = {}): UseAgen
 
     return {
       counts,
-      totalVolumeSol: data.stats.totalTasksCompleted,
+      totalVolume: { agents: data.stats.totalTasksCompleted },
       totalTransactions: data.stats.totalToolCalls,
       totalAgents: data.stats.totalAgents,
       recentEvents: providerEvents,

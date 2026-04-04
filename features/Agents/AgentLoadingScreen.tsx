@@ -100,6 +100,9 @@ const AgentLoadingScreen = memo<AgentLoadingScreenProps>(({ ready }) => {
           0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
           40% { opacity: 1; transform: scale(1.2); }
         }
+        @media (prefers-reduced-motion: reduce) {
+          * { animation: none !important; transition-duration: 0s !important; }
+        }
       `}</style>
     </div>
   );

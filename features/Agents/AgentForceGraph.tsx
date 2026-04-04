@@ -15,7 +15,7 @@
 
 import React, { forwardRef, memo, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { MapControls } from '@react-three/drei';
+import { Html, MapControls } from '@react-three/drei';
 import type { MapControls as MapControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
 
@@ -692,6 +692,134 @@ const SubAgentEdges = memo<SubAgentEdgesProps>(({ edges }) => {
 SubAgentEdges.displayName = 'SubAgentEdges';
 
 // ---------------------------------------------------------------------------
+// AgentEdges — Thin background structure lines between all agent hubs
+// ---------------------------------------------------------------------------
+
+interface AgentEdgesProps {
+  hubs: AgentHubState[];
+}
+
+const AgentEdges = memo<AgentEdgesProps>(({ hubs }) => {
+  const lineRef = useRef<THREE.LineSegments>(null);
+  const posAttr = useRef<THREE.Float32BufferAttribute | null>(null);
+  const colorAttr = useRef<THREE.Float32BufferAttribute | null>(null);
+  const maxEdges = 200; // n*(n-1)/2 for up to ~20 hubs
+
+  useEffect(() => {
+    const geo = new THREE.BufferGeometry();
+    const positions = new Float32Array(maxEdges * 6);
+    const colors = new Float32Array(maxEdges * 6);
+    const pAttr = new THREE.Float32BufferAttribute(positions, 3);
+    const cAttr = new THREE.Float32BufferAttribute(colors, 3);
+    pAttr.setUsage(THREE.DynamicDrawUsage);
+    cAttr.setUsage(THREE.DynamicDrawUsage);
+    geo.setAttribute('position', pAttr);
+    geo.setAttribute('color', cAttr);
+    geo.setDrawRange(0, 0);
+    posAttr.current = pAttr;
+    colorAttr.current = cAttr;
+
+    if (lineRef.current) {
+      lineRef.current.geometry.dispose();
+      lineRef.current.geometry = geo;
+    }
+  }, []);
+
+  useFrame(() => {
+    const pA = posAttr.current;
+    const cA = colorAttr.current;
+    if (!pA || !cA || !lineRef.current) return;
+
+    let count = 0;
+    const edgeColor = new THREE.Color(AGENT_COLORS.edgeDefault);
+
+    for (let i = 0; i < hubs.length && count < maxEdges; i++) {
+      for (let j = i + 1; j < hubs.length && count < maxEdges; j++) {
+        const idx = count * 6;
+        pA.array[idx] = hubs[i].position.x;
+        pA.array[idx + 1] = hubs[i].position.y;
+        pA.array[idx + 2] = hubs[i].position.z;
+        pA.array[idx + 3] = hubs[j].position.x;
+        pA.array[idx + 4] = hubs[j].position.y;
+        pA.array[idx + 5] = hubs[j].position.z;
+
+        cA.array[idx] = edgeColor.r;
+        cA.array[idx + 1] = edgeColor.g;
+        cA.array[idx + 2] = edgeColor.b;
+        cA.array[idx + 3] = edgeColor.r;
+        cA.array[idx + 4] = edgeColor.g;
+        cA.array[idx + 5] = edgeColor.b;
+
+        count++;
+      }
+    }
+
+    pA.needsUpdate = true;
+    cA.needsUpdate = true;
+    lineRef.current.geometry.setDrawRange(0, count * 2);
+  });
+
+  return (
+    <lineSegments ref={lineRef}>
+      <bufferGeometry />
+      <lineBasicMaterial vertexColors transparent opacity={0.12} linewidth={1} />
+    </lineSegments>
+  );
+});
+AgentEdges.displayName = 'AgentEdges';
+
+// ---------------------------------------------------------------------------
+// ToolClusterNodes — Fixed hub spheres at tool cluster positions with icons
+// ---------------------------------------------------------------------------
+
+interface ToolClusterNodesProps {
+  hubs: AgentHubState[];
+}
+
+const ToolClusterNodes = memo<ToolClusterNodesProps>(({ hubs: _hubs }) => {
+  const entries = useMemo(
+    () => Object.entries(TOOL_CLUSTER_POSITIONS) as [string, [number, number]][],
+    [],
+  );
+
+  return (
+    <>
+      {entries.map(([category, [x, z]]) => (
+        <group key={category} position={[x, 0, z]}>
+          {/* Small translucent sphere */}
+          <mesh frustumCulled>
+            <sphereGeometry args={[0.6, 16, 16]} />
+            <meshStandardMaterial
+              color={AGENT_COLORS.agentDefault}
+              transparent
+              opacity={0.4}
+              roughness={0.8}
+            />
+          </mesh>
+          {/* Icon label */}
+          <Html center style={{ pointerEvents: 'none' }}>
+            <div
+              style={{
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: 10,
+                color: '#888',
+                textAlign: 'center',
+                userSelect: 'none',
+                whiteSpace: 'nowrap',
+                transform: 'translateY(-16px)',
+              }}
+            >
+              {TOOL_CLUSTER_ICONS[category] || '?'}
+            </div>
+          </Html>
+        </group>
+      ))}
+    </>
+  );
+});
+ToolClusterNodes.displayName = 'ToolClusterNodes';
+
+// ---------------------------------------------------------------------------
 // ExecutorHeartbeat — Global pulse indicator
 // ---------------------------------------------------------------------------
 
@@ -741,11 +869,23 @@ const ExecutorHeartbeat = memo<ExecutorHeartbeatProps>(({ executorState }) => {
         />
       </mesh>
 
-      {/* Status text (via Html) */}
+      {/* Uptime counter label */}
       {executorState && (
-        <group position={[0, -1.5, 0]}>
-          {/* Note: In a real implementation, use <Html> from drei for text rendering */}
-        </group>
+        <Html center position={[0, -1.5, 0]} style={{ pointerEvents: 'none' }}>
+          <div
+            style={{
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontSize: 9,
+              color: '#888',
+              textAlign: 'center',
+              userSelect: 'none',
+              whiteSpace: 'nowrap',
+              letterSpacing: '0.06em',
+            }}
+          >
+            {uptimeStr} uptime
+          </div>
+        </Html>
       )}
     </group>
   );
@@ -890,6 +1030,12 @@ const NetworkScene = memo<NetworkSceneProps>(
 
         {/* Tool call particles */}
         {!reducedMotion && <ToolCallParticles particles={particles} />}
+
+        {/* Background structure lines between all hubs */}
+        <AgentEdges hubs={hubs} />
+
+        {/* Tool cluster fixed nodes */}
+        <ToolClusterNodes hubs={hubs} />
 
         {/* Sub-agent edges */}
         <SubAgentEdges edges={subAgentEdges} />

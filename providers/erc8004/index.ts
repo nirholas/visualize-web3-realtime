@@ -31,6 +31,7 @@ import { EVENT_BUFFER_SIZE } from './constants';
 class ERC8004Provider implements DataProvider {
   readonly id = 'erc8004';
   readonly name = 'ERC-8004 Assets';
+  readonly chains = ['ethereum', 'base'];
   readonly sourceConfig = SOURCE_CONFIG_MAP['erc8004'];
   readonly categories: CategoryConfig[] = ERC8004_CATEGORIES;
 

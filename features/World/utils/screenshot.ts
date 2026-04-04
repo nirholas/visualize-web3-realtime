@@ -1,14 +1,32 @@
 import html2canvas from 'html2canvas';
 
+/** Minimum export scale — ensures at least 2x even on 1x DPI displays. */
+const MIN_SCALE = 2;
+
 /**
  * Capture the Three.js canvas as a high-res PNG Blob.
- * Uses 2x scale for retina quality.
+ * Always exports at minimum 2x resolution for quality.
  */
 export async function captureCanvas(canvas: HTMLCanvasElement): Promise<Blob> {
-  // Force a synchronous render to get the current frame
-  const dataUrl = canvas.toDataURL('image/png');
-  const res = await fetch(dataUrl);
-  return res.blob();
+  const scale = Math.max(MIN_SCALE, window.devicePixelRatio || 1);
+  const w = canvas.width;
+  const h = canvas.height;
+
+  // If we need to upscale beyond the native canvas size, redraw at higher res
+  const out = document.createElement('canvas');
+  out.width = w * scale;
+  out.height = h * scale;
+  const ctx = out.getContext('2d')!;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(canvas, 0, 0, out.width, out.height);
+
+  return new Promise<Blob>((resolve, reject) => {
+    out.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error('Failed to export canvas'))),
+      'image/png',
+    );
+  });
 }
 
 /**
@@ -21,7 +39,7 @@ export async function captureSnapshot(
 ): Promise<Blob> {
   const w = canvas.width;
   const h = canvas.height;
-  const dpr = window.devicePixelRatio || 1;
+  const dpr = Math.max(MIN_SCALE, window.devicePixelRatio || 1);
 
   // Create composite canvas at device pixel ratio
   const comp = document.createElement('canvas');

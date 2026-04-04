@@ -242,15 +242,19 @@ export class EthereumProvider implements DataProvider {
     if (existing) {
       existing.trades++;
       existing.volume += swap.volume;
+      existing.volumeSol = (existing.volumeSol ?? 0) + swap.volume;
     } else {
       this.tokenAcc.set(swap.tokenAddress, {
         tokenAddress: swap.tokenAddress,
+        mint: swap.tokenAddress,
         symbol: swap.symbol,
         name: swap.name,
         chain: 'ethereum',
         trades: 1,
         volume: swap.volume,
+        volumeSol: swap.volume,
         nativeSymbol: 'ETH',
+        source: 'ethereum',
       });
     }
 
@@ -260,13 +264,17 @@ export class EthereumProvider implements DataProvider {
     if (existingEdge) {
       existingEdge.trades++;
       existingEdge.volume += swap.volume;
+      existingEdge.volumeSol = (existingEdge.volumeSol ?? 0) + swap.volume;
     } else {
       this.traderAcc.set(edgeKey, {
         trader: swap.trader,
         tokenAddress: swap.tokenAddress,
+        mint: swap.tokenAddress,
         chain: 'ethereum',
         trades: 1,
         volume: swap.volume,
+        volumeSol: swap.volume,
+        source: 'ethereum',
       });
     }
   }

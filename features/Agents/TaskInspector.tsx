@@ -90,6 +90,62 @@ export const TaskInspectorPanel = memo<TaskInspectorPanelProps>(
       return toolCalls.filter((tc) => tc.taskId === task.taskId);
     }, [toolCalls, task.taskId]);
 
+    // Responsive: detect mobile/tablet
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    const isTablet = typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth < 1024;
+
+    // Panel positioning: full-screen on mobile, bottom sheet on tablet, right slide-in on desktop
+    const panelStyle: React.CSSProperties = isMobile
+      ? {
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100%',
+          background: 'rgba(10,10,15,0.98)',
+          backdropFilter: 'blur(8px)',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          zIndex: 40,
+          animation: 'slideUp 0.3s ease-out',
+          fontFamily: "'IBM Plex Mono', monospace",
+        }
+      : isTablet
+      ? {
+          position: 'fixed',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          height: '50vh',
+          background: 'rgba(10,10,15,0.95)',
+          backdropFilter: 'blur(8px)',
+          borderTop: '1px solid rgba(192,132,252,0.2)',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          zIndex: 40,
+          animation: 'slideUp 0.3s ease-out',
+          fontFamily: "'IBM Plex Mono', monospace",
+        }
+      : {
+          position: 'fixed',
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: 320,
+          background: 'rgba(10,10,15,0.95)',
+          backdropFilter: 'blur(8px)',
+          borderLeft: '1px solid rgba(192,132,252,0.2)',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          zIndex: 40,
+          animation: 'slideIn 0.3s ease-out',
+          fontFamily: "'IBM Plex Mono', monospace",
+        };
+
     return (
       <>
         {/* Backdrop */}
@@ -109,22 +165,9 @@ export const TaskInspectorPanel = memo<TaskInspectorPanelProps>(
 
         {/* Panel */}
         <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            right: 0,
-            bottom: 0,
-            width: 320,
-            background: 'rgba(10,10,15,0.95)',
-            backdropFilter: 'blur(8px)',
-            borderLeft: '1px solid rgba(192,132,252,0.2)',
-            overflow: 'hidden',
-            display: 'flex',
-            flexDirection: 'column',
-            zIndex: 40,
-            animation: 'slideIn 0.3s ease-out',
-            fontFamily: "'IBM Plex Mono', monospace",
-          }}
+          role="dialog"
+          aria-label="Task inspector"
+          style={panelStyle}
         >
           {/* Header */}
           <div
@@ -166,6 +209,7 @@ export const TaskInspectorPanel = memo<TaskInspectorPanelProps>(
             {/* Close button */}
             <button
               onClick={onClose}
+              aria-label="Close task inspector"
               style={{
                 background: 'none',
                 border: 'none',
@@ -174,7 +218,10 @@ export const TaskInspectorPanel = memo<TaskInspectorPanelProps>(
                 fontSize: 16,
                 padding: '4px 8px',
                 marginLeft: 8,
+                outline: 'none',
               }}
+              onFocus={(e) => { e.currentTarget.style.outline = '2px solid #c084fc'; }}
+              onBlur={(e) => { e.currentTarget.style.outline = 'none'; }}
             >
               ✕
             </button>
@@ -387,32 +434,15 @@ export const TaskInspectorPanel = memo<TaskInspectorPanelProps>(
 
           <style>{`
             @keyframes slideIn {
-              from {
-                transform: translateX(100%);
-                opacity: 0;
-              }
-              to {
-                transform: translateX(0);
-                opacity: 1;
-              }
+              from { transform: translateX(100%); opacity: 0; }
+              to { transform: translateX(0); opacity: 1; }
             }
-
-            /* Custom scrollbar for the panel */
-            div::-webkit-scrollbar {
-              width: 6px;
+            @keyframes slideUp {
+              from { transform: translateY(100%); opacity: 0; }
+              to { transform: translateY(0); opacity: 1; }
             }
-
-            div::-webkit-scrollbar-track {
-              background: transparent;
-            }
-
-            div::-webkit-scrollbar-thumb {
-              background: rgba(255,255,255,0.1);
-              border-radius: 3px;
-            }
-
-            div::-webkit-scrollbar-thumb:hover {
-              background: rgba(255,255,255,0.2);
+            @media (prefers-reduced-motion: reduce) {
+              * { animation: none !important; transition-duration: 0s !important; }
             }
           `}</style>
         </div>

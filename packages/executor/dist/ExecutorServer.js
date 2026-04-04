@@ -19,6 +19,7 @@ export class ExecutorServer {
     running = false;
     pollTimer;
     heartbeatTimer;
+    autoSpawnTimer;
     httpServer;
     recentEvents = [];
     constructor(config) {
@@ -36,6 +37,21 @@ export class ExecutorServer {
                 this.recentEvents = this.recentEvents.slice(-500);
             this.broadcaster.broadcast(event);
             this.stateStore.saveEvent(event);
+            // Sync task completion/failure back to the queue
+            if (event.type === 'task:completed' && event.taskId) {
+                this.queue.complete(event.taskId, String(event.payload.result ?? ''));
+                const tasks = this.queue.getAll();
+                const task = tasks.find((t) => t.taskId === event.taskId);
+                if (task)
+                    this.stateStore.saveTask(task);
+            }
+            else if (event.type === 'task:failed' && event.taskId) {
+                this.queue.fail(event.taskId, String(event.payload.error ?? 'Unknown error'));
+                const tasks = this.queue.getAll();
+                const task = tasks.find((t) => t.taskId === event.taskId);
+                if (task)
+                    this.stateStore.saveTask(task);
+            }
         });
         this.setupHealthChecks();
     }
@@ -129,8 +145,23 @@ export class ExecutorServer {
             });
         }
         else if (path.match(/^\/api\/tasks\/[^/]+$/) && method === 'DELETE') {
-            res.writeHead(501);
-            res.end(JSON.stringify({ error: 'Task cancellation not yet implemented' }));
+            const taskId = path.split('/').pop();
+            this.queue.fail(taskId, 'Cancelled by user');
+            const tasks = this.queue.getAll();
+            const task = tasks.find((t) => t.taskId === taskId);
+            if (task) {
+                this.stateStore.saveTask(task);
+                this.broadcaster.broadcast({
+                    eventId: `evt_cancel_${taskId}`,
+                    type: 'task:cancelled',
+                    timestamp: Date.now(),
+                    agentId: task.agentId || 'executor',
+                    taskId,
+                    payload: { reason: 'Cancelled by user' },
+                });
+            }
+            res.writeHead(200);
+            res.end(JSON.stringify({ taskId, status: 'cancelled' }));
         }
         else if (path === '/api/agents/spawn' && method === 'POST') {
             this.parseRequestBody(req)
@@ -194,6 +225,32 @@ export class ExecutorServer {
                 timestamp: Date.now(),
             };
         });
+        this.health.addCheck('memory', () => {
+            const usage = process.memoryUsage();
+            const heapMB = Math.round(usage.heapUsed / 1024 / 1024);
+            const threshold = 512; // MB
+            return {
+                name: 'memory',
+                status: heapMB > threshold ? 'warn' : 'pass',
+                message: `Heap: ${heapMB}MB`,
+                timestamp: Date.now(),
+            };
+        });
+        this.health.addCheck('event_rate', () => {
+            const recentCount = this.recentEvents.length;
+            const now = Date.now();
+            // Check if events have flowed in the last 2 minutes (only warn if agents are active)
+            const twoMinAgo = now - 120_000;
+            const recentEventsInWindow = this.recentEvents.filter((e) => e.timestamp > twoMinAgo).length;
+            const agentCount = this.agentManager.getAgentCount();
+            const stuck = agentCount > 0 && recentEventsInWindow === 0 && this.running && (now - this.startedAt > 120_000);
+            return {
+                name: 'event_rate',
+                status: stuck ? 'warn' : 'pass',
+                message: `${recentEventsInWindow} events in last 2min (total buffered: ${recentCount})`,
+                timestamp: now,
+            };
+        });
     }
     async start() {
         this.startedAt = Date.now();
@@ -201,6 +258,15 @@ export class ExecutorServer {
         console.log('[ExecutorServer] Starting...');
         // Initialize state store metadata
         this.stateStore.setMeta('start_time', String(this.startedAt));
+        // Restore persisted tasks from previous run
+        const restoredTasks = this.stateStore.loadActiveTasks();
+        for (const task of restoredTasks) {
+            // Re-enqueue tasks that were queued or in-progress (stalled) before crash
+            this.queue.enqueue({ description: task.description, priority: task.priority, requiredRole: undefined }, '');
+            console.log(`[ExecutorServer] Restored task: ${task.taskId} (${task.status})`);
+        }
+        // Load recent events for snapshot
+        this.recentEvents = this.stateStore.loadRecentEvents(50);
         // Start HTTP server (shared by both REST API and WebSocket)
         this.httpServer = createServer((req, res) => {
             // Only handle REST API requests here (non-upgrade requests)
@@ -236,7 +302,39 @@ export class ExecutorServer {
         this.heartbeatTimer = setInterval(() => this.sendHeartbeat(), this.config.heartbeatInterval);
         // Start health monitoring
         this.health.start();
+        // Start autonomous task generation loop
+        this.autoSpawnTimer = setInterval(() => this.autoGenerateTasks(), 10_000);
         console.log(`[ExecutorServer] Ready. WS port: ${this.config.port}`);
+    }
+    /**
+     * Background autonomous task generation loop.
+     * Ensures agents always have work to do by generating synthetic tasks
+     * when the queue is empty and agents are idle.
+     */
+    async autoGenerateTasks() {
+        if (!this.running)
+            return;
+        const queueLength = this.queue.getQueueLength();
+        const inProgress = this.queue.getInProgressCount();
+        const idleAgents = this.agentManager.getAgentCount() - this.agentManager.getBusyCount();
+        // Only generate tasks when idle agents exist and queue is nearly empty
+        if (queueLength > 2 || idleAgents === 0)
+            return;
+        const AUTONOMOUS_TASKS = [
+            { description: 'Scan network for new token deployments', requiredRole: 'researcher', priority: 3 },
+            { description: 'Analyze trending contract patterns', requiredRole: 'researcher', priority: 4 },
+            { description: 'Review and optimize gas usage', requiredRole: 'coder', priority: 5 },
+            { description: 'Monitor liquidity pool changes', requiredRole: 'researcher', priority: 2 },
+            { description: 'Generate daily activity report', requiredRole: 'planner', priority: 6 },
+            { description: 'Audit smart contract security', requiredRole: 'coder', priority: 1 },
+            { description: 'Update risk assessment models', requiredRole: 'planner', priority: 4 },
+            { description: 'Check for anomalous trading patterns', requiredRole: 'researcher', priority: 2 },
+            { description: 'Refactor indexer query pipeline', requiredRole: 'coder', priority: 5 },
+            { description: 'Plan next sprint objectives', requiredRole: 'planner', priority: 7 },
+        ];
+        // Pick a random task and enqueue it
+        const task = AUTONOMOUS_TASKS[Math.floor(Math.random() * AUTONOMOUS_TASKS.length)];
+        this.enqueueTask(task);
     }
     async processTasks() {
         if (!this.running)
@@ -317,6 +415,8 @@ export class ExecutorServer {
             clearInterval(this.pollTimer);
         if (this.heartbeatTimer)
             clearInterval(this.heartbeatTimer);
+        if (this.autoSpawnTimer)
+            clearInterval(this.autoSpawnTimer);
         this.health.stop();
         this.broadcaster.stop();
         // Close HTTP server

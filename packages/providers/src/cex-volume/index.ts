@@ -151,17 +151,21 @@ export class CexVolumeProvider implements DataProvider {
     if (existing) {
       existing.trades++;
       existing.volume += trade.volumeUsd;
+      existing.volumeSol = (existing.volumeSol ?? 0) + trade.volumeUsd;
       existing.volumeUsd = (existing.volumeUsd ?? 0) + trade.volumeUsd;
     } else {
       this.symbolAcc.set(trade.symbol, {
         tokenAddress: trade.symbol,
+        mint: trade.symbol,
         symbol: trade.baseAsset,
         name: trade.baseAsset,
         chain: 'cex',
         trades: 1,
         volume: trade.volumeUsd,
+        volumeSol: trade.volumeUsd,
         nativeSymbol: 'USD',
         volumeUsd: trade.volumeUsd,
+        source: 'cex',
       });
     }
 

@@ -6,6 +6,7 @@ import type {
   CategoryConfig,
   SourceConfig,
   RawEvent,
+  TraderEdge,
 } from '@web3viz/core';
 import { getCategoriesForSource } from '@web3viz/core';
 
@@ -58,7 +59,7 @@ export class MockProvider implements DataProvider {
   private totalClaims = 0;
   private totalVolume = 0;
   private tokenAcc = new Map<string, { name: string; symbol: string; volume: number; trades: number }>();
-  private traderEdges: Array<{ trader: string; tokenAddress: string; chain: string; trades: number; volume: number }> = [];
+  private traderEdges: TraderEdge[] = [];
 
   constructor(private intervalMs = 500) {}
 
@@ -94,12 +95,15 @@ export class MockProvider implements DataProvider {
     let topTokens = Array.from(this.tokenAcc.entries())
       .map(([addr, token]) => ({
         tokenAddress: addr,
+        mint: addr,
         name: token.name,
         symbol: token.symbol,
         chain: 'mock',
         trades: token.trades,
         volume: token.volume,
+        volumeSol: token.volume,
         nativeSymbol: 'SOL',
+        source: 'mock',
       }))
       .sort((a, b) => b.volume - a.volume)
       .slice(0, 8);
@@ -109,12 +113,15 @@ export class MockProvider implements DataProvider {
       topTokens = [
         {
           tokenAddress: 'mock1aaa',
+          mint: 'mock1aaa',
           name: 'MockDog',
           symbol: 'MDOG',
           chain: 'mock',
           trades: 0,
           volume: 0,
+          volumeSol: 0,
           nativeSymbol: 'SOL',
+          source: 'mock',
         },
       ];
     }
@@ -227,7 +234,7 @@ export class MockProvider implements DataProvider {
         edge.trades++;
         edge.volume += solAmount;
       } else {
-        this.traderEdges.push({ trader: wallet, tokenAddress, chain: 'mock', trades: 1, volume: solAmount });
+        this.traderEdges.push({ trader: wallet, tokenAddress, mint: tokenAddress, chain: 'mock', trades: 1, volume: solAmount, volumeSol: solAmount, source: 'mock' });
       }
 
       this.emitEvent({

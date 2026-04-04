@@ -12,7 +12,7 @@
  */
 
 // Register providers (each file calls registerProvider internally)
-// import './solana-pumpfun';   // ← Task 23 will add this
+import './solana-pumpfun';
 import './ethereum';          // ← Task 24
 import './base';                // ← Task 25
 // import './agents';            // ← Task 26

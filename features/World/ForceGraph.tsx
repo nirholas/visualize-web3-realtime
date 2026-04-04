@@ -110,6 +110,7 @@ class ForceGraphSimulation {
       if (existing) {
         existing.radius = scaledRadius;
         existing.label = t.symbol || t.name;
+        existing.source = t.source;
       } else {
         const angle = (i / Math.max(topTokens.length, 1)) * Math.PI * 2;
         const dist = 15 + Math.random() * 5;
@@ -119,6 +120,7 @@ class ForceGraphSimulation {
           label: t.symbol || t.name,
           radius: scaledRadius,
           color: CHAIN_COLORS[t.chain ?? ''] || COLOR_PALETTE[i % COLOR_PALETTE.length],
+          source: t.source,
           x: Math.cos(angle) * dist,
           y: Math.sin(angle) * dist,
         };
@@ -149,6 +151,7 @@ class ForceGraphSimulation {
         radius: AGENT_RADIUS,
         color: '#555566',
         hubTokenAddress: edge.tokenAddress,
+        source: edge.source,
         x: (hub?.x ?? 0) + Math.cos(angle) * dist,
         y: (hub?.y ?? 0) + Math.sin(angle) * dist,
       };

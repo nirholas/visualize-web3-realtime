@@ -2,7 +2,7 @@ import { WebSocketServer } from 'ws';
 export class EventBroadcaster {
     port;
     wss;
-    clients = new Set();
+    clients = new Map();
     recentEvents = [];
     constructor(port) {
         this.port = port;
@@ -18,10 +18,27 @@ export class EventBroadcaster {
             this.wss = new WebSocketServer({ port: this.port });
         }
         this.wss.on('connection', (ws) => {
-            this.clients.add(ws);
+            const state = { ws, subscribedAgents: null };
+            this.clients.set(ws, state);
             // Send snapshot on connect
             const snapshot = { type: 'snapshot', data: getSnapshot() };
             ws.send(JSON.stringify(snapshot));
+            // Handle client messages (e.g., subscribe)
+            ws.on('message', (raw) => {
+                try {
+                    const msg = JSON.parse(typeof raw === 'string' ? raw : raw.toString());
+                    if (msg.type === 'subscribe' && Array.isArray(msg.agentIds)) {
+                        state.subscribedAgents = new Set(msg.agentIds);
+                    }
+                    else if (msg.type === 'subscribe' && msg.agentIds === null) {
+                        // Unsubscribe — receive all events again
+                        state.subscribedAgents = null;
+                    }
+                }
+                catch {
+                    // ignore malformed messages
+                }
+            });
             ws.on('close', () => this.clients.delete(ws));
             ws.on('error', () => this.clients.delete(ws));
         });
@@ -33,23 +50,31 @@ export class EventBroadcaster {
             this.recentEvents = this.recentEvents.slice(-500);
         const msg = { type: 'event', data: event };
         const json = JSON.stringify(msg);
-        for (const client of this.clients) {
-            if (client.readyState === 1 /* OPEN */) {
-                client.send(json);
-            }
+        for (const [, client] of this.clients) {
+            if (client.ws.readyState !== 1 /* OPEN */)
+                continue;
+            // Apply subscription filter
+            if (client.subscribedAgents && !client.subscribedAgents.has(event.agentId))
+                continue;
+            client.ws.send(json);
         }
     }
     broadcastState(state) {
         const msg = { type: 'heartbeat', data: state };
         const json = JSON.stringify(msg);
-        for (const client of this.clients) {
-            if (client.readyState === 1) {
-                client.send(json);
+        for (const [, client] of this.clients) {
+            if (client.ws.readyState === 1) {
+                // Heartbeat always sent regardless of subscription filter
+                client.ws.send(json);
             }
         }
     }
     getClientCount() { return this.clients.size; }
     stop() {
+        for (const [, client] of this.clients) {
+            client.ws.close();
+        }
+        this.clients.clear();
         this.wss.close();
     }
 }
