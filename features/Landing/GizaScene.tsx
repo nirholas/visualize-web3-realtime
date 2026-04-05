@@ -165,19 +165,62 @@ function ProtocolLabel({ protocol }: { protocol: ProtocolNode }) {
   )
 }
 
+// ─── Single trail line (imperative Three.js Line to avoid SVG <line> type conflict) ───
+function TrailLine({ from, to }: { from: ProtocolNode; to: ProtocolNode }) {
+  const lineRef = useRef<THREE.Line>(null)
+  const materialRef = useRef<THREE.ShaderMaterial>(null)
+
+  const lineObj = useMemo(() => {
+    const geo = new THREE.BufferGeometry()
+    const positions = new Float32Array(TRAIL_SEGMENTS * 3)
+    const progress = new Float32Array(TRAIL_SEGMENTS)
+
+    const mid = [
+      (from.position[0] + to.position[0]) / 2 + (Math.random() - 0.5) * 1.5,
+      (from.position[1] + to.position[1]) / 2 + (Math.random() - 0.5) * 1.5,
+      (from.position[2] + to.position[2]) / 2 + (Math.random() - 0.5) * 1.5,
+    ]
+
+    for (let k = 0; k < TRAIL_SEGMENTS; k++) {
+      const t = k / (TRAIL_SEGMENTS - 1)
+      const inv = 1 - t
+      positions[k * 3] = inv * inv * from.position[0] + 2 * inv * t * mid[0] + t * t * to.position[0]
+      positions[k * 3 + 1] = inv * inv * from.position[1] + 2 * inv * t * mid[1] + t * t * to.position[1]
+      positions[k * 3 + 2] = inv * inv * from.position[2] + 2 * inv * t * mid[2] + t * t * to.position[2]
+      progress[k] = t
+    }
+
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+    geo.setAttribute('aProgress', new THREE.BufferAttribute(progress, 1))
+
+    const mat = new THREE.ShaderMaterial({
+      vertexShader: trailVertexShader,
+      fragmentShader: trailFragmentShader,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      uniforms: {
+        uTime: { value: 0 },
+        uColorA: { value: new THREE.Color(from.color) },
+        uColorB: { value: new THREE.Color(to.color) },
+      },
+    })
+
+    const line = new THREE.Line(geo, mat)
+    return { line, material: mat }
+  }, [from, to])
+
+  useFrame(({ clock }) => {
+    lineObj.material.uniforms.uTime.value = clock.elapsedTime
+  })
+
+  return <primitive object={lineObj.line} />
+}
+
 // ─── Connection Trails between protocols ───
 function ConnectionTrails() {
-  const groupRef = useRef<THREE.Group>(null)
-  const materialRefs = useRef<THREE.ShaderMaterial[]>([])
-
-  const trails = useMemo(() => {
-    const connections: Array<{
-      from: ProtocolNode
-      to: ProtocolNode
-      geometry: THREE.BufferGeometry
-    }> = []
-
-    // Create connections between nearby protocols
+  const pairs = useMemo(() => {
+    const result: Array<{ from: ProtocolNode; to: ProtocolNode }> = []
     for (let i = 0; i < PROTOCOLS.length; i++) {
       for (let j = i + 1; j < PROTOCOLS.length; j++) {
         const a = PROTOCOLS[i]
@@ -188,61 +231,17 @@ function ConnectionTrails() {
           (a.position[2] - b.position[2]) ** 2
         )
         if (dist < 7) {
-          const geo = new THREE.BufferGeometry()
-          const positions = new Float32Array(TRAIL_SEGMENTS * 3)
-          const progress = new Float32Array(TRAIL_SEGMENTS)
-
-          for (let k = 0; k < TRAIL_SEGMENTS; k++) {
-            const t = k / (TRAIL_SEGMENTS - 1)
-            // Curved path with midpoint offset
-            const mid = [
-              (a.position[0] + b.position[0]) / 2 + (Math.random() - 0.5) * 1.5,
-              (a.position[1] + b.position[1]) / 2 + (Math.random() - 0.5) * 1.5,
-              (a.position[2] + b.position[2]) / 2 + (Math.random() - 0.5) * 1.5,
-            ]
-            const tt = t
-            const inv = 1 - tt
-            positions[k * 3] = inv * inv * a.position[0] + 2 * inv * tt * mid[0] + tt * tt * b.position[0]
-            positions[k * 3 + 1] = inv * inv * a.position[1] + 2 * inv * tt * mid[1] + tt * tt * b.position[1]
-            positions[k * 3 + 2] = inv * inv * a.position[2] + 2 * inv * tt * mid[2] + tt * tt * b.position[2]
-            progress[k] = t
-          }
-
-          geo.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-          geo.setAttribute('aProgress', new THREE.BufferAttribute(progress, 1))
-          connections.push({ from: a, to: b, geometry: geo })
+          result.push({ from: a, to: b })
         }
       }
     }
-    return connections
+    return result
   }, [])
 
-  useFrame(({ clock }) => {
-    for (const mat of materialRefs.current) {
-      if (mat) mat.uniforms.uTime.value = clock.elapsedTime
-    }
-  })
-
   return (
-    <group ref={groupRef}>
-      {trails.map((trail, i) => (
-        <line key={i} geometry={trail.geometry}>
-          <shaderMaterial
-            ref={(ref) => {
-              if (ref) materialRefs.current[i] = ref
-            }}
-            vertexShader={trailVertexShader}
-            fragmentShader={trailFragmentShader}
-            transparent
-            depthWrite={false}
-            blending={THREE.AdditiveBlending}
-            uniforms={{
-              uTime: { value: 0 },
-              uColorA: { value: new THREE.Color(trail.from.color) },
-              uColorB: { value: new THREE.Color(trail.to.color) },
-            }}
-          />
-        </line>
+    <group>
+      {pairs.map((pair, i) => (
+        <TrailLine key={i} from={pair.from} to={pair.to} />
       ))}
     </group>
   )
