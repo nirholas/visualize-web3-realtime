@@ -33,5 +33,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "packages/executor", "apps/playground", "packages/react-native", "apps/mobile-demo", "packages/create-swarming-app", "providers", "temp", "extracted", "scripts", "benchmarks"]
+  "exclude": ["node_modules", "packages/executor", "apps/playground", "packages/react-native", "apps/mobile-demo", "packages/create-swarming-app", "packages/create-swarming-plugin", "providers", "temp", "extracted", "scripts", "benchmarks"]
 }

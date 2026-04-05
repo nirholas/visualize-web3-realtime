@@ -87,7 +87,8 @@ export interface PluginManager {
   onChange: (listener: () => void) => () => void;
   getActiveTheme: () => ThemeConfig | undefined;
   getRendererHooks: () => RendererPluginHooks;
-  getProviders: () => unknown[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getProviders: () => any[];
 }
 
 export function definePlugin<T>(def: T): T {
