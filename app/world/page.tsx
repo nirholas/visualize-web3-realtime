@@ -11,7 +11,7 @@ import type { DataProvider } from '@web3viz/core';
 import { providers as builtInProviders } from './providers';
 import type { CustomProviderFormData } from '@/features/World/AddCustomProviderForm';
 import { useJourney } from '@/features/World/useJourney';
-import { DEMO_TOP_TOKENS, DEMO_TRADER_EDGES } from '@/features/World/demoData';
+import { useDemoStagger } from '@/features/World/demoData';
 import { captureCanvas, captureSnapshot, downloadBlob, timestampedFilename } from '@/features/World/utils/screenshot';
 import { buildShareUrl, buildShareText, parseShareParams, shareOnX, shareOnLinkedIn } from '@/features/World/utils/shareUrl';
 import type { ForceGraphHandle } from '@/features/World/ForceGraph';
@@ -268,6 +268,9 @@ export default function WorldPage() {
   const handleToggleDemo = useCallback(() => {
     setDemoMode((prev) => !prev);
   }, []);
+
+  // Staggered demo data — tokens appear one by one
+  const demoStagger = useDemoStagger(demoMode);
 
   // -- Timeline timestamp accumulation --
   const [timelineTimestamps, setTimelineTimestamps] = useState<number[]>([]);
@@ -556,8 +559,8 @@ export default function WorldPage() {
       }}>
         <ForceGraph
           ref={graphRef}
-          topTokens={demoMode ? DEMO_TOP_TOKENS : displayTopTokens}
-          traderEdges={demoMode ? DEMO_TRADER_EDGES : displayTraderEdges}
+          topTokens={demoMode ? demoStagger.topTokens : displayTopTokens}
+          traderEdges={demoMode ? demoStagger.traderEdges : displayTraderEdges}
           activeProtocol={activeHubMint}
           highlightedHubIndex={highlightedHubIndex}
           highlightedAddress={highlightedAddress}

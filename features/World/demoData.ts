@@ -56,3 +56,52 @@ function generateDemoEdges(): TraderEdge[] {
 }
 
 export const DEMO_TRADER_EDGES: TraderEdge[] = generateDemoEdges();
+
+// ---------------------------------------------------------------------------
+// Stagger hook — progressively reveals demo tokens and edges over time
+// to simulate live data arriving, rather than showing everything at once.
+// ---------------------------------------------------------------------------
+
+export function useDemoStagger(active: boolean) {
+  const [visibleCount, setVisibleCount] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const reset = useCallback(() => {
+    setVisibleCount(0);
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    if (!active) {
+      reset();
+      return;
+    }
+    // Start revealing tokens one by one every 800ms
+    setVisibleCount(1);
+    intervalRef.current = setInterval(() => {
+      setVisibleCount((prev) => {
+        if (prev >= DEMO_TOP_TOKENS.length) {
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, 800);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [active, reset]);
+
+  const topTokens = useMemo(
+    () => DEMO_TOP_TOKENS.slice(0, visibleCount),
+    [visibleCount],
+  );
+
+  const traderEdges = useMemo(() => {
+    const visibleAddresses = new Set(topTokens.map((t) => t.tokenAddress));
+    return DEMO_TRADER_EDGES.filter((e) => visibleAddresses.has(e.tokenAddress));
+  }, [topTokens]);
+
+  return { topTokens, traderEdges };
+}
