@@ -17,7 +17,7 @@ let reactModule: typeof import('react') | null = null;
 async function loadForceGraph() {
   if (!ForceGraphComponent) {
     const mod = await import('@web3viz/react-graph');
-    ForceGraphComponent = mod.default || mod.ForceGraph;
+    ForceGraphComponent = mod.ForceGraph;
   }
   return ForceGraphComponent;
 }
