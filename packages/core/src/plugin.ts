@@ -25,10 +25,14 @@ export interface PluginConfigSchema {
 
 export interface ThemeConfig {
   background: string;
-  foreground: string;
-  accent: string;
-  hubColors: string[];
-  agentColors: string[];
+  nodeColors: string[];
+  edgeColor: string;
+  agentColor: string;
+  bloomStrength: number;
+  bloomRadius: number;
+  fontFamily: string;
+  chainColors: Record<string, string>;
+  protocolColors: Record<string, string>;
 }
 
 export interface RendererPluginHooks {
