@@ -15,10 +15,8 @@ import { useEffect, useRef } from 'react'
 import {
   prepareWithSegments,
   layoutWithLines,
-  layoutNextLine,
   walkLineRanges,
   type LayoutCursor,
-  type PreparedTextWithSegments,
 } from '@chenglou/pretext'
 
 import {
@@ -120,6 +118,9 @@ export default function LandingEngine() {
 
     const stage = stageRef.current
     if (!stage) return
+
+    // Dismiss the root boot-loader immediately (no WebGL on this page)
+    window.dispatchEvent(new Event('webgl-ready'))
 
     // ── Wait for fonts, then initialize ─────────────────────────────────
     document.fonts.ready.then(() => {

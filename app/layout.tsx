@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://swarming.world'),
   title: "swarming.world",
   description: "Real-time 3D visualization of streaming data — blockchain, AI agents, and beyond.",
   openGraph: {

@@ -5,7 +5,9 @@
   <img src="https://img.shields.io/badge/60fps-5%2C000%2B%20nodes-22c55e?style=for-the-badge" />
 </p>
 
-# web3viz
+# swarming.world
+
+> **Live:** [swarming.world](https://swarming.world/world) · [visualizing.vercel.app](https://visualizing.vercel.app/world)
 
 **Real-time 3D force-graph visualization toolkit for streaming data.**
 
@@ -48,8 +50,8 @@ web3viz gives you all of it:
 ### See it live in 30 seconds
 
 ```bash
-git clone https://github.com/nirholas/visualize-web3-realtime.git
-cd visualize-web3-realtime
+git clone https://github.com/nirholas/swarming.world.git
+cd swarming.world
 npm install
 npm run dev
 ```

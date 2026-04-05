@@ -94,7 +94,7 @@ export default function LandingPage() {
           Tools
         </a>
         <a
-          href="https://github.com/nirholas/visualize-web3-realtime"
+          href="https://github.com/nirholas/swarming.world"
           target="_blank"
           rel="noopener noreferrer"
           style={{
