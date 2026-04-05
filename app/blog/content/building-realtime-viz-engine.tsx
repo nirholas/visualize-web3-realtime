@@ -63,7 +63,7 @@ DataProvider          ← connect(), disconnect(), onEvent()
 ForceGraphSimulation  ← update(topTokens, traderEdges)
     |
     v
-React Three Fiber     ← useFrame() reads node positions every frame`} /
+React Three Fiber     ← useFrame() reads node positions every frame`} />
 
       <p>
         This clean separation also makes the system testable. We can feed synthetic data into
