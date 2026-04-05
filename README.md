@@ -1,469 +1,199 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/3D-Force%20Graph-blueviolet?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/React-Three%20Fiber-61dafb?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/TypeScript-Strict-3178c6?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/60fps-5%2C000%2B%20nodes-22c55e?style=for-the-badge" />
+  <img src="docs/assets/hero.gif" alt="swarming — real-time network visualization" width="800" />
 </p>
 
-# swarming.world
+<p align="center">
+  <a href="https://www.npmjs.com/package/@web3viz/core"><img src="https://img.shields.io/npm/v/@web3viz/core?style=flat-square&color=blueviolet" alt="npm version" /></a>
+  <a href="https://bundlephobia.com/package/@web3viz/react-graph"><img src="https://img.shields.io/bundlephobia/minzip/@web3viz/react-graph?style=flat-square&color=22c55e&label=bundle" alt="bundle size" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="license" /></a>
+  <a href="https://discord.gg/swarming"><img src="https://img.shields.io/discord/0000000000?style=flat-square&logo=discord&logoColor=white&color=5865F2&label=discord" alt="discord" /></a>
+  <a href="https://github.com/nirholas/swarming.world/stargazers"><img src="https://img.shields.io/github/stars/nirholas/swarming.world?style=flat-square&color=f59e0b" alt="stars" /></a>
+</p>
 
-> **Live:** [swarming.world](https://swarming.world/world) · [visualizing.vercel.app](https://visualizing.vercel.app/world)
+<h1 align="center">swarming</h1>
 
-**Real-time 3D force-graph visualization toolkit for streaming data.**
+<p align="center">
+  <strong>GPU-accelerated real-time network visualization. 5,000+ nodes at 60fps. Any data source.</strong>
+</p>
 
-Plug in any data source — blockchain transactions, AI agent activity, network traffic, social graphs, IoT telemetry — and get a beautiful, interactive, 60fps particle network out of the box.
+<p align="center">
+  <a href="https://swarming.world/world"><strong>Live Demo</strong></a> · <a href="docs/"><strong>Documentation</strong></a> · <a href="https://discord.gg/swarming"><strong>Discord</strong></a>
+</p>
+
+---
+
+## Get Started in 30 Seconds
 
 ```bash
-npm install @web3viz/core @web3viz/react-graph @web3viz/ui
+npm install @web3viz/core @web3viz/react-graph
 ```
 
 ```tsx
-import { ForceGraph } from '@web3viz/react-graph';
+import { ForceGraph } from '@web3viz/react-graph'
 
-<ForceGraph topTokens={hubs} traderEdges={edges} />
+function App() {
+  return <ForceGraph topTokens={hubs} traderEdges={edges} />
+}
 ```
 
-That's it. You have a GPU-accelerated force-directed graph with instanced rendering, mouse repulsion, proximity webs, camera orbits, and spring physics.
+That's it — GPU-accelerated force-directed graph with instanced rendering, mouse repulsion, proximity webs, and spring physics.
 
----
-
-## Why web3viz?
-
-Most real-time visualization tools make you choose: **pretty or performant, simple API or flexible architecture, one data source or build everything yourself.**
-
-web3viz gives you all of it:
-
-| | web3viz | D3.js | Sigma.js | Cytoscape |
-|---|---|---|---|---|
-| 3D rendering | Yes (Three.js) | SVG/Canvas only | WebGL 2D | Canvas 2D |
-| Nodes at 60fps | 5,000+ | ~500 | ~10,000 (2D) | ~1,000 |
-| Streaming data | Built-in provider system | DIY | DIY | DIY |
-| React integration | Native (R3F) | Wrapper needed | Wrapper needed | Wrapper needed |
-| Camera system | Orbit, focus, tour | N/A | Basic pan/zoom | Pan/zoom |
-| Design system included | Yes | No | No | No |
-| TypeScript | Strict mode | Partial | Yes | Yes |
-
----
-
-## Quick Start
-
-### See it live in 30 seconds
+Or scaffold a full app:
 
 ```bash
 git clone https://github.com/nirholas/swarming.world.git
 cd swarming.world
-npm install
-npm run dev
+npm install && npm run dev
 ```
 
-Open **http://localhost:3100** — a live visualization of Solana PumpFun activity starts immediately. No API keys needed.
-
-### Use the mock provider for development
-
-```bash
-npm run dev:playground
-```
-
-Opens a standalone demo with synthetic data — no blockchain connection required.
+Open **http://localhost:3100** — live visualization starts immediately. No API keys needed.
 
 ---
 
-## Packages
+## Features
 
-web3viz is a modular monorepo. Use the pieces you need:
-
-| Package | Description | Size |
-|---|---|---|
-| [`@web3viz/core`](packages/core/) | Types, physics engine, provider interface, category system. Zero React deps. | ~15KB |
-| [`@web3viz/react-graph`](packages/react-graph/) | React Three Fiber `<ForceGraph />` component | ~25KB |
-| [`@web3viz/providers`](packages/providers/) | Data provider implementations (PumpFun, Mock, + your own) | ~20KB |
-| [`@web3viz/ui`](packages/ui/) | Design system — buttons, panels, feeds, filters, theming | ~30KB |
-| [`@web3viz/utils`](packages/utils/) | Screenshots, share URLs, formatting helpers | ~8KB |
-| [`@web3viz/executor`](packages/executor/) | Standalone agent executor server (WebSocket broadcast) | ~15KB |
-
-### Dependency graph
-
-![Dependency Graph](public/diagrams/dependency-graph.svg)
-
----
-
-## Build Your Own Provider
-
-The provider system is the core abstraction. Any streaming data source becomes a visualization by implementing one interface:
-
-```typescript
-import type { DataProvider } from '@web3viz/core';
-
-class EthereumSwapProvider implements DataProvider {
-  readonly id = 'uniswap';
-  readonly name = 'Uniswap V3';
-  readonly sourceConfig = {
-    id: 'ethereum',
-    label: 'Ethereum',
-    color: '#627EEA',
-    icon: '⬡',
-  };
-  readonly categories = [
-    { id: 'swaps', label: 'Swaps', icon: '⇄', color: '#627EEA', source: 'ethereum' },
-    { id: 'liquidity', label: 'LP Events', icon: '◈', color: '#8799EE', source: 'ethereum' },
-  ];
-
-  connect() {
-    const ws = new WebSocket('wss://your-indexer.com/stream');
-    ws.onmessage = (msg) => {
-      const swap = JSON.parse(msg.data);
-      this.emit({
-        id: swap.txHash,
-        providerId: this.id,
-        category: 'swaps',
-        timestamp: Date.now(),
-        label: `${swap.tokenIn} → ${swap.tokenOut}`,
-        amount: swap.amountUSD,
-        address: swap.sender,
-        tokenAddress: swap.pool,
-      });
-    };
-  }
-
-  // ... implement remaining interface methods
-}
-```
-
-Register it and the entire UI lights up:
-
-```typescript
-import { registerProvider } from '@web3viz/core';
-
-registerProvider(new EthereumSwapProvider());
-```
-
-The `<ForceGraph>`, `<StatsBar>`, `<LiveFeed>`, and `<FilterSidebar>` all react automatically.
+<table>
+<tr>
+<td width="33%" align="center">
+<img src="docs/assets/feature-performance.gif" alt="60fps performance" width="240" /><br />
+<strong>60fps @ 5,000 nodes</strong><br />
+<sub>InstancedMesh rendering with spatial hashing for O(1) lookups</sub>
+</td>
+<td width="33%" align="center">
+<img src="docs/assets/feature-websocket.gif" alt="Any data source" width="240" /><br />
+<strong>Any data source</strong><br />
+<sub>Built-in provider system — plug in WebSockets, REST, or custom streams</sub>
+</td>
+<td width="33%" align="center">
+<img src="docs/assets/feature-physics.gif" alt="Force-directed physics" width="240" /><br />
+<strong>Force-directed 3D physics</strong><br />
+<sub>d3-force-3d with framerate-independent damping and configurable springs</sub>
+</td>
+</tr>
+<tr>
+<td width="33%" align="center">
+<img src="docs/assets/feature-interaction.gif" alt="Mouse interaction" width="240" /><br />
+<strong>Rich interaction</strong><br />
+<sub>Hover, click, drag, orbit, zoom. Mouse-repulsion physics. Camera fly-to.</sub>
+</td>
+<td width="33%" align="center">
+<img src="docs/assets/feature-themes.gif" alt="Themes" width="240" /><br />
+<strong>Theming & design system</strong><br />
+<sub>Full component library with dark/light presets and CSS custom properties</sub>
+</td>
+<td width="33%" align="center">
+<img src="docs/assets/feature-export.gif" alt="Export & share" width="240" /><br />
+<strong>Export & share</strong><br />
+<sub>Screenshot with metadata overlay, share URLs, and embeddable widget</sub>
+</td>
+</tr>
+</table>
 
 ---
 
 ## Use Cases
 
-### Blockchain & DeFi
-- **DEX activity** — Uniswap, Jupiter, Raydium swaps in real-time
-- **Token launches** — PumpFun, pump.fun clones, fair launch platforms
-- **MEV visualization** — Searcher bundles, sandwich attacks, arbitrage paths
-- **Cross-chain bridges** — Wormhole, LayerZero message flows
-- **NFT minting** — Collection mints as particle clusters
-- **Validator networks** — Stake delegation flows, attestation patterns
-
-### AI & Agents
-- **Agent orchestration** — Visualize multi-agent task execution (built-in executor)
-- **LLM tool calls** — Watch agents invoke tools, spawn sub-agents, reason
-- **Swarm behavior** — Multi-agent coordination patterns
-
-### Infrastructure & DevOps
-- **API traffic** — Request flows across microservices
-- **Log streams** — Error clustering, anomaly detection
-- **Kubernetes** — Pod scheduling, service mesh traffic
-- **CI/CD pipelines** — Build/deploy event streams
-
-### Social & Communication
-- **Chat networks** — Message flows in Discord, Slack, Telegram
-- **Social graphs** — Follow/interaction networks
-- **Content virality** — Repost/share cascades
-
-### IoT & Sensor Data
-- **Device telemetry** — Temperature, pressure, vibration clusters
-- **Fleet tracking** — Vehicle/drone position streams
-- **Smart grid** — Energy production/consumption flows
+| | Application | Description |
+|---|---|---|
+| **Blockchain** | Transaction flows | DEX swaps, token launches, MEV, bridge messages in real-time |
+| **AI Agents** | Orchestration graphs | Multi-agent task execution, tool calls, swarm coordination |
+| **Infrastructure** | Service meshes | Kubernetes pods, API traffic, CI/CD pipelines, log clustering |
+| **Social** | Interaction networks | Chat flows, follow graphs, content virality cascades |
+| **IoT** | Sensor networks | Device telemetry, fleet tracking, energy grid flows |
+| **Finance** | Trading activity | Order flow, liquidity movements, market microstructure |
 
 ---
 
-## The `<ForceGraph>` Component
+## Performance
 
-The visualization engine at the heart of web3viz:
+swarming uses InstancedMesh (single draw call per node type), SpatialHash grids, and framerate-independent physics.
+
+| | swarming | d3-force (SVG) | sigma.js | cytoscape |
+|---|---|---|---|---|
+| **1,000 nodes** | 60 fps | 45 fps | 55 fps | 40 fps |
+| **5,000 nodes** | 60 fps | 12 fps | 30 fps | 8 fps |
+| **10,000 nodes** | 45 fps | 3 fps | 15 fps | crash |
+| **Rendering** | WebGL 3D | SVG / Canvas | WebGL 2D | Canvas 2D |
+| **Streaming data** | Built-in | DIY | DIY | DIY |
+| **React native** | Yes (R3F) | Wrapper | Wrapper | Wrapper |
+
+---
+
+## API Overview
+
+### `<ForceGraph>` Props
+
+| Prop | Type | Description |
+|---|---|---|
+| `topTokens` | `HubNode[]` | Hub nodes (up to 8) |
+| `traderEdges` | `Edge[]` | Participant-to-hub connections (up to 5,000) |
+| `simulationConfig` | `SimulationConfig` | Physics parameters (charge, damping, springs) |
+| `background` | `string` | Scene background color |
+| `showLabels` | `boolean` | Toggle hub labels |
+| `showGround` | `boolean` | Toggle ground plane |
+| `fov` | `number` | Camera field of view |
+| `cameraPosition` | `[x, y, z]` | Initial camera position |
+
+### Imperative Handle
 
 ```tsx
-import { ForceGraph, type GraphHandle } from '@web3viz/react-graph';
+const ref = useRef<GraphHandle>(null)
 
-const graphRef = useRef<GraphHandle>(null);
-
-<ForceGraph
-  ref={graphRef}
-  topTokens={hubs}           // Hub nodes (up to 8)
-  traderEdges={edges}        // Participant → hub connections (up to 5,000)
-  simulationConfig={{
-    hubChargeStrength: -200,
-    agentChargeStrength: -8,
-    centerStrength: 0.03,
-    hubLinkDistance: 25,
-    damping: 0.92,
-  }}
-  background="#0a0a0f"
-  showLabels
-  showGround={false}
-  fov={50}
-  cameraPosition={[0, 15, 45]}
-/>
+ref.current.focusHub(0)                            // Fly to hub
+ref.current.animateCameraTo([10, 20, 30], origin)  // Custom fly-to
+ref.current.setOrbitEnabled(true)                   // Auto-rotate
 ```
 
-### Imperative API
+Full API reference: [docs/COMPONENTS.md](docs/COMPONENTS.md)
+
+---
+
+## Build Your Own Provider
+
+Any streaming data source becomes a visualization:
 
 ```typescript
-graphRef.current.focusHub(0);                          // Fly camera to hub
-graphRef.current.animateCameraTo([10, 20, 30], origin); // Custom animation
-graphRef.current.setOrbitEnabled(true);                 // Auto-rotate
-graphRef.current.getHubCount();                         // Number of hubs
+import type { DataProvider } from '@web3viz/core'
+
+class MyProvider implements DataProvider {
+  readonly id = 'my-source'
+  readonly name = 'My Data Source'
+  readonly sourceConfig = { id: 'custom', label: 'Custom', color: '#ff6b6b', icon: '◉' }
+  readonly categories = [
+    { id: 'events', label: 'Events', icon: '⚡', color: '#ff6b6b', source: 'custom' },
+  ]
+
+  connect() {
+    const ws = new WebSocket('wss://your-stream.com')
+    ws.onmessage = (msg) => {
+      const data = JSON.parse(msg.data)
+      this.emit({
+        id: data.id,
+        providerId: this.id,
+        category: 'events',
+        timestamp: Date.now(),
+        label: data.name,
+        amount: data.value,
+      })
+    }
+  }
+}
 ```
 
-### Performance
+Guide: [docs/PROVIDERS.md](docs/PROVIDERS.md)
 
-| Metric | Value |
+---
+
+## Packages
+
+| Package | Description |
 |---|---|
-| Max nodes at 60fps | 5,000+ |
-| Rendering | InstancedMesh (single draw call per node type) |
-| Spatial queries | SpatialHash grid — O(1) neighbor lookups |
-| Physics | Framerate-independent damping (`damping^(dt*60)`) |
-| Lines | Up to 800 proximity + 320 tether lines |
-| Blending | Additive (luminous glow effect) |
-
----
-
-## UI Components
-
-The design system works standalone or with the graph:
-
-```tsx
-import { ThemeProvider, StatsBar, LiveFeed, FilterSidebar } from '@web3viz/ui';
-
-<ThemeProvider theme="dark">
-  <StatsBar stats={stats} />
-  <LiveFeed events={recentEvents} />
-  <FilterSidebar categories={categories} onToggle={handleToggle} />
-</ThemeProvider>
-```
-
-**Included components:** Button, Pill, Badge, Input, Dialog, Panel, ColorControl, StatsBar, LiveFeed, FilterSidebar, SharePanel, InfoPopover, JourneyOverlay.
-
-**Theming:** CSS custom properties with light/dark presets. Fully customizable via design tokens.
-
----
-
-## Guided Tours
-
-Built-in camera tour system for onboarding users:
-
-```typescript
-import { useJourney } from '@web3viz/ui';
-
-const { start, skip, currentStep } = useJourney({
-  steps: [
-    { label: 'Welcome', camera: [0, 30, 60], duration: 3000 },
-    { label: 'Most Active', focusHub: 0, duration: 4000 },
-    { label: 'Explore', freeOrbit: true },
-  ],
-});
-```
-
----
-
-## Architecture
-
-![Provider Architecture](public/diagrams/provider-architecture.svg)
-
-### Monorepo Structure
-
-```
-web3viz/
-├── packages/
-│   ├── core/              # Types, engine, provider interface (0 deps)
-│   ├── react-graph/       # <ForceGraph> component (Three.js + d3-force)
-│   ├── providers/         # PumpFun, Mock, and provider hooks
-│   ├── ui/                # Design system (tokens, theme, components)
-│   ├── utils/             # Screenshots, sharing, formatting
-│   └── executor/          # Standalone agent executor (Node.js)
-├── apps/
-│   └── playground/        # Demo app with mock data
-├── app/                   # Reference app: live PumpFun visualizer
-│   ├── world/             # Blockchain visualization route
-│   ├── agents/            # AI agent monitoring route
-│   └── embed/             # Embeddable widget
-└── features/              # Feature modules for the reference app
-```
-
----
-
-## Landing Page
-
-The landing page uses the **Pretext Editorial Engine** (`@chenglou/pretext`) to flow responsive editorial text around a live 3D force graph.
-
-- **Giza Scene** — 8 protocol nodes (Morpho, Aave, Compound, Moonwell, Euler, Fluid, Uniswap, Lido) with 120 orbiting agent particles each
-- **Custom GLSL shaders** — Simplex 3D noise for organic sphere surfaces, orbital agent motion, protocol-to-protocol connection trails
-- **Editorial overlay** — Text reflows every frame around the 3D graph projection using Pretext's cursor-based line layout and DOM pooling
-- **Orb physics** — Velocity integration, wall bouncing, and inter-orb repulsion for animated background elements
-
-Routes: `/` and `/landing` both serve the landing engine.
-
----
-
-## Reference App: PumpFun Visualizer
-
-The included reference app connects to live Solana data:
-
-- **2 concurrent WebSocket streams** — PumpPortal (trades) + Solana RPC (claims)
-- **6 event categories** — Launches, Agent Launches, Trades, Wallet/GitHub/First Claims
-- **AI agent detection** — Regex heuristic on token names
-- **Address search** — Find any wallet in the network, camera flies to it
-- **Share/export** — Screenshot with metadata overlay, social sharing
-- **Guided tour** — 7-step narrated camera walkthrough
-
-### Desktop OS Shell
-
-The world view is wrapped in a full desktop metaphor:
-
-- **Taskbar** — Fixed bottom bar with pinned app icons, system tray, and live clock
-- **Start Menu** — Launch panel with app grid (Sources, Stats, Chat, Timeline, etc.)
-- **Floating windows** — Draggable, minimizable, closable panels with glassmorphism styling
-- **Window manager** — Z-index stacking, focus tracking, state persisted to localStorage
-
-**Keyboard shortcuts:**
-
-| Key | Action |
-|---|---|
-| `?` | Toggle help overlay |
-| `Space` | Play / Pause |
-| `Escape` | Close menu / overlay |
-| `1`–`6` | Toggle windows (Filters, Live Feed, Stats, AI Chat, Share, Data Sources) |
-
-### Onboarding
-
-A 7-step guided walkthrough for first-time visitors:
-
-1. **Welcome** — Introduction to the 3D blockchain visualization
-2. **Start Menu** — Launch tools from the W3 button
-3. **Data Sources** — Enable providers (PumpFun, Ethereum) to stream live data
-4. **Graph Controls** — Drag to rotate, scroll to zoom, hover hubs for categories
-5. **Taskbar & Windows** — Drag, minimize, close floating windows
-6. **Search** — Find wallets via the Stats window; camera flies to the address
-7. **Finish** — Ready to explore
-
-Completion state is persisted to localStorage. The initial prompt appears non-intrusively above the taskbar after 1.5s for new visitors only.
-
-### AI Chat
-
-An integrated chat panel powered by Claude with tool calling:
-
-| Tool | Description |
-|---|---|
-| `sceneColorUpdate` | Change background, protocol nodes, and user node colors; adjust bloom |
-| `cameraFocus` | Fly camera to a hub index or custom `[x, y, z]` position |
-| `dataFilter` | Filter by protocol, volume threshold, or time range |
-| `agentSummary` | Display a metrics summary card with labeled values |
-| `tradeVisualization` | Highlight specific trades with custom color and duration |
-
-The chat receives live context (event count, volume, connections, hub count) so the AI can reason about the current state of the visualization.
-
-### ZK Verification
-
-STARK proof verification via **Giza LuminAIR** with a 5-step pipeline:
-
-1. Protocol Setup
-2. Commit Preprocessed Trace
-3. Commit Main Trace
-4. Commit Interaction Trace
-5. Verify with STWO
-
-Runs in-browser via WASM. Degrades gracefully to demo mode if `@gizatech/luminair-web` is not installed.
-
-### Agents Dashboard
-
-The `/agents` route provides real-time AI agent monitoring:
-
-- **Agent lifecycle tracking** — Spawn, execute, complete, fail states
-- **Task inspector** — Execution details, tool calls, sub-agent trees
-- **Timeline scrubber** — Scrub through historical task execution
-- **Agent force graph** — Visualize agent coordination as a network
-- **SperaxOS integration** — Live WebSocket stream from agent backend (with mock mode for development)
-
-### Tools Hub
-
-The `/tools` route hosts 7 standalone visualization experiments:
-
-| Tool | Description |
-|---|---|
-| Cosmograph | GPU-accelerated WebGL graph (Apache Arrow + DuckDB) |
-| Reagraph | React WebGL network graph (Three.js + D3) |
-| Graphistry | GPU-powered visual graph intelligence platform |
-| Blockchain Visualizer | P2P network simulation with data packets |
-| AI Office | Procedural 3D world of autonomous AI agents (math-only, no assets) |
-| Creative Coding | WebGL shader playground (Cables.gl / Nodes.io inspired) |
-| NVEIL | Volumetric 3D data rendering and spatial dashboards |
-
-### Routes
-
-| Route | Description |
-|---|---|
-| `/` | Landing page (Pretext Editorial Engine + Giza 3D scene) |
-| `/landing` | Landing page (alternate route) |
-| `/world` | Live PumpFun visualization |
-| `/world?address=<addr>` | Auto-search for a Solana address |
-| `/agents` | AI agent monitoring dashboard |
-| `/tools` | Tools hub with 7 standalone demos |
-| `/tools/[tool-name]` | Individual tool demo |
-| `/embed` | Embeddable widget |
-
-### API Routes
-
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/world-chat` | POST | Claude agent endpoint — accepts messages + live context, returns text + tool actions |
-| `/api/executor` | GET/POST | Proxy to agent executor backend (status, task creation) |
-
----
-
-## Configuration
-
-### Physics
-
-All simulation parameters are configurable:
-
-| Parameter | Default | Description |
-|---|---|---|
-| `hubChargeStrength` | `-200` | Hub-to-hub repulsion |
-| `agentChargeStrength` | `-8` | Node-to-node repulsion |
-| `centerStrength` | `0.03` | Pull toward origin |
-| `hubLinkDistance` | `25` | Spring rest length (hubs) |
-| `agentLinkDistance` | `5-8` | Spring rest length (nodes) |
-| `damping` | `0.92` | Velocity decay per frame |
-| `alphaDecay` | `0.01` | Simulation cooling rate |
-
-### Rendering
-
-| Parameter | Default | Description |
-|---|---|---|
-| Hub count | `8` | Max hub nodes |
-| Max particles | `5,000` | Instanced mesh capacity |
-| Proximity lines | `800` | Max inter-node lines |
-| Tether lines/hub | `40` | Lines connecting nodes to hubs |
-| Camera orbit | `0.06 rad/s` | Auto-rotation speed |
-| Repulsion radius | `6` | Mouse cursor push radius |
-
----
-
-## Environment Variables
-
-Copy `.env.example` to `.env.local` and configure:
-
-| Variable | Required | Description |
-|---|---|---|
-| `NEXT_PUBLIC_SOLANA_WS_URL` | Yes | Solana WebSocket endpoint (Helius mainnet) |
-| `NEXT_PUBLIC_SOLANA_RPC_URL` | Yes | Solana HTTP RPC |
-| `NEXT_PUBLIC_SOLANA_RPC_FALLBACKS` | No | Comma-separated fallback RPCs (Alchemy, Ankr) |
-| `NEXT_PUBLIC_ETH_WS_URL` | No | Ethereum WebSocket |
-| `NEXT_PUBLIC_ETH_RPC_URL` | No | Ethereum HTTP RPC |
-| `NEXT_PUBLIC_BASE_WS_URL` | No | Base WebSocket |
-| `NEXT_PUBLIC_BASE_RPC_URL` | No | Base HTTP RPC |
-| `ANTHROPIC_API_KEY` | No | Claude API key (for AI Chat in `/world`) |
-| `NEXT_PUBLIC_SPERAXOS_WS_URL` | No | SperaxOS WebSocket for agent events |
-| `NEXT_PUBLIC_SPERAXOS_API_KEY` | No | SperaxOS API key |
-| `NEXT_PUBLIC_AGENT_MOCK` | No | `true` to use mock agent data (default) |
-| `EXECUTOR_PORT` | No | Agent executor WebSocket port (default: 8765) |
-| `EXECUTOR_MAX_AGENTS` | No | Max concurrent agents (default: 5) |
+| [`@web3viz/core`](packages/core/) | Types, physics engine, provider interface. Zero React deps. |
+| [`@web3viz/react-graph`](packages/react-graph/) | `<ForceGraph>` component (Three.js + React Three Fiber) |
+| [`@web3viz/providers`](packages/providers/) | Data providers (PumpFun, Mock, + build your own) |
+| [`@web3viz/ui`](packages/ui/) | Design system — buttons, panels, feeds, filters, theming |
+| [`@web3viz/utils`](packages/utils/) | Screenshots, share URLs, formatting helpers |
+| [`@web3viz/executor`](packages/executor/) | Agent execution server (WebSocket broadcast) |
 
 ---
 
@@ -471,66 +201,57 @@ Copy `.env.example` to `.env.local` and configure:
 
 | Layer | Technology |
 |---|---|
-| Monorepo | Turborepo + npm workspaces |
 | Framework | Next.js 14 (App Router) |
-| Landing Page | Pretext Editorial Engine |
 | 3D Engine | Three.js + React Three Fiber |
 | Physics | d3-force-3d |
 | Animation | Framer Motion |
 | Styling | Tailwind CSS + CSS custom properties |
 | Language | TypeScript (strict mode) |
-| Agent Server | Node.js + SQLite + WebSocket |
+| Monorepo | npm workspaces |
 
 ---
 
 ## Documentation
 
-| Document | Description |
+| | |
 |---|---|
-| [README.md](README.md) | Project overview and quick start |
-| [SDK.md](SDK.md) | Package descriptions and usage |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Dev setup, code style, PR guidelines |
-| [CHANGELOG.md](CHANGELOG.md) | Notable changes by theme |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design, data flow, performance |
-| [docs/PROVIDERS.md](docs/PROVIDERS.md) | Guide to building custom data providers |
-| [docs/COMPONENTS.md](docs/COMPONENTS.md) | ForceGraph + UI component API reference |
-| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Vercel, Docker, self-hosted deployment |
+| [Architecture](docs/ARCHITECTURE.md) | System design, data flow, performance internals |
+| [Providers](docs/PROVIDERS.md) | Build custom data providers |
+| [Components](docs/COMPONENTS.md) | ForceGraph + UI component API reference |
+| [Deployment](docs/DEPLOYMENT.md) | Vercel, Docker, self-hosted |
+| [Contributing](CONTRIBUTING.md) | Dev setup, code style, PR guidelines |
+| [Changelog](CHANGELOG.md) | Notable changes |
 
 ---
 
-## Contributing
+## Community
 
-We welcome contributions. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+swarming is MIT-licensed and open to contributions.
 
 **High-impact areas:**
-- New data providers (Ethereum, Base, Arbitrum, Bitcoin, ...)
-- Performance optimizations (WebGPU, compute shaders)
-- Mobile/touch interaction improvements
-- Accessibility enhancements
+- New data providers (Ethereum, Base, Arbitrum, Bitcoin)
+- Performance (WebGPU, compute shaders)
+- Mobile/touch interaction
+- Accessibility
 - Documentation and examples
 
----
+If swarming is useful to you, consider [starring the repo](https://github.com/nirholas/swarming.world) — it helps others discover the project and motivates continued development.
 
-## Scripts
-
-| Command | Description |
-|---|---|
-| `npm run dev` | Dev server (port 3100) |
-| `npm run dev:playground` | Playground with mock data |
-| `npm run dev:executor` | Agent executor server |
-| `npm run build` | Production build |
-| `npm run build:web` | Production build (alias) |
-| `npm run start` | Run production build |
-| `npm run typecheck` | TypeScript check across all packages |
-| `npm run lint` | ESLint |
+<a href="https://discord.gg/swarming">Join the Discord</a> · <a href="CONTRIBUTING.md">Contributing Guide</a> · <a href="https://swarming.world">Showcase Gallery</a>
 
 ---
 
-## License
+## Sponsors
 
-MIT
+<p align="center">
+  <sub>Interested in sponsoring? See <a href=".github/FUNDING.yml">FUNDING.yml</a> or reach out on Discord.</sub>
+</p>
 
 ---
+
+<p align="center">
+  MIT License · Built by <a href="https://github.com/nirholas">@nirholas</a>
+</p>
 
 <p align="center">
   <sub>Built for builders who want their data to look as good as it works.</sub>

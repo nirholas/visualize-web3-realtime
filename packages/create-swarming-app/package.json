@@ -1,0 +1,27 @@
+{
+  "name": "create-swarming-app",
+  "version": "0.1.0",
+  "description": "CLI scaffolder for swarming visualization projects",
+  "license": "MIT",
+  "bin": {
+    "create-swarming-app": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.9.1",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.5.0"
+  }
+}

@@ -1,0 +1,9 @@
+# Default owners for everything in the repo
+* @nirholas
+
+# Core packages
+packages/core/ @nirholas
+packages/react-graph/ @nirholas
+
+# CI/CD
+.github/ @nirholas

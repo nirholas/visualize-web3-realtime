@@ -82,8 +82,7 @@ const HubNodes = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
 
     for (let i = 0; i < hubs.length; i++) {
       const node = hubs[i];
-      // Map d3-force-3d (x,y,z) → Three.js (x,z,y) so Y-up = d3's z-axis
-      tempObj.position.set(node.x ?? 0, node.z ?? 0, node.y ?? 0);
+      tempObj.position.set(node.x ?? 0, node.y ?? 0, node.z ?? 0);
       tempObj.scale.setScalar(node.radius);
       tempObj.updateMatrix();
       mesh.setMatrixAt(i, tempObj.matrix);
@@ -112,8 +111,8 @@ const HubLabels = memo<{ sim: ForceGraphSimulation; labelStyle?: React.CSSProper
         id: h.id,
         label: h.label,
         x: h.x ?? 0,
-        y: h.z ?? 0, // d3 z → Three.js Y (up)
-        z: h.y ?? 0, // d3 y → Three.js Z (depth)
+        y: h.y ?? 0,
+        z: h.z ?? 0,
         radius: h.radius,
       }));
       if (Math.random() < 0.15) {
@@ -175,7 +174,7 @@ const AgentNodes = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
 
     for (let i = 0; i < count; i++) {
       const node = agents[i];
-      tempObj.position.set(node.x ?? 0, node.z ?? 0, node.y ?? 0);
+      tempObj.position.set(node.x ?? 0, node.y ?? 0, node.z ?? 0);
       tempObj.scale.setScalar(node.radius);
       tempObj.updateMatrix();
       mesh.setMatrixAt(i, tempObj.matrix);
@@ -233,11 +232,11 @@ const Edges = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
       const idx = i * 6;
 
       pA.array[idx] = src.x ?? 0;
-      pA.array[idx + 1] = src.z ?? 0;   // d3 z → Three.js Y
-      pA.array[idx + 2] = src.y ?? 0;
+      pA.array[idx + 1] = src.y ?? 0;
+      pA.array[idx + 2] = src.z ?? 0;
       pA.array[idx + 3] = tgt.x ?? 0;
-      pA.array[idx + 4] = tgt.z ?? 0;   // d3 z → Three.js Y
-      pA.array[idx + 5] = tgt.y ?? 0;
+      pA.array[idx + 4] = tgt.y ?? 0;
+      pA.array[idx + 5] = tgt.z ?? 0;
 
       const isHubEdge = src.type === 'hub' && tgt.type === 'hub';
       const gray = isHubEdge ? 0.45 : 0.75;
@@ -482,8 +481,8 @@ const ForceGraph = forwardRef<GraphHandle, ForceGraphProps>(function ForceGraph(
       const hub = hubs[index];
       if (!hub) return;
       const hx = hub.x ?? 0;
-      const hy = hub.z ?? 0; // d3 z → Three.js Y
-      const hz = hub.y ?? 0; // d3 y → Three.js Z
+      const hy = hub.y ?? 0;
+      const hz = hub.z ?? 0;
       await api.animateTo([hx, hy + 15, hz + 12], [hx, hy, hz], durationMs);
     },
     setOrbitEnabled: (enabled) => {

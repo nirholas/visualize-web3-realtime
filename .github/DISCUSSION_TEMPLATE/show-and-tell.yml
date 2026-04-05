@@ -1,0 +1,31 @@
+title: "[Show & Tell] "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share what you've built with swarming.world! We'd love to see your visualizations.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What did you build?
+      description: Tell us about your project and how you're using swarming.world.
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshots / Demo
+      description: Share screenshots, recordings, or a link to a live demo.
+    validations:
+      required: false
+
+  - type: textarea
+    id: stack
+    attributes:
+      label: Tech Stack
+      description: What technologies are you using alongside swarming.world?
+    validations:
+      required: false

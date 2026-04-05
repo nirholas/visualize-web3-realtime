@@ -1,45 +1,30 @@
-# Contributing to web3viz
+# Contributing to Swarming
 
-Thanks for your interest in contributing! This guide covers everything you need to get started.
+We love contributions! Whether it's a bug fix, new feature, documentation improvement, or a typo fix — every contribution matters. Here's how to get started.
 
 ---
 
-## Development Setup
-
-### Prerequisites
-
-- **Node.js** >= 18
-- **npm** >= 10.8.2 (pinned in `engines`)
-- **Git**
-
-### Clone and install
+## Quick Start (5 minutes)
 
 ```bash
 git clone https://github.com/nirholas/swarming.world.git
 cd swarming.world
 npm install
+npm run dev
 ```
 
-### Run the dev server
+Open **http://localhost:3100** to see the dev server with live data.
 
 ```bash
-# Live data (connects to PumpPortal + Solana RPC)
-npm run dev
-
-# Mock data (no external connections)
+# Alternative: mock data mode (no external connections needed)
 npm run dev:playground
-
-# Agent executor backend
-npm run dev:executor
 ```
-
-The main app runs on **http://localhost:3100**, the playground on **http://localhost:3200**.
 
 ### Verify everything works
 
 ```bash
-npm run typecheck   # TypeScript across all packages
 npm run lint        # ESLint
+npm run typecheck   # TypeScript across all packages
 npm run build       # Production build
 ```
 
@@ -47,22 +32,21 @@ npm run build       # Production build
 
 ## Project Structure
 
-This is a **Turborepo monorepo** with npm workspaces:
+This is a monorepo with npm workspaces:
 
 ```
 packages/
-  core/           # Types, engine, provider interface (0 React deps)
-  react-graph/    # <ForceGraph /> 3D component
-  providers/      # Data provider implementations
-  ui/             # Design system (tokens, theme, components)
-  utils/          # Screenshots, sharing, formatters
-  executor/       # Agent executor backend (Node.js)
-  tsconfig/       # Shared TS configs
-  tailwind-config/# Shared Tailwind config
+├── core/             # Types, engine, provider interface (0 React deps)
+├── react-graph/      # <ForceGraph /> 3D component
+├── providers/        # Data provider implementations
+├── ui/               # Design system (tokens, theme, components)
+├── utils/            # Screenshots, sharing, formatters
+├── executor/         # Agent executor backend (Node.js)
+├── mcp/              # MCP server (DeFi Llama, cookie.fun, proof registry)
 
-app/              # Next.js 14 reference app (App Router)
-features/         # Feature modules for the reference app
-apps/playground/  # Standalone demo app
+app/                  # Next.js 14 reference app (App Router)
+features/             # Feature modules for the reference app
+apps/playground/      # Standalone demo app
 ```
 
 ### Dependency rules
@@ -76,111 +60,98 @@ apps/playground/  # Standalone demo app
 
 ---
 
+## What to Work On
+
+Not sure where to start? Here are some options:
+
+- **`good-first-issue`** — Beginner-friendly tasks with clear guidance and mentorship
+- **`help-wanted`** — Medium-complexity tasks that need community help
+- **Roadmap items** — Check [GitHub Discussions](https://github.com/nirholas/swarming.world/discussions/categories/ideas) for bigger features
+
+### High-Impact Areas
+
+| Area | Examples |
+|------|----------|
+| **New providers** | Ethereum DEX (Uniswap V3, Curve), L2 chains (Arbitrum, Base), Bitcoin (Ordinals, Runes), non-blockchain (GitHub events, Kubernetes) |
+| **Performance** | WebGPU compute shaders, Web Worker offloading, LOD for distant nodes |
+| **Accessibility** | Keyboard navigation, screen reader support, high contrast theme, reduced motion |
+| **Mobile** | Touch gestures, responsive layout, mobile GPU budgets |
+| **Tests** | Unit tests for core utilities, integration tests for providers |
+| **Documentation** | API docs, tutorial improvements, new demo templates |
+
+---
+
 ## Making Changes
 
-### Branch naming
+### 1. Fork and branch
+
+```bash
+# Fork the repo on GitHub, then:
+git clone https://github.com/YOUR_USERNAME/swarming.world.git
+cd swarming.world
+git remote add upstream https://github.com/nirholas/swarming.world.git
+git checkout -b feat/my-feature
+```
+
+### 2. Branch naming
 
 ```
-feat/short-description    # New features
-fix/short-description     # Bug fixes
-docs/short-description    # Documentation
-refactor/short-description
+feat/short-description      # New features
+fix/short-description       # Bug fixes
+docs/short-description      # Documentation
+refactor/short-description  # Refactoring
+test/short-description      # Tests
 ```
 
-### Commit messages
+### 3. Make your changes
 
-Use conventional commits:
+Follow the code style guidelines below, then verify:
+
+```bash
+npm run lint        # Must pass
+npm run typecheck   # Must pass
+npm run build       # Must pass
+```
+
+### 4. Commit with a descriptive message
+
+Use [conventional commits](https://www.conventionalcommits.org/):
 
 ```
 feat: add Ethereum provider
 fix: prevent duplicate WebSocket connections
 docs: add provider creation guide
 refactor: extract spatial hash to core package
+test: add unit tests for BoundedMap
 ```
 
-### Code style
+### 5. Open a PR
+
+Push your branch and open a pull request against `main`. Fill out the PR template — describe what changed, why, and how to test it. Include screenshots for visual changes.
+
+---
+
+## Code Style
 
 - **TypeScript strict mode** — no `any` types, no `@ts-ignore`
-- **Inline styles** with CSS custom properties for theming (no CSS modules in `packages/ui`)
+- **Functional components** with hooks
 - **Tailwind CSS** for app-level styling (`app/`, `features/`)
+- **Inline styles** with CSS custom properties for theming in `packages/ui`
 - **IBM Plex Mono** is the primary typeface
 - Memoize components with `React.memo` when they receive stable props
 - Use `useRef` over `useState` for values that don't trigger re-renders
+- Descriptive variable names — no single-letter variables outside loops
 
 ### File conventions
 
-- Components: `PascalCase.tsx`
-- Hooks: `useCamelCase.ts`
-- Types/utilities: `camelCase.ts`
-- One component per file (colocated sub-components are fine)
-- Export barrel files at `src/index.ts` in each package
+| Type | Convention | Example |
+|------|-----------|---------|
+| Components | `PascalCase.tsx` | `ForceGraph.tsx` |
+| Hooks | `useCamelCase.ts` | `useGraphData.ts` |
+| Types/utilities | `camelCase.ts` | `shared.ts` |
+| Tests | `*.test.ts(x)` | `BoundedMap.test.ts` |
 
----
-
-## Pull Requests
-
-1. **Keep PRs focused** — one feature or fix per PR
-2. **Run checks before pushing:**
-   ```bash
-   npm run typecheck && npm run lint && npm run build
-   ```
-3. **Write a clear description** — what changed, why, and how to test
-4. **Include screenshots** for visual changes (the app is a 3D visualization — visuals matter)
-5. **Update documentation** if you change public APIs
-
-### PR template
-
-```markdown
-## What
-
-Brief description of the change.
-
-## Why
-
-Context and motivation.
-
-## How to test
-
-Steps to verify the change works.
-
-## Screenshots
-
-(if visual changes)
-```
-
----
-
-## High-Impact Contribution Areas
-
-### New data providers
-
-The provider system is the main extensibility point. See [docs/PROVIDERS.md](docs/PROVIDERS.md) for a complete guide. Good candidates:
-
-- **Ethereum DEX** — Uniswap V3, Curve, Balancer
-- **L2 chains** — Arbitrum, Optimism, Base, zkSync
-- **Bitcoin** — Ordinals, Runes
-- **Cross-chain** — Wormhole, LayerZero bridge messages
-- **Non-blockchain** — GitHub events, Kubernetes, IoT
-
-### Performance
-
-- WebGPU compute shaders for physics
-- Web Worker offloading for d3-force
-- LOD (level of detail) for distant nodes
-- Frustum culling improvements
-
-### Accessibility
-
-- Keyboard navigation for graph interaction
-- Screen reader descriptions of graph state
-- High contrast theme
-- Reduced motion support
-
-### Mobile
-
-- Touch gesture improvements (pinch zoom, two-finger orbit)
-- Responsive layout for `<FilterSidebar>` and `<StatsBar>`
-- Performance budgets for mobile GPUs
+One component per file. Colocated sub-components are fine. Each package exports via `src/index.ts`.
 
 ---
 
@@ -203,6 +174,44 @@ The app works without any env vars — PumpFun data streams need no authenticati
 
 ---
 
-## Questions?
+## Development Commands
 
-Open an issue or start a discussion on GitHub. We're happy to help.
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Dev server with hot reload (port 3100) |
+| `npm run dev:playground` | Dev with mock data (no external deps) |
+| `npm run build` | Production build |
+| `npm run lint` | ESLint checks |
+| `npm run typecheck` | TypeScript type checking |
+
+---
+
+## Pull Request Guidelines
+
+1. **Keep PRs focused** — one feature or fix per PR
+2. **Run all checks** before pushing (`npm run lint && npm run typecheck && npm run build`)
+3. **Write a clear description** — what changed, why, and how to test
+4. **Include screenshots** for visual changes (the app is a 3D visualization — visuals matter)
+5. **Update documentation** if you change public APIs
+6. **Respond to review feedback** promptly — we aim to merge within 24 hours
+
+---
+
+## Recognition
+
+We value every contribution and make sure contributors are recognized:
+
+- **All contributors** are listed in the README using the [all-contributors](https://allcontributors.org/) specification
+- **`@contributor` role** in Discord after your first merged PR
+- **Monthly Contributor Spotlight** in Discord `#announcements`
+- **Yearly Top Contributors** acknowledgment in the README and release notes
+
+---
+
+## Getting Help
+
+- **Issues** — [Open an issue](https://github.com/nirholas/swarming.world/issues) for bugs or feature requests
+- **Discussions** — [Start a discussion](https://github.com/nirholas/swarming.world/discussions) for questions or ideas
+- **Discord** — Join the community for real-time help
+
+We're happy to help! Don't hesitate to ask questions — there are no dumb questions.

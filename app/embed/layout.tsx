@@ -1,6 +1,9 @@
-export const metadata = {
-  title: 'PumpFun Widget',
-  description: 'Embeddable real-time PumpFun network visualization',
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  title: 'Embed — swarming.world',
+  description: 'Embeddable real-time blockchain visualization widget.',
+  robots: { index: false, follow: false },
 };
 
 export default function EmbedLayout({ children }: { children: React.ReactNode }) {

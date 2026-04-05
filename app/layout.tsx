@@ -1,42 +1,100 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import { IBM_Plex_Mono } from "next/font/google";
+
+const ibmPlexMono = IBM_Plex_Mono({
+  subsets: ['latin'],
+  weight: ['200', '300', '400', '500', '600'],
+  variable: '--font-ibm-plex-mono',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://swarming.world'),
-  title: "swarming.world",
-  description: "Real-time 3D visualization of streaming data — blockchain, AI agents, and beyond.",
+  title: {
+    default: 'Swarming — Real-time Data Visualization at 60fps',
+    template: '%s | Swarming',
+  },
+  description:
+    'GPU-accelerated 3D network visualization for any streaming data source. React component. 5,000+ nodes at 60fps. Open source.',
+  keywords: [
+    'data visualization',
+    'real-time',
+    'force graph',
+    'react',
+    'threejs',
+    'webgl',
+    'network graph',
+    'force directed graph',
+    'websocket visualization',
+    'd3 force graph',
+    '3d graph javascript',
+    'graph visualization library',
+  ],
+  authors: [{ name: 'Swarming Contributors', url: 'https://github.com/nicholasgriffintn/visualize-web3-realtime' }],
+  creator: 'Swarming',
+  publisher: 'Swarming',
+  alternates: {
+    canonical: '/',
+  },
   openGraph: {
-    title: "swarming.world",
-    description: "Explore a living, breathing network in real time.",
-    type: "website",
-    siteName: "swarming.world",
+    title: 'Swarming — Real-time Data Visualization',
+    description:
+      '5,000+ nodes at 60fps. GPU-accelerated 3D network visualization for any streaming data source.',
+    type: 'website',
+    siteName: 'Swarming',
+    locale: 'en_US',
     images: [
       {
-        url: "/og-preview.png",
+        url: '/og-preview.png',
         width: 1200,
         height: 630,
-        alt: "swarming.world — a living network in real time",
+        alt: 'Swarming — real-time 3D network visualization at 60fps',
       },
     ],
   },
   twitter: {
-    card: "summary_large_image",
-    title: "swarming.world",
-    description: "Explore a living, breathing network in real time.",
-    images: ["/og-preview.png"],
+    card: 'summary_large_image',
+    title: 'Swarming — Real-time Data Visualization',
+    description:
+      'GPU-accelerated 3D network visualization. 5,000+ nodes at 60fps. Open source React component.',
+    images: ['/og-preview.png'],
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+};
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'Swarming',
+  description:
+    'GPU-accelerated real-time 3D network visualization for any streaming data source. React component with 5,000+ nodes at 60fps.',
+  applicationCategory: 'DeveloperApplication',
+  operatingSystem: 'Web Browser',
+  url: 'https://swarming.world',
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  license: 'https://opensource.org/licenses/MIT',
+  programmingLanguage: ['TypeScript', 'React', 'Three.js'],
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@200;300;400;500;600&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="en" className={ibmPlexMono.variable}>
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
         {children}
       </body>
     </html>

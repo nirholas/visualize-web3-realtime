@@ -3,6 +3,25 @@ import Anthropic from '@anthropic-ai/sdk';
 import { getToolDefinitions } from '@/features/World/ai/componentRegistry';
 
 // ---------------------------------------------------------------------------
+// Simple in-memory rate limiter (per-IP, 20 requests / 60 s window)
+// ---------------------------------------------------------------------------
+
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 20;
+const ipHits = new Map<string, { count: number; resetAt: number }>();
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = ipHits.get(ip);
+  if (!entry || now > entry.resetAt) {
+    ipHits.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return false;
+  }
+  entry.count++;
+  return entry.count > RATE_LIMIT_MAX;
+}
+
+// ---------------------------------------------------------------------------
 // Anthropic client — reads ANTHROPIC_API_KEY from env at request time
 // ---------------------------------------------------------------------------
 
@@ -51,6 +70,11 @@ interface IncomingMessage {
 }
 
 export async function POST(request: NextRequest) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  if (isRateLimited(ip)) {
+    return NextResponse.json({ error: 'Too many requests. Please wait a minute.' }, { status: 429 });
+  }
+
   let body: { messages: IncomingMessage[]; context: ChatContext };
 
   try {

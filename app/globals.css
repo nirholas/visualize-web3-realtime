@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: var(--font-ibm-plex-mono), 'IBM Plex Mono', monospace;
   }
 
   html, body {
@@ -17,7 +17,7 @@
   body {
     background-color: #0a0a12;
     color: #d8d8e8;
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: var(--font-ibm-plex-mono), 'IBM Plex Mono', monospace;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

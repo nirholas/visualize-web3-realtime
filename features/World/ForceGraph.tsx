@@ -11,9 +11,9 @@ import {
   forceManyBody,
   forceCenter,
   forceCollide,
-  type SimulationNodeDatum,
-  type SimulationLinkDatum,
-} from 'd3-force';
+  type SimulationNodeDatum3D,
+} from 'd3-force-3d';
+import type { SimulationLinkDatum } from 'd3-force';
 
 import type { TopToken, TraderEdge } from '@web3viz/core';
 import type { ShareColors } from './SharePanel';
@@ -27,7 +27,7 @@ import { PostProcessing } from '@web3viz/react-graph';
 // Types
 // ---------------------------------------------------------------------------
 
-interface ForceNode extends SimulationNodeDatum {
+interface ForceNode extends SimulationNodeDatum3D {
   id: string;
   type: 'hub' | 'agent';
   label: string;
@@ -76,9 +76,10 @@ class ForceGraphSimulation {
   nodeMap = new Map<string, ForceNode>();
 
   constructor() {
-    this.simulation = forceSimulation<ForceNode>([])
+    // numDimensions=3 enables full volumetric (spherical) layout
+    this.simulation = forceSimulation<ForceNode>([], 3)
       .force('charge', forceManyBody<ForceNode>().strength((d) => (d.type === 'hub' ? -200 : -8)))
-      .force('center', forceCenter(0, 0).strength(0.03))
+      .force('center', forceCenter<ForceNode>(0, 0, 0).strength(0.03))
       .force('collide', forceCollide<ForceNode>().radius((d) => d.radius + 0.3).strength(0.7))
       .force(
         'link',
@@ -117,7 +118,9 @@ class ForceGraphSimulation {
         existing.label = t.symbol || t.name;
         existing.source = t.source;
       } else {
-        const angle = (i / Math.max(topTokens.length, 1)) * Math.PI * 2;
+        // Distribute hubs on a sphere using spherical coordinates
+        const phi = Math.acos(1 - 2 * (i + 0.5) / Math.max(topTokens.length, 1));
+        const theta = Math.PI * (1 + Math.sqrt(5)) * i; // golden angle
         const dist = 15 + Math.random() * 5;
         const node: ForceNode = {
           id: t.tokenAddress,
@@ -126,8 +129,9 @@ class ForceGraphSimulation {
           radius: scaledRadius,
           color: CHAIN_COLORS[t.chain ?? ''] || COLOR_PALETTE[i % COLOR_PALETTE.length],
           source: t.source,
-          x: Math.cos(angle) * dist,
-          y: Math.sin(angle) * dist,
+          x: Math.sin(phi) * Math.cos(theta) * dist,
+          y: Math.sin(phi) * Math.sin(theta) * dist,
+          z: Math.cos(phi) * dist,
         };
         this.nodeMap.set(t.tokenAddress, node);
         this.nodes.push(node);
@@ -147,7 +151,9 @@ class ForceGraphSimulation {
       if (added >= budget) break;
 
       const hub = this.nodeMap.get(edge.tokenAddress);
-      const angle = Math.random() * Math.PI * 2;
+      // Distribute agents spherically around their hub
+      const aPhi = Math.acos(1 - 2 * Math.random());
+      const aTheta = Math.random() * Math.PI * 2;
       const dist = 2 + Math.random() * 4;
       const node: ForceNode = {
         id: agentId,
@@ -157,8 +163,9 @@ class ForceGraphSimulation {
         color: '#555566',
         hubTokenAddress: edge.tokenAddress,
         source: edge.source,
-        x: (hub?.x ?? 0) + Math.cos(angle) * dist,
-        y: (hub?.y ?? 0) + Math.sin(angle) * dist,
+        x: (hub?.x ?? 0) + Math.sin(aPhi) * Math.cos(aTheta) * dist,
+        y: (hub?.y ?? 0) + Math.sin(aPhi) * Math.sin(aTheta) * dist,
+        z: (hub?.z ?? 0) + Math.cos(aPhi) * dist,
       };
       this.nodeMap.set(agentId, node);
       this.nodes.push(node);
@@ -900,7 +907,7 @@ const NetworkScene = memo<{
         const parts = node.id.split(':');
         if (parts.length >= 2 && parts[1].toLowerCase() === searchLower) {
           if (!agentPositionRef.current) agentPositionRef.current = new THREE.Vector3();
-          agentPositionRef.current.set(node.x ?? 0, 0, node.y ?? 0);
+          agentPositionRef.current.set(node.x ?? 0, node.y ?? 0, node.z ?? 0);
           found = true;
           break;
         }
@@ -1146,7 +1153,7 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
     getHubPosition: (index: number) => {
       const hubs = sim.nodes.filter((n) => n.type === 'hub');
       const hub = hubs[index];
-      return hub ? [hub.x ?? 0, 0, hub.y ?? 0] as [number, number, number] : null;
+      return hub ? [hub.x ?? 0, hub.y ?? 0, hub.z ?? 0] as [number, number, number] : null;
     },
     findAgentHub: (address: string) => {
       const lower = address.toLowerCase();
@@ -1178,9 +1185,10 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
       const hubs = sim.nodes.filter((n) => n.type === 'hub');
       const hub = hubs[index];
       if (!hub) return;
-      const x = hub.x ?? 0;
-      const z = hub.y ?? 0;
-      await api.animateTo([x, 25, z + 12], [x, 0, z], durationMs);
+      const hx = hub.x ?? 0;
+      const hy = hub.y ?? 0;
+      const hz = hub.z ?? 0;
+      await api.animateTo([hx, hy + 15, hz + 12], [hx, hy, hz], durationMs);
     },
     focusAgent: async (address, durationMs = 800) => {
       const api = cameraApiRef.current;
@@ -1196,10 +1204,11 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
         }
       }
       if (!agentNode) return;
-      const x = agentNode.x ?? 0;
-      const z = agentNode.y ?? 0;
+      const ax = agentNode.x ?? 0;
+      const ay = agentNode.y ?? 0;
+      const az = agentNode.z ?? 0;
       // Zoom in closer than hub view to show the agent in its local cluster
-      await api.animateTo([x, 18, z + 10], [x, 0, z], durationMs);
+      await api.animateTo([ax, ay + 12, az + 10], [ax, ay, az], durationMs);
     },
     setOrbitEnabled: (enabled) => {
       cameraApiRef.current?.setOrbitEnabled(enabled);
