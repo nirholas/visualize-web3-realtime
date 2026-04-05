@@ -140,6 +140,11 @@ export interface SwarmingConfig {
   /** Center gravity strength (default: 0.03) */
   centerPull?: number;
 
+  // -- Collaboration --
+
+  /** Enable multiplayer mode — shared cursors, annotations, presenter mode */
+  collaboration?: CollaborationConfig;
+
   // -- Events --
 
   /** Called when a node is clicked */

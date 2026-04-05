@@ -33,6 +33,9 @@ import { SwarmingScene } from './core/ForceGraph';
 import { CameraSetup, SnapshotHelper, type CameraApi } from './SwarmingCanvasHelpers';
 import { PostProcessing } from './PostProcessing';
 import { defaultMapEvent } from './defaults';
+import { CollaborationProvider, useCollaboration } from './collaboration/CollaborationProvider';
+import { CursorOverlay } from './collaboration/CursorOverlay';
+import { usePresenterFollow } from './collaboration/PresenterMode';
 
 // ---------------------------------------------------------------------------
 // Theme resolution
@@ -270,6 +273,7 @@ const SwarmingInner = memo<{
         maxNodes={config.nodes ?? 2000}
         showLabels
       />
+      {config.collaboration && <CollaborationScene />}
       <PostProcessing
         enabled={config.bloom !== false}
         bloomIntensity={theme.bloomIntensity}
@@ -279,6 +283,38 @@ const SwarmingInner = memo<{
   );
 });
 SwarmingInner.displayName = 'SwarmingInner';
+
+// ---------------------------------------------------------------------------
+// Collaboration scene elements (cursors, follow mode)
+// ---------------------------------------------------------------------------
+
+const CollaborationScene = memo(() => {
+  const collab = useCollaboration();
+  if (!collab) return null;
+
+  const followingPeer = collab.followingPeerId
+    ? collab.peers.find((p) => p.id === collab.followingPeerId) ?? null
+    : null;
+
+  return (
+    <>
+      <CursorOverlay peers={collab.peers} />
+      <CollaborationFollow followingPeer={followingPeer} />
+    </>
+  );
+});
+CollaborationScene.displayName = 'CollaborationScene';
+
+const CollaborationFollow = memo<{
+  followingPeer: import('./collaboration/types').Peer | null;
+}>(({ followingPeer }) => {
+  usePresenterFollow({
+    followingPeer,
+    enabled: followingPeer !== null,
+  });
+  return null;
+});
+CollaborationFollow.displayName = 'CollaborationFollow';
 
 // ---------------------------------------------------------------------------
 // Main component
@@ -386,7 +422,7 @@ const Swarming = forwardRef<SwarmingHandle, SwarmingConfig>(function Swarming(
     ? '#dc2626' : '#ef4444';
   const loadingColor = theme.hubColors[0] ?? '#6366f1';
 
-  return (
+  const content = (
     <div
       ref={containerRef}
       className={className}
@@ -429,6 +465,17 @@ const Swarming = forwardRef<SwarmingHandle, SwarmingConfig>(function Swarming(
       </Canvas>
     </div>
   );
+
+  // Wrap with CollaborationProvider when collaboration is configured
+  if (props.collaboration) {
+    return (
+      <CollaborationProvider config={props.collaboration}>
+        {content}
+      </CollaborationProvider>
+    );
+  }
+
+  return content;
 });
 
 const SwarmingMemo = memo(Swarming);

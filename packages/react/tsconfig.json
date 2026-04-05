@@ -17,6 +17,6 @@
     "resolveJsonModule": true,
     "isolatedModules": true
   },
-  "include": ["src/index.ts", "src/umd.ts", "src/SwarmingRenderer.tsx"],
+  "include": ["src"],
   "exclude": ["dist", "node_modules"]
 }

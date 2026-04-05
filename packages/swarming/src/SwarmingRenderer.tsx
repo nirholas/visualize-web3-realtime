@@ -19,6 +19,29 @@ import {
 } from '@web3viz/core';
 
 // ---------------------------------------------------------------------------
+// Internal node/edge shape (mirrors ForceGraphSimulation's public arrays)
+// ---------------------------------------------------------------------------
+
+interface SimNode {
+  id: string;
+  type: 'hub' | 'agent';
+  label: string;
+  radius: number;
+  color: string;
+  x?: number;
+  y?: number;
+  z?: number;
+  hubTokenAddress?: string;
+}
+
+interface SimEdge {
+  sourceId: string;
+  targetId: string;
+  source: string | SimNode;
+  target: string | SimNode;
+}
+
+// ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
@@ -66,7 +89,7 @@ const HubNodes = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
   useFrame(() => {
     const mesh = meshRef.current;
     if (!mesh) return;
-    const hubs = sim.nodes.filter((n) => n.type === 'hub');
+    const hubs = (sim.nodes as SimNode[]).filter((n) => n.type === 'hub');
     mesh.count = hubs.length;
     for (let i = 0; i < hubs.length; i++) {
       const node = hubs[i];
@@ -105,7 +128,7 @@ const AgentNodes = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
   useFrame(() => {
     const mesh = meshRef.current;
     if (!mesh) return;
-    const agents = sim.nodes.filter((n) => n.type === 'agent');
+    const agents = (sim.nodes as SimNode[]).filter((n) => n.type === 'agent');
     const count = Math.min(agents.length, MAX_AGENT_NODES);
     mesh.count = count;
     for (let i = 0; i < count; i++) {
@@ -156,7 +179,7 @@ const Edges = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
     const pA = posAttr.current;
     const cA = colorAttr.current;
     if (!pA || !cA || !lineRef.current) return;
-    const edges = sim.edges;
+    const edges = sim.edges as SimEdge[];
     const count = Math.min(edges.length, maxEdges);
     for (let i = 0; i < count; i++) {
       const edge = edges[i];
@@ -199,7 +222,7 @@ const HubLabels = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
   const [labels, setLabels] = useState<typeof labelsRef.current>([]);
 
   useFrame(() => {
-    const hubs = sim.nodes.filter((n) => n.type === 'hub');
+    const hubs = (sim.nodes as SimNode[]).filter((n) => n.type === 'hub');
     labelsRef.current = hubs.map((h) => ({
       id: h.id,
       label: h.label,

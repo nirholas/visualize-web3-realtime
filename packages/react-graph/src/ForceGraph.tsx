@@ -299,8 +299,9 @@ const NetworkScene = memo<{
   showShadows: boolean;
   groundColor: string;
   labelStyle?: React.CSSProperties;
-}>(({ sim, showLabels, showGround, showShadows, groundColor, labelStyle }) => {
-  useFrame(() => { sim.tick(); });
+  onTick?: () => void;
+}>(({ sim, showLabels, showGround, showShadows, groundColor, labelStyle, onTick }) => {
+  useFrame(() => { if (onTick) onTick(); else sim.tick(); });
 
   return (
     <>
@@ -461,22 +462,33 @@ const ForceGraph = forwardRef<GraphHandle, ForceGraphProps>(function ForceGraph(
     cameraPosition = [0, 55, 12],
     labelStyle,
     postProcessing,
+    renderer = 'auto',
+    onRendererReady,
   },
   ref,
 ) {
-  const simRef = useRef<ForceGraphSimulation | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const cameraApiRef = useRef<CameraApi | null>(null);
   const snapshotRef = useRef<(() => string | null) | null>(null);
 
-  if (!simRef.current) {
-    simRef.current = new ForceGraphSimulation(simulationConfig);
-  }
-  const sim = simRef.current;
+  // Use the WebGPU-aware simulation hook
+  const gpuSim = useWebGPUSimulation(renderer, simulationConfig);
+  const sim = gpuSim.sim;
+
+  // Notify parent when renderer is determined
+  const notifiedRef = useRef(false);
+  useEffect(() => {
+    if (notifiedRef.current) return;
+    const active = gpuSim.gpuActive ? 'webgpu' : 'webgl';
+    if (renderer === 'webgl' || gpuSim.gpuActive) {
+      notifiedRef.current = true;
+      onRendererReady?.(active);
+    }
+  }, [gpuSim.gpuActive, renderer, onRendererReady]);
 
   useImperativeHandle(ref, () => ({
     getCanvasElement: () => containerRef.current?.querySelector('canvas') ?? null,
-    getHubCount: () => sim.nodes.filter((n) => n.type === 'hub').length,
+    getHubCount: () => sim.nodes.filter((n: any) => n.type === 'hub').length,
     animateCameraTo: async (request) => {
       const api = cameraApiRef.current;
       if (!api) return;
@@ -489,7 +501,7 @@ const ForceGraph = forwardRef<GraphHandle, ForceGraphProps>(function ForceGraph(
     focusHub: async (index, durationMs = 1200) => {
       const api = cameraApiRef.current;
       if (!api) return;
-      const hubs = sim.nodes.filter((n) => n.type === 'hub');
+      const hubs = sim.nodes.filter((n: any) => n.type === 'hub');
       const hub = hubs[index];
       if (!hub) return;
       const hx = hub.x ?? 0;
@@ -508,12 +520,13 @@ const ForceGraph = forwardRef<GraphHandle, ForceGraphProps>(function ForceGraph(
   const tokenKey = topTokens.map((t) => `${t.tokenAddress}:${t.trades}`).join(',');
   const edgeCount = traderEdges.length;
   useEffect(() => {
-    sim.update(topTokens, traderEdges);
+    gpuSim.update(topTokens, traderEdges);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tokenKey, edgeCount]);
 
   useEffect(() => {
-    return () => { simRef.current?.dispose(); };
+    return () => { gpuSim.dispose(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -524,9 +537,7 @@ const ForceGraph = forwardRef<GraphHandle, ForceGraphProps>(function ForceGraph(
         gl={{ antialias: false, alpha: false, stencil: false }}
         dpr={[1, 1.5]}
         onCreated={({ gl }) => {
-          gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = 1.0;
-          gl.outputColorSpace = THREE.SRGBColorSpace;
+          configureWebGLRenderer(gl);
         }}
       >
         <CameraSetup apiRef={cameraApiRef} initialPosition={cameraPosition} />
@@ -538,6 +549,7 @@ const ForceGraph = forwardRef<GraphHandle, ForceGraphProps>(function ForceGraph(
           showShadows={showShadows}
           groundColor={groundColor}
           labelStyle={labelStyle}
+          onTick={gpuSim.tick}
         />
         <PostProcessing {...postProcessing} />
       </Canvas>

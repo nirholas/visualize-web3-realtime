@@ -22,3 +22,14 @@ export {
   usePluginManager,
   type SwarmingProviderProps,
 } from './SwarmingProvider';
+
+// Renderer infrastructure
+export {
+  detectRenderer,
+  getRendererSync,
+  type RendererType,
+  type RendererCapabilities,
+} from './renderers/auto-detect';
+export { WebGPUForceEngine, type GPUNodeData, type GPUEdgeData } from './renderers/webgpu';
+export { configureWebGLRenderer } from './renderers/webgl';
+export { useWebGPUSimulation } from './renderers/useWebGPUSimulation';
