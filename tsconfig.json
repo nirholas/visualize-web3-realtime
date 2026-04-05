@@ -28,9 +28,10 @@
       "@swarming/engine": ["./packages/engine/src/index.ts"],
       "@swarming/react": ["./packages/react/src/index.ts"],
       "@swarming/vue": ["./packages/vue/src/index.ts"],
-      "@swarming/svelte": ["./packages/svelte/src/index.ts"]
+      "@swarming/svelte": ["./packages/svelte/src/index.ts"],
+      "@swarming/react-native": ["./packages/react-native/src/index.ts"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "packages/executor", "apps/playground", "providers", "temp", "extracted", "scripts"]
+  "exclude": ["node_modules", "packages/executor", "apps/playground", "packages/react-native", "apps/mobile-demo", "providers", "temp", "extracted", "scripts"]
 }

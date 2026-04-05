@@ -85,37 +85,3 @@ export {
   createProvider,
   type CreateProviderConfig,
 } from './providers';
-
-// Plugin system
-export {
-  definePlugin,
-  createPluginManager,
-  type PluginDefinition,
-  type SourcePluginDefinition,
-  type ThemePluginDefinition,
-  type RendererPluginDefinition,
-  type ResolvedPlugin,
-  type PluginManager,
-  type ThemeConfig,
-  type RendererPluginHooks,
-  type PluginMeta,
-  type PluginConfigSchema,
-  type PluginConfigField,
-  type PluginConfigFieldType,
-  type PluginProviderFactory,
-} from './plugin';
-
-// Built-in plugins
-export {
-  websocketPlugin,
-  solanaPlugin,
-  ethereumPlugin,
-  mockPlugin,
-  type WebSocketPluginConfig,
-  type SolanaPluginConfig,
-  type EthereumPluginConfig,
-  type MockPluginConfig,
-} from './plugins';
-
-// Built-in themes
-export { darkTheme, lightTheme, DARK_THEME, LIGHT_THEME } from './themes';

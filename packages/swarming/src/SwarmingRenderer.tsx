@@ -6,11 +6,10 @@
 // logic so the UMD bundle has zero workspace peer dependencies.
 // ============================================================================
 
-import React, { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Environment, Html, OrbitControls } from '@react-three/drei';
 import { EffectComposer, SMAA, Bloom } from '@react-three/postprocessing';
-import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
 import {
   ForceGraphSimulation,

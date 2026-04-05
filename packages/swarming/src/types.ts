@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import type { CollaborationConfig } from './collaboration/types';
 
 // ---------------------------------------------------------------------------
 // Node & Edge types

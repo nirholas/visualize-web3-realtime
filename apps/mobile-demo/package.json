@@ -1,0 +1,41 @@
+{
+  "name": "@web3viz/mobile-demo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Expo demo app showcasing @swarming/react-native",
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@swarming/react-native": "*",
+    "@web3viz/core": "*",
+    "expo": "~50.0.0",
+    "expo-battery": "~7.0.0",
+    "expo-constants": "~15.0.0",
+    "expo-gl": "~13.0.0",
+    "expo-haptics": "~12.0.0",
+    "expo-linking": "~6.0.0",
+    "expo-router": "~3.0.0",
+    "expo-screen-orientation": "~6.0.0",
+    "expo-sharing": "~11.0.0",
+    "expo-status-bar": "~1.11.0",
+    "react": "18.2.0",
+    "react-native": "0.73.0",
+    "react-native-gesture-handler": "~2.14.0",
+    "react-native-reanimated": "~3.6.0",
+    "react-native-safe-area-context": "4.8.0",
+    "react-native-screens": "~3.29.0",
+    "react-native-webview": "13.6.0",
+    "react-native-view-shot": "3.8.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.24.0",
+    "@types/react": "^18.3.0",
+    "typescript": "^5.5.0"
+  }
+}

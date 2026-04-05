@@ -35,22 +35,34 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@web3viz/core": "*",
+    "d3-force-3d": "^3.0.6"
+  },
+  "peerDependencies": {
+    "@react-three/drei": ">=9.0.0",
+    "@react-three/fiber": ">=8.0.0",
+    "@react-three/postprocessing": ">=2.0.0",
+    "postprocessing": ">=6.0.0",
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0",
+    "three": ">=0.150.0"
+  },
+  "peerDependenciesMeta": {
+    "@react-three/postprocessing": { "optional": true },
+    "postprocessing": { "optional": true }
+  },
+  "devDependencies": {
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^8.18.0",
     "@react-three/postprocessing": "^2.19.1",
-    "@swarming/engine": "*",
-    "d3-force-3d": "^3.0.6",
-    "postprocessing": "^6.39.0",
-    "react": "^18.3.0",
-    "react-dom": "^18.3.0",
-    "three": "^0.169.0"
-  },
-  "devDependencies": {
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
     "@types/three": "^0.169.0",
-    "@web3viz/core": "*",
     "@web3viz/react-graph": "*",
+    "postprocessing": "^6.39.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "three": "^0.169.0",
     "tsup": "^8.0.0",
     "typescript": "^5.5.0"
   }

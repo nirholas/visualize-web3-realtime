@@ -15,6 +15,9 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
 import { ForceGraphSimulation, type ForceGraphConfig, type TopToken, type TraderEdge, type GraphHandle } from '@web3viz/core';
 import PostProcessing, { type PostProcessingProps } from './PostProcessing';
+import { useWebGPUSimulation } from './renderers/useWebGPUSimulation';
+import { configureWebGLRenderer } from './renderers/webgl';
+import type { RendererType } from './renderers/auto-detect';
 
 // ============================================================================
 // Constants
@@ -50,6 +53,15 @@ export interface ForceGraphProps {
   showShadows?: boolean;
   /** Post-processing configuration */
   postProcessing?: PostProcessingProps;
+  /**
+   * Renderer backend:
+   * - 'auto': Detect WebGPU, fall back to WebGL (default)
+   * - 'webgpu': Force WebGPU (error if unavailable)
+   * - 'webgl': Force WebGL (current behavior)
+   */
+  renderer?: RendererType;
+  /** Called when the active renderer is determined */
+  onRendererReady?: (activeRenderer: 'webgpu' | 'webgl') => void;
 }
 
 // ============================================================================
