@@ -2,26 +2,26 @@ import "./globals.css";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Web3 Realtime Visualizer",
-  description: "Real-time 3D visualization of PumpFun token activity",
+  title: "swarming.world",
+  description: "Real-time 3D visualization of streaming data — blockchain, AI agents, and beyond.",
   openGraph: {
-    title: "Web3 Realtime Visualizer",
-    description: "Explore a living, breathing financial network in real time.",
+    title: "swarming.world",
+    description: "Explore a living, breathing network in real time.",
     type: "website",
-    siteName: "PumpFun World",
+    siteName: "swarming.world",
     images: [
       {
         url: "/og-preview.png",
         width: 1200,
         height: 630,
-        alt: "PumpFun World — a living financial network in real time",
+        alt: "swarming.world — a living network in real time",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Web3 Realtime Visualizer",
-    description: "Explore a living, breathing financial network in real time.",
+    title: "swarming.world",
+    description: "Explore a living, breathing network in real time.",
     images: ["/og-preview.png"],
   },
 };

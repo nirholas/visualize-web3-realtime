@@ -1,4 +1,4 @@
-# visualize-web3-realtime — Complete Source Documentation
+# swarming.world — Complete Source Documentation
 
 > **Every file, every function, every line — exhaustively documented.**
 

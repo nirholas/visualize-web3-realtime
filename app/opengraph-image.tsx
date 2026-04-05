@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
-export const alt = 'PumpFun World — real-time 3D token visualization';
+export const alt = 'swarming.world — real-time 3D streaming data visualization';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -40,7 +40,7 @@ export default function OGImage() {
               padding: '24px 48px',
             }}
           >
-            PumpFun World
+            swarming.world
           </div>
           <div
             style={{
@@ -51,7 +51,7 @@ export default function OGImage() {
               textTransform: 'uppercase',
             }}
           >
-            Real-time 3D Token Visualization
+            Real-time 3D Streaming Data Visualization
           </div>
         </div>
       </div>

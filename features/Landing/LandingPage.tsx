@@ -124,7 +124,7 @@ export default function LandingPage() {
           textTransform: 'uppercase',
         }}
       >
-        Web3 Realtime Visualizer
+        swarming.world
       </div>
     </div>
   )

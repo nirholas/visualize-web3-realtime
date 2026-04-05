@@ -56,7 +56,7 @@ function EmbedInner() {
         }}
         target="_blank"
       >
-        ⚡ PumpFun World
+        ⚡ swarming.world
       </a>
     </div>
   );
