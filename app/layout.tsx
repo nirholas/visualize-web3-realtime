@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import Script from "next/script";
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://swarming.world'),
@@ -76,23 +77,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             to { transform: rotate(360deg); }
           }
         `}} />
-        {/* Boot-loader dismissal script — placed in <head> so it runs
-            independently of React hydration. The body <script> approach
-            doesn't work reliably in Next.js App Router because it gets
-            serialized into the RSC payload instead of rendering as inline HTML. */}
-        <script dangerouslySetInnerHTML={{ __html: `
-          (function() {
-            function dismiss() {
-              var el = document.getElementById('boot-loader');
-              if (!el || !el.parentNode) return;
-              el.classList.add('hide');
-              setTimeout(function() { if (el.parentNode) el.remove(); }, 400);
-            }
-            window.addEventListener('webgl-ready', dismiss);
-            // Safety: force-remove after 4s even if React never hydrates
-            setTimeout(dismiss, 4000);
-          })();
-        `}} />
       </head>
       <body>
         {/* Hardcoded boot loader — visible before React hydrates */}
@@ -101,6 +85,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <span className="label">Initializing</span>
         </div>
         {children}
+        {/* Dismiss boot loader — uses next/script beforeInteractive so it
+            actually inlines into the HTML and runs even if React fails to hydrate */}
+        <Script id="boot-dismiss" strategy="beforeInteractive">{`
+          (function() {
+            function dismiss() {
+              var el = document.getElementById('boot-loader');
+              if (!el || !el.parentNode) return;
+              el.classList.add('hide');
+              setTimeout(function() { if (el.parentNode) el.remove(); }, 400);
+            }
+            window.addEventListener('webgl-ready', dismiss);
+            setTimeout(dismiss, 4000);
+          })();
+        `}</Script>
       </body>
     </html>
   );
