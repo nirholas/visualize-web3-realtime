@@ -5,7 +5,6 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import InfoPopover from '@/features/World/InfoPopover';
 import JourneyOverlay from '@/features/World/JourneyOverlay';
-import LoadingScreen from '@/features/World/LoadingScreen';
 import { type ShareColors } from '@/features/World/SharePanel';
 import { useProviders, CustomStreamProvider } from '@web3viz/providers';
 import type { DataProvider } from '@web3viz/core';

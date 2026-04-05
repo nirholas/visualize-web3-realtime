@@ -1,6 +1,5 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import Script from "next/script";
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://swarming.world'),
@@ -36,58 +35,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@200;300;400;500;600&display=swap"
           rel="stylesheet"
         />
-        {/* Inline boot loader — masks WebGL compilation with a CSS-only spinner.
-            Rendered server-side so it appears instantly before any JS executes.
-            The React LoadingScreen component hides this via #boot-loader { display:none }
-            once the Canvas is ready. */}
-        <style dangerouslySetInnerHTML={{ __html: `
-          #boot-loader {
-            position: fixed;
-            inset: 0;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 20px;
-            background: #0a0a12;
-            transition: opacity 300ms ease;
-          }
-          #boot-loader.hide {
-            opacity: 0;
-            pointer-events: none;
-          }
-          #boot-loader .spinner {
-            width: 36px;
-            height: 36px;
-            border: 2px solid #1e293b;
-            border-top-color: #60a5fa;
-            border-radius: 50%;
-            animation: boot-spin 0.8s linear infinite;
-          }
-          #boot-loader .label {
-            font-family: 'IBM Plex Mono', monospace;
-            font-size: 10px;
-            font-weight: 400;
-            letter-spacing: 0.14em;
-            text-transform: uppercase;
-            color: #555;
-          }
-          @keyframes boot-spin {
-            to { transform: rotate(360deg); }
-          }
-        `}} />
       </head>
       <body>
-        {/* Hardcoded boot loader — visible before React hydrates */}
-        <div id="boot-loader">
-          <div className="spinner" />
-          <span className="label">Initializing</span>
-        </div>
         {children}
-        {/* Dismiss boot loader — beforeInteractive with src produces a real
-            <script> tag in the HTML that runs before React hydrates */}
-        <Script src="/boot-dismiss.js" strategy="beforeInteractive" />
       </body>
     </html>
   );
