@@ -11,17 +11,17 @@ import {
   forceManyBody,
   forceCenter,
   forceCollide,
-  type SimulationNodeDatum,
-  type SimulationLinkDatum,
-} from 'd3-force';
+  type SimulationNodeDatum3D,
+} from 'd3-force-3d';
+import type { SimulationLinkDatum } from 'd3-force';
 
 import type { TopToken, TraderEdge, GraphNode, GraphEdge } from '../types';
 
 // ---------------------------------------------------------------------------
-// Internal node/edge types (extend d3-force interfaces)
+// Internal node/edge types (extend d3-force-3d interfaces)
 // ---------------------------------------------------------------------------
 
-interface ForceNode extends SimulationNodeDatum {
+interface ForceNode extends SimulationNodeDatum3D {
   id: string;
   type: 'hub' | 'agent';
   label: string;
@@ -106,14 +106,15 @@ export class ForceGraphSimulation {
     this.config = { ...DEFAULT_CONFIG, ...config };
     const c = this.config;
 
-    this.simulation = forceSimulation<ForceNode>([])
+    // numDimensions=3 enables full volumetric (spherical) layout
+    this.simulation = forceSimulation<ForceNode>([], 3)
       .force(
         'charge',
         forceManyBody<ForceNode>().strength((d) =>
           d.type === 'hub' ? c.hubChargeStrength : c.agentChargeStrength,
         ),
       )
-      .force('center', forceCenter(0, 0).strength(c.centerStrength))
+      .force('center', forceCenter<ForceNode>(0, 0, 0).strength(c.centerStrength))
       .force(
         'collide',
         forceCollide<ForceNode>()
@@ -160,7 +161,9 @@ export class ForceGraphSimulation {
         existing.radius = scaledRadius;
         existing.label = t.symbol || t.name;
       } else {
-        const angle = (i / Math.max(topTokens.length, 1)) * Math.PI * 2;
+        // Distribute hubs on a sphere using spherical coordinates
+        const phi = Math.acos(1 - 2 * (i + 0.5) / Math.max(topTokens.length, 1));
+        const theta = Math.PI * (1 + Math.sqrt(5)) * i; // golden angle
         const dist = 15 + Math.random() * 5;
         const node: ForceNode = {
           id: t.tokenAddress,
@@ -168,8 +171,9 @@ export class ForceGraphSimulation {
           label: t.symbol || t.name,
           radius: scaledRadius,
           color: c.hubColors[i % c.hubColors.length],
-          x: Math.cos(angle) * dist,
-          y: Math.sin(angle) * dist,
+          x: Math.sin(phi) * Math.cos(theta) * dist,
+          y: Math.sin(phi) * Math.sin(theta) * dist,
+          z: Math.cos(phi) * dist,
         };
         this.nodeMap.set(t.tokenAddress, node);
         this.nodes.push(node);
@@ -189,7 +193,9 @@ export class ForceGraphSimulation {
       if (added >= budget) break;
 
       const hub = this.nodeMap.get(edge.tokenAddress);
-      const angle = Math.random() * Math.PI * 2;
+      // Distribute agents spherically around their hub
+      const aPhi = Math.acos(1 - 2 * Math.random());
+      const aTheta = Math.random() * Math.PI * 2;
       const dist = 2 + Math.random() * 4;
       const node: ForceNode = {
         id: agentId,
@@ -198,8 +204,9 @@ export class ForceGraphSimulation {
         radius: c.agentRadius,
         color: c.agentColor,
         hubTokenAddress: edge.tokenAddress,
-        x: (hub?.x ?? 0) + Math.cos(angle) * dist,
-        y: (hub?.y ?? 0) + Math.sin(angle) * dist,
+        x: (hub?.x ?? 0) + Math.sin(aPhi) * Math.cos(aTheta) * dist,
+        y: (hub?.y ?? 0) + Math.sin(aPhi) * Math.sin(aTheta) * dist,
+        z: (hub?.z ?? 0) + Math.cos(aPhi) * dist,
       };
       this.nodeMap.set(agentId, node);
       this.nodes.push(node);
@@ -263,6 +270,7 @@ export class ForceGraphSimulation {
         color: n.color,
         x: n.x,
         y: n.y,
+        z: n.z,
       }));
   }
 
@@ -279,6 +287,7 @@ export class ForceGraphSimulation {
         hubTokenAddress: n.hubTokenAddress,
         x: n.x,
         y: n.y,
+        z: n.z,
       }));
   }
 
@@ -305,6 +314,7 @@ export class ForceGraphSimulation {
       hubTokenAddress: n.hubTokenAddress,
       x: n.x,
       y: n.y,
+      z: n.z,
     };
   }
 

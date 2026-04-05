@@ -303,7 +303,7 @@ function HubNodeMesh({
   useFrame((state, delta) => {
     const nodeData = sim.nodeMap.get(nodeId);
     if (!nodeData || !groupRef.current || !meshRef.current || !materialRef.current) return;
-    groupRef.current.position.set(nodeData.x ?? 0, 0, nodeData.y ?? 0);
+    groupRef.current.position.set(nodeData.x ?? 0, nodeData.y ?? 0, nodeData.z ?? 0);
 
     const baseScale = nodeData.radius;
     // Gentle breathe animation — each hub out of phase via paletteIndex
@@ -474,22 +474,24 @@ const AgentNodes = memo<{
         isSearchedAgent = parts.length >= 2 && parts[1].toLowerCase() === searchLower;
       }
 
-      // Orbital drift — each agent slowly orbits its sim position
+      // Orbital drift — each agent slowly orbits its sim position in 3D
       const orbitAngle = state.clock.getElapsedTime() * 0.15 + i * 0.37;
+      const orbitTilt = state.clock.getElapsedTime() * 0.1 + i * 0.53;
       const orbitDrift = 0.5;
-      const driftX = Math.cos(orbitAngle) * orbitDrift;
-      const driftZ = Math.sin(orbitAngle) * orbitDrift;
+      const driftX = Math.cos(orbitAngle) * Math.cos(orbitTilt) * orbitDrift;
+      const driftY = Math.sin(orbitTilt) * orbitDrift;
+      const driftZ = Math.sin(orbitAngle) * Math.cos(orbitTilt) * orbitDrift;
 
       if (isSearchedAgent) {
         // Searched agent: 3x size with gentle pulse, bright blue
         const pulse = 1 + Math.sin(state.clock.getElapsedTime() * Math.PI) * 0.05;
-        tempObj.position.set((node.x ?? 0) + driftX, 0, (node.y ?? 0) + driftZ);
+        tempObj.position.set((node.x ?? 0) + driftX, (node.y ?? 0) + driftY, (node.z ?? 0) + driftZ);
         tempObj.scale.setScalar(node.radius * 3 * pulse);
         tempObj.updateMatrix();
         mesh.setMatrixAt(i, tempObj.matrix);
         tempColor.set('#818cf8');
       } else {
-        tempObj.position.set((node.x ?? 0) + driftX, 0, (node.y ?? 0) + driftZ);
+        tempObj.position.set((node.x ?? 0) + driftX, (node.y ?? 0) + driftY, (node.z ?? 0) + driftZ);
         tempObj.scale.setScalar(node.radius);
         tempObj.updateMatrix();
         mesh.setMatrixAt(i, tempObj.matrix);
@@ -574,11 +576,11 @@ const Edges = memo<{
       const idx = i * 6;
 
       pA.array[idx] = src.x ?? 0;
-      pA.array[idx + 1] = 0;
-      pA.array[idx + 2] = src.y ?? 0;
+      pA.array[idx + 1] = src.y ?? 0;
+      pA.array[idx + 2] = src.z ?? 0;
       pA.array[idx + 3] = tgt.x ?? 0;
-      pA.array[idx + 4] = 0;
-      pA.array[idx + 5] = tgt.y ?? 0;
+      pA.array[idx + 4] = tgt.y ?? 0;
+      pA.array[idx + 5] = tgt.z ?? 0;
 
       const isHubEdge = src.type === 'hub' && tgt.type === 'hub';
 
@@ -707,13 +709,22 @@ const EdgeParticles = memo<{ sim: ForceGraphSimulation; isDark?: boolean }>(({ s
       const src = edge.source as ForceNode;
       const tgt = edge.target as ForceNode;
 
-      // Interpolate position along the edge with a slight arc
+      // Interpolate position along the edge in full 3D with a slight arc offset
       const t = p.phase;
-      const x = (src.x ?? 0) + ((tgt.x ?? 0) - (src.x ?? 0)) * t;
-      const z = (src.y ?? 0) + ((tgt.y ?? 0) - (src.y ?? 0)) * t;
-      const arc = Math.sin(t * Math.PI) * 0.8; // arc height
+      const sx = src.x ?? 0, sy = src.y ?? 0, sz = src.z ?? 0;
+      const tx = tgt.x ?? 0, ty = tgt.y ?? 0, tz = tgt.z ?? 0;
+      const x = sx + (tx - sx) * t;
+      const y = sy + (ty - sy) * t;
+      const z = sz + (tz - sz) * t;
+      // Arc perpendicular to the edge direction for visual separation
+      const arc = Math.sin(t * Math.PI) * 0.8;
+      // Compute a perpendicular offset using cross product with up vector
+      const dx = tx - sx, dy = ty - sy, dz = tz - sz;
+      const len = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+      // Cross with (0,1,0) to get perpendicular direction
+      const px = -dz / len, pz = dx / len;
 
-      tempObj.position.set(x, arc, z);
+      tempObj.position.set(x + px * arc, y, z + pz * arc);
       tempObj.scale.setScalar(0.08);
       tempObj.updateMatrix();
       mesh.setMatrixAt(i, tempObj.matrix);

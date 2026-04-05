@@ -138,8 +138,8 @@ export function orbStyle(colorIndex: number): { background: string; boxShadow: s
   const c = ORB_COLORS[colorIndex % ORB_COLORS.length]!
   const [r, g, b] = c.rgb
   return {
-    background: `radial-gradient(circle at 40% 40%, rgba(${r},${g},${b},0.50), rgba(${r},${g},${b},0.16) 50%, transparent 70%)`,
-    boxShadow: `0 0 30px 8px rgba(${r},${g},${b},0.35), 0 0 60px 20px rgba(${r},${g},${b},0.20), 0 0 120px 50px rgba(${r},${g},${b},0.08)`,
-    boxShadowHover: `0 0 35px 10px rgba(${r},${g},${b},0.50), 0 0 70px 25px rgba(${r},${g},${b},0.30), 0 0 140px 60px rgba(${r},${g},${b},0.12)`,
+    background: `radial-gradient(circle at 40% 40%, rgba(${r},${g},${b},0.30), rgba(${r},${g},${b},0.10) 50%, transparent 70%)`,
+    boxShadow: `0 0 20px 4px rgba(${r},${g},${b},0.18), 0 0 40px 12px rgba(${r},${g},${b},0.10), 0 0 70px 30px rgba(${r},${g},${b},0.04)`,
+    boxShadowHover: `0 0 24px 6px rgba(${r},${g},${b},0.28), 0 0 50px 16px rgba(${r},${g},${b},0.16), 0 0 90px 40px rgba(${r},${g},${b},0.06)`,
   }
 }

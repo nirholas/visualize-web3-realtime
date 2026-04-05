@@ -164,10 +164,13 @@ export interface GraphNode {
   hubTokenAddress?: string;
   x?: number;
   y?: number;
+  z?: number;
   vx?: number;
   vy?: number;
+  vz?: number;
   fx?: number | null;
   fy?: number | null;
+  fz?: number | null;
 }
 
 export interface GraphEdge {

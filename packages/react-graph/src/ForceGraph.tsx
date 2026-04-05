@@ -10,8 +10,8 @@ import React, {
   useState,
 } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { ContactShadows, Environment, Html, MapControls } from '@react-three/drei';
-import type { MapControls as MapControlsImpl } from 'three-stdlib';
+import { ContactShadows, Environment, Html, OrbitControls } from '@react-three/drei';
+import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
 import { ForceGraphSimulation, type ForceGraphConfig, type TopToken, type TraderEdge, type GraphHandle } from '@web3viz/core';
 import PostProcessing, { type PostProcessingProps } from './PostProcessing';
@@ -38,7 +38,7 @@ export interface ForceGraphProps {
   simulationConfig?: ForceGraphConfig;
   /** Whether to show hub labels */
   showLabels?: boolean;
-  /** Whether to show the ground plane */
+  /** Whether to show the ground plane (default false for volumetric layout) */
   showGround?: boolean;
   /** Camera field of view */
   fov?: number;
@@ -82,7 +82,8 @@ const HubNodes = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
 
     for (let i = 0; i < hubs.length; i++) {
       const node = hubs[i];
-      tempObj.position.set(node.x ?? 0, 0, node.y ?? 0);
+      // Map d3-force-3d (x,y,z) → Three.js (x,z,y) so Y-up = d3's z-axis
+      tempObj.position.set(node.x ?? 0, node.z ?? 0, node.y ?? 0);
       tempObj.scale.setScalar(node.radius);
       tempObj.updateMatrix();
       mesh.setMatrixAt(i, tempObj.matrix);
@@ -102,7 +103,7 @@ HubNodes.displayName = 'HubNodes';
 const HubLabels = memo<{ sim: ForceGraphSimulation; labelStyle?: React.CSSProperties }>(
   ({ sim, labelStyle }) => {
     const groupRef = useRef<THREE.Group>(null);
-    const labelsRef = useRef<{ id: string; label: string; x: number; z: number; radius: number }[]>([]);
+    const labelsRef = useRef<{ id: string; label: string; x: number; y: number; z: number; radius: number }[]>([]);
     const [labels, setLabels] = useState<typeof labelsRef.current>([]);
 
     useFrame(() => {
@@ -111,7 +112,8 @@ const HubLabels = memo<{ sim: ForceGraphSimulation; labelStyle?: React.CSSProper
         id: h.id,
         label: h.label,
         x: h.x ?? 0,
-        z: h.y ?? 0,
+        y: h.z ?? 0, // d3 z → Three.js Y (up)
+        z: h.y ?? 0, // d3 y → Three.js Z (depth)
         radius: h.radius,
       }));
       if (Math.random() < 0.15) {
@@ -122,7 +124,7 @@ const HubLabels = memo<{ sim: ForceGraphSimulation; labelStyle?: React.CSSProper
     return (
       <group ref={groupRef}>
         {labels.map((l) => (
-          <Html key={l.id} position={[l.x, l.radius + 0.5, l.z]} center distanceFactor={50} style={{ pointerEvents: 'none' }}>
+          <Html key={l.id} position={[l.x, l.y + l.radius + 0.5, l.z]} center distanceFactor={50} style={{ pointerEvents: 'none' }}>
             <div
               style={{
                 fontFamily: 'monospace',
@@ -173,7 +175,7 @@ const AgentNodes = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
 
     for (let i = 0; i < count; i++) {
       const node = agents[i];
-      tempObj.position.set(node.x ?? 0, 0, node.y ?? 0);
+      tempObj.position.set(node.x ?? 0, node.z ?? 0, node.y ?? 0);
       tempObj.scale.setScalar(node.radius);
       tempObj.updateMatrix();
       mesh.setMatrixAt(i, tempObj.matrix);
@@ -231,10 +233,10 @@ const Edges = memo<{ sim: ForceGraphSimulation }>(({ sim }) => {
       const idx = i * 6;
 
       pA.array[idx] = src.x ?? 0;
-      pA.array[idx + 1] = 0;
+      pA.array[idx + 1] = src.z ?? 0;   // d3 z → Three.js Y
       pA.array[idx + 2] = src.y ?? 0;
       pA.array[idx + 3] = tgt.x ?? 0;
-      pA.array[idx + 4] = 0;
+      pA.array[idx + 4] = tgt.z ?? 0;   // d3 z → Three.js Y
       pA.array[idx + 5] = tgt.y ?? 0;
 
       const isHubEdge = src.type === 'hub' && tgt.type === 'hub';
@@ -342,7 +344,7 @@ const CameraSetup = memo<{
   initialPosition?: [number, number, number];
 }>(({ apiRef, initialPosition = [0, 55, 12] }) => {
   const { camera } = useThree();
-  const controlsRef = useRef<MapControlsImpl>(null);
+  const controlsRef = useRef<OrbitControlsImpl>(null);
   const animRef = useRef<CameraAnimation | null>(null);
 
   useEffect(() => {
@@ -395,14 +397,14 @@ const CameraSetup = memo<{
   });
 
   return (
-    <MapControls
+    <OrbitControls
       ref={controlsRef}
-      enableRotate={false}
+      enableRotate
       enableDamping
       dampingFactor={0.15}
       minDistance={10}
       maxDistance={150}
-      screenSpacePanning
+      enablePan
     />
   );
 });
@@ -442,8 +444,8 @@ const ForceGraph = forwardRef<GraphHandle, ForceGraphProps>(function ForceGraph(
     groundColor = '#f8f8fa',
     simulationConfig,
     showLabels = true,
-    showGround = true,
-    showShadows = true,
+    showGround = false,
+    showShadows = false,
     fov = 45,
     cameraPosition = [0, 55, 12],
     labelStyle,
@@ -479,9 +481,10 @@ const ForceGraph = forwardRef<GraphHandle, ForceGraphProps>(function ForceGraph(
       const hubs = sim.nodes.filter((n) => n.type === 'hub');
       const hub = hubs[index];
       if (!hub) return;
-      const x = hub.x ?? 0;
-      const z = hub.y ?? 0;
-      await api.animateTo([x, 25, z + 12], [x, 0, z], durationMs);
+      const hx = hub.x ?? 0;
+      const hy = hub.z ?? 0; // d3 z → Three.js Y
+      const hz = hub.y ?? 0; // d3 y → Three.js Z
+      await api.animateTo([hx, hy + 15, hz + 12], [hx, hy, hz], durationMs);
     },
     setOrbitEnabled: (enabled) => {
       cameraApiRef.current?.setOrbitEnabled(enabled);

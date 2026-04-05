@@ -6,8 +6,8 @@
 // ── Typography ──────────────────────────────────────────────────────────────
 
 export const FONT_FAMILY = "'IBM Plex Mono', monospace"
-export const BODY_FONT = `300 16px ${FONT_FAMILY}`
-export const BODY_LINE_HEIGHT = 28
+export const BODY_FONT = `300 15px ${FONT_FAMILY}`
+export const BODY_LINE_HEIGHT = 30
 export const HEADLINE_FONT_FAMILY = FONT_FAMILY
 export const PULLQUOTE_FONT = `500 12px ${FONT_FAMILY}`
 export const PULLQUOTE_LINE_HEIGHT = 22
@@ -16,8 +16,8 @@ export const DROP_CAP_LINES = 3
 // ── Colors ──────────────────────────────────────────────────────────────────
 
 export const BG_COLOR = '#0a0a12'
-export const TEXT_COLOR = '#d0d0dc'
-export const HEADLINE_COLOR = '#e2e8f0'
+export const TEXT_COLOR = '#e8e8f0'
+export const HEADLINE_COLOR = '#ffffff'
 export const DROP_CAP_COLOR = '#818cf8'
 export const MUTED_COLOR = '#555570'
 export const ACCENT_INDIGO = '#818cf8'
@@ -37,7 +37,7 @@ export const GUTTER = 48
 export const COL_GAP = 40
 export const BOTTOM_GAP = 20
 export const MIN_SLOT_WIDTH = 50
-export const MAX_CONTENT_WIDTH = 1500
+export const MAX_CONTENT_WIDTH = 1200
 
 // ── Responsive ──────────────────────────────────────────────────────────────
 

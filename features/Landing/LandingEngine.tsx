@@ -167,8 +167,8 @@ export default function LandingEngine() {
         }
         .le-headline-line {
           position: absolute; white-space: pre; z-index: 2;
-          font-weight: 300; color: ${HEADLINE_COLOR};
-          letter-spacing: 0.06em; text-transform: uppercase;
+          font-weight: 700; color: ${HEADLINE_COLOR};
+          letter-spacing: 0.02em; text-transform: uppercase;
           user-select: text; -webkit-user-select: text;
           opacity: 0; transform: translateY(8px);
           animation: le-headline-in 0.6s ease forwards;
@@ -401,7 +401,7 @@ function init(stage: HTMLDivElement): () => void {
 
     while (lo <= hi) {
       const size = Math.floor((lo + hi) / 2)
-      const font = `300 ${size}px ${HEADLINE_FONT_FAMILY}`
+      const font = `700 ${size}px ${HEADLINE_FONT_FAMILY}`
       const lineHeight = Math.round(size * 1.05)
       const prepared = prepareWithSegments(HEADLINE_TEXT, font)
       let breaksWord = false
@@ -590,7 +590,7 @@ function init(stage: HTMLDivElement): () => void {
       headlineWidth, maxHeadlineHeight, isNarrow ? 32 : 72,
     )
     const hlLineHeight = Math.round(hlSize * 1.05)
-    const hlFont = `300 ${hlSize}px ${HEADLINE_FONT_FAMILY}`
+    const hlFont = `700 ${hlSize}px ${HEADLINE_FONT_FAMILY}`
     const hlHeight = hlLines.length * hlLineHeight
 
     // ── Body columns ────────────────────────────────────────────────────

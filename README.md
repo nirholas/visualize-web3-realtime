@@ -288,6 +288,19 @@ web3viz/
 
 ---
 
+## Landing Page
+
+The landing page uses the **Pretext Editorial Engine** (`@chenglou/pretext`) to flow responsive editorial text around a live 3D force graph.
+
+- **Giza Scene** — 8 protocol nodes (Morpho, Aave, Compound, Moonwell, Euler, Fluid, Uniswap, Lido) with 120 orbiting agent particles each
+- **Custom GLSL shaders** — Simplex 3D noise for organic sphere surfaces, orbital agent motion, protocol-to-protocol connection trails
+- **Editorial overlay** — Text reflows every frame around the 3D graph projection using Pretext's cursor-based line layout and DOM pooling
+- **Orb physics** — Velocity integration, wall bouncing, and inter-orb repulsion for animated background elements
+
+Routes: `/` and `/landing` both serve the landing engine.
+
+---
+
 ## Reference App: PumpFun Visualizer
 
 The included reference app connects to live Solana data:
@@ -299,14 +312,107 @@ The included reference app connects to live Solana data:
 - **Share/export** — Screenshot with metadata overlay, social sharing
 - **Guided tour** — 7-step narrated camera walkthrough
 
+### Desktop OS Shell
+
+The world view is wrapped in a full desktop metaphor:
+
+- **Taskbar** — Fixed bottom bar with pinned app icons, system tray, and live clock
+- **Start Menu** — Launch panel with app grid (Sources, Stats, Chat, Timeline, etc.)
+- **Floating windows** — Draggable, minimizable, closable panels with glassmorphism styling
+- **Window manager** — Z-index stacking, focus tracking, state persisted to localStorage
+
+**Keyboard shortcuts:**
+
+| Key | Action |
+|---|---|
+| `?` | Toggle help overlay |
+| `Space` | Play / Pause |
+| `Escape` | Close menu / overlay |
+| `1`–`6` | Toggle windows (Filters, Live Feed, Stats, AI Chat, Share, Data Sources) |
+
+### Onboarding
+
+A 7-step guided walkthrough for first-time visitors:
+
+1. **Welcome** — Introduction to the 3D blockchain visualization
+2. **Start Menu** — Launch tools from the W3 button
+3. **Data Sources** — Enable providers (PumpFun, Ethereum) to stream live data
+4. **Graph Controls** — Drag to rotate, scroll to zoom, hover hubs for categories
+5. **Taskbar & Windows** — Drag, minimize, close floating windows
+6. **Search** — Find wallets via the Stats window; camera flies to the address
+7. **Finish** — Ready to explore
+
+Completion state is persisted to localStorage. The initial prompt appears non-intrusively above the taskbar after 1.5s for new visitors only.
+
+### AI Chat
+
+An integrated chat panel powered by Claude with tool calling:
+
+| Tool | Description |
+|---|---|
+| `sceneColorUpdate` | Change background, protocol nodes, and user node colors; adjust bloom |
+| `cameraFocus` | Fly camera to a hub index or custom `[x, y, z]` position |
+| `dataFilter` | Filter by protocol, volume threshold, or time range |
+| `agentSummary` | Display a metrics summary card with labeled values |
+| `tradeVisualization` | Highlight specific trades with custom color and duration |
+
+The chat receives live context (event count, volume, connections, hub count) so the AI can reason about the current state of the visualization.
+
+### ZK Verification
+
+STARK proof verification via **Giza LuminAIR** with a 5-step pipeline:
+
+1. Protocol Setup
+2. Commit Preprocessed Trace
+3. Commit Main Trace
+4. Commit Interaction Trace
+5. Verify with STWO
+
+Runs in-browser via WASM. Degrades gracefully to demo mode if `@gizatech/luminair-web` is not installed.
+
+### Agents Dashboard
+
+The `/agents` route provides real-time AI agent monitoring:
+
+- **Agent lifecycle tracking** — Spawn, execute, complete, fail states
+- **Task inspector** — Execution details, tool calls, sub-agent trees
+- **Timeline scrubber** — Scrub through historical task execution
+- **Agent force graph** — Visualize agent coordination as a network
+- **SperaxOS integration** — Live WebSocket stream from agent backend (with mock mode for development)
+
+### Tools Hub
+
+The `/tools` route hosts 7 standalone visualization experiments:
+
+| Tool | Description |
+|---|---|
+| Cosmograph | GPU-accelerated WebGL graph (Apache Arrow + DuckDB) |
+| Reagraph | React WebGL network graph (Three.js + D3) |
+| Graphistry | GPU-powered visual graph intelligence platform |
+| Blockchain Visualizer | P2P network simulation with data packets |
+| AI Office | Procedural 3D world of autonomous AI agents (math-only, no assets) |
+| Creative Coding | WebGL shader playground (Cables.gl / Nodes.io inspired) |
+| NVEIL | Volumetric 3D data rendering and spatial dashboards |
+
 ### Routes
 
 | Route | Description |
 |---|---|
+| `/` | Landing page (Pretext Editorial Engine + Giza 3D scene) |
+| `/landing` | Landing page (alternate route) |
 | `/world` | Live PumpFun visualization |
 | `/world?address=<addr>` | Auto-search for a Solana address |
 | `/agents` | AI agent monitoring dashboard |
+| `/tools` | Tools hub with 7 standalone demos |
+| `/tools/[tool-name]` | Individual tool demo |
 | `/embed` | Embeddable widget |
+
+### API Routes
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/world-chat` | POST | Claude agent endpoint — accepts messages + live context, returns text + tool actions |
+| `/api/executor` | GET/POST | Proxy to agent executor backend (status, task creation) |
 
 ---
 
@@ -336,6 +442,28 @@ All simulation parameters are configurable:
 | Tether lines/hub | `40` | Lines connecting nodes to hubs |
 | Camera orbit | `0.06 rad/s` | Auto-rotation speed |
 | Repulsion radius | `6` | Mouse cursor push radius |
+
+---
+
+## Environment Variables
+
+Copy `.env.example` to `.env.local` and configure:
+
+| Variable | Required | Description |
+|---|---|---|
+| `NEXT_PUBLIC_SOLANA_WS_URL` | Yes | Solana WebSocket endpoint (Helius mainnet) |
+| `NEXT_PUBLIC_SOLANA_RPC_URL` | Yes | Solana HTTP RPC |
+| `NEXT_PUBLIC_SOLANA_RPC_FALLBACKS` | No | Comma-separated fallback RPCs (Alchemy, Ankr) |
+| `NEXT_PUBLIC_ETH_WS_URL` | No | Ethereum WebSocket |
+| `NEXT_PUBLIC_ETH_RPC_URL` | No | Ethereum HTTP RPC |
+| `NEXT_PUBLIC_BASE_WS_URL` | No | Base WebSocket |
+| `NEXT_PUBLIC_BASE_RPC_URL` | No | Base HTTP RPC |
+| `ANTHROPIC_API_KEY` | No | Claude API key (for AI Chat in `/world`) |
+| `NEXT_PUBLIC_SPERAXOS_WS_URL` | No | SperaxOS WebSocket for agent events |
+| `NEXT_PUBLIC_SPERAXOS_API_KEY` | No | SperaxOS API key |
+| `NEXT_PUBLIC_AGENT_MOCK` | No | `true` to use mock agent data (default) |
+| `EXECUTOR_PORT` | No | Agent executor WebSocket port (default: 8765) |
+| `EXECUTOR_MAX_AGENTS` | No | Max concurrent agents (default: 5) |
 
 ---
 
@@ -391,6 +519,8 @@ We welcome contributions. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 | `npm run dev:playground` | Playground with mock data |
 | `npm run dev:executor` | Agent executor server |
 | `npm run build` | Production build |
+| `npm run build:web` | Production build (alias) |
+| `npm run start` | Run production build |
 | `npm run typecheck` | TypeScript check across all packages |
 | `npm run lint` | ESLint |
 
