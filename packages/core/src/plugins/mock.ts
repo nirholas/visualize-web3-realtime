@@ -60,7 +60,7 @@ export const mockPlugin = definePlugin({
     { id: 'mockTrades', label: 'Mock Trades', icon: '▲', color: '#60a5fa', sourceId: 'mock' },
   ],
   createProvider: {
-    connect(config, emit) {
+    connect(config: MockPluginConfig, emit: (event: Record<string, unknown>) => void) {
       const interval = config.intervalMs ?? 500;
       const numTokens = Math.min(config.numTokens ?? 5, MOCK_TOKENS.length);
       const chain = config.chain ?? 'mock';

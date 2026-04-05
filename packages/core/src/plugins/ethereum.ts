@@ -49,7 +49,7 @@ export const ethereumPlugin = definePlugin({
     { id: 'ethMints', label: 'ETH Mints', icon: '✦', color: '#4B6AE5', sourceId: 'ethereum' },
   ],
   createProvider: {
-    connect(config, emit) {
+    connect(config: EthereumPluginConfig, emit: (event: Record<string, unknown>) => void) {
       let ws: WebSocket | null = null;
       let disposed = false;
       let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;

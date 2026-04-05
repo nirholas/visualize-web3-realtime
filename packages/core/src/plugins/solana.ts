@@ -49,7 +49,7 @@ export const solanaPlugin = definePlugin({
     { id: 'trades', label: 'Trades', icon: '▲', color: '#60a5fa', sourceId: 'pumpfun' },
   ],
   createProvider: {
-    connect(config, emit) {
+    connect(config: SolanaPluginConfig, emit: (event: Record<string, unknown>) => void) {
       const url = config.wsUrl ?? 'wss://pumpportal.fun/api/data';
       let ws: WebSocket | null = null;
       let disposed = false;
