@@ -30,7 +30,7 @@ async function loadReact() {
 }
 
 export function PlaygroundPreview({ code, controls, onError }: PlaygroundPreviewProps) {
-  const [Component, setComponent] = useState<React.ComponentType<Record<string, unknown>><Record<string, unknown>> | null>(null);
+  const [Component, setComponent] = useState<React.ComponentType<Record<string, unknown>> | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const prevCodeRef = useRef(code);
 
