@@ -291,10 +291,11 @@ export default function EditorialOverlay({ graphBounds }: EditorialOverlayProps)
         return el
       })
 
-      let headlineBottom = GUTTER
+      const headlineTop = GUTTER + 60
+      let headlineBottom = headlineTop
       headlineFit.lines.forEach((line, i) => {
         const el = headlinePool[i]
-        const y = GUTTER + i * headlineLineHeight
+        const y = headlineTop + i * headlineLineHeight
         el.style.fontSize = `${headlineFit.size}px`
         el.style.left = `${GUTTER}px`
         el.style.top = `${y}px`
