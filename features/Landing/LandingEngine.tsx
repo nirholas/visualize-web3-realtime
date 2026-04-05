@@ -167,6 +167,20 @@ export default function LandingEngine() {
           letter-spacing: 0.06em; text-transform: uppercase;
           user-select: text; -webkit-user-select: text;
         }
+        .le-brand {
+          position: fixed; top: 18px; left: 24px; z-index: 100;
+          font: 500 13px ${FONT_FAMILY};
+          letter-spacing: 0.18em; text-transform: uppercase;
+          color: ${HEADLINE_COLOR}; text-decoration: none;
+          pointer-events: auto; white-space: nowrap;
+          transition: color 0.2s ease;
+        }
+        .le-brand .le-brand-tld {
+          color: ${ACCENT_INDIGO};
+        }
+        .le-brand:hover {
+          color: #fff;
+        }
         .le-hint {
           position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
           font: 400 10px ${FONT_FAMILY};
@@ -208,6 +222,7 @@ export default function LandingEngine() {
       `}</style>
 
       <div ref={stageRef} className="le-stage" />
+      <a className="le-brand" href="/">SWARMING<span className="le-brand-tld">.world</span></a>
       <div className="le-hint">Drag the orbs &middot; Click to pause &middot; Zero DOM reads</div>
       <a className="le-cta" href="/world">Enter World &rarr;</a>
     </>
