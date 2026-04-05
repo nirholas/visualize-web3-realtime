@@ -13,11 +13,5 @@ export const metadata: Metadata = {
 };
 
 export default function LandingLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      {/* Immediately dismiss the root boot-loader since this page has no WebGL */}
-      <style dangerouslySetInnerHTML={{ __html: `#boot-loader { display: none !important; }` }} />
-      {children}
-    </>
-  );
+  return <>{children}</>;
 }

@@ -119,9 +119,6 @@ export default function LandingEngine() {
     const stage = stageRef.current
     if (!stage) return
 
-    // Dismiss the root boot-loader immediately (no WebGL on this page)
-    window.dispatchEvent(new Event('webgl-ready'))
-
     // ── Wait for fonts, then initialize ─────────────────────────────────
     document.fonts.ready.then(() => {
       init(stage)
@@ -228,8 +225,33 @@ export default function LandingEngine() {
           border-color: rgba(129, 140, 248, 0.5);
           box-shadow: 0 4px 32px rgba(129, 140, 248, 0.15), 0 4px 24px rgba(0,0,0,0.4);
         }
+        .le-hint { display: none; }
+        .le-hint.le-visible { display: block; }
+        .le-breathe-btn {
+          position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+          z-index: 100;
+          font: 500 11px ${FONT_FAMILY};
+          letter-spacing: 0.1em; text-transform: uppercase;
+          color: ${HEADLINE_COLOR};
+          background: ${GLASS.bg};
+          backdrop-filter: ${GLASS.blur};
+          -webkit-backdrop-filter: ${GLASS.blur};
+          border: 1px solid rgba(129, 140, 248, 0.25);
+          border-radius: 9999px;
+          padding: 10px 28px;
+          box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+          cursor: pointer;
+          transition: all 0.3s ease;
+          white-space: nowrap;
+        }
+        .le-breathe-btn:hover {
+          color: #fff;
+          border-color: rgba(129, 140, 248, 0.5);
+          box-shadow: 0 4px 32px rgba(129, 140, 248, 0.2), 0 4px 24px rgba(0,0,0,0.4);
+        }
+        .le-breathe-btn.le-hidden { display: none; }
         @media (max-width: 760px) {
-          .le-hint { display: none; }
+          .le-hint { display: none !important; }
         }
         @media (prefers-reduced-motion: reduce) {
           .le-orb { transition: none !important; }
@@ -245,6 +267,7 @@ export default function LandingEngine() {
         <span className="le-stats-line">Not a Dashboard. A Living Network.</span>
       </div>
       <div className="le-hint">Drag the orbs &middot; Click to pause &middot; Zero DOM reads</div>
+      <button className="le-breathe-btn" id="le-breathe-btn">See the Network Breathe</button>
       <a className="le-cta" href="/world">Enter World &rarr;</a>
     </>
   )
@@ -299,6 +322,9 @@ function init(stage: HTMLDivElement) {
   // ── State ───────────────────────────────────────────────────────────────
 
   const orbs = createOrbs(ORB_DEFS, W0, H0)
+
+  let orbsActive = false        // orbs start hidden; activated by CTA button
+  let orbsFadeIn = 0             // 0..1 fade progress for orbs
 
   let pointer: PointerSample = { x: -9999, y: -9999 }
   let drag: DragState | null = null
@@ -482,20 +508,32 @@ function init(stage: HTMLDivElement) {
     const prevTime = lastFrameTime ?? now
     const dt = Math.min((now - prevTime) / 1000, 0.05)
 
-    const stillAnimating = stepPhysics(
-      orbs, dt, pageWidth, pageHeight, gutter, bottomGap,
-      orbRadiusScale, activeOrbCount, draggedIdx, isNarrow,
-    )
+    let stillAnimating = false
+
+    if (orbsActive) {
+      // Fade in orbs over ~0.6s
+      if (orbsFadeIn < 1) {
+        orbsFadeIn = Math.min(1, orbsFadeIn + dt / 0.6)
+        stillAnimating = true
+      }
+
+      stillAnimating = stepPhysics(
+        orbs, dt, pageWidth, pageHeight, gutter, bottomGap,
+        orbRadiusScale, activeOrbCount, draggedIdx, isNarrow,
+      ) || stillAnimating
+    }
 
     // ── Build obstacles ─────────────────────────────────────────────────
     const circleObstacles: CircleObstacle[] = []
-    for (let i = 0; i < activeOrbCount; i++) {
-      const orb = orbs[i]!
-      circleObstacles.push({
-        cx: orb.x, cy: orb.y, r: orb.r * orbRadiusScale,
-        hPad: isNarrow ? 10 : 14,
-        vPad: isNarrow ? 2 : 4,
-      })
+    if (orbsActive) {
+      for (let i = 0; i < activeOrbCount; i++) {
+        const orb = orbs[i]!
+        circleObstacles.push({
+          cx: orb.x, cy: orb.y, r: orb.r * orbRadiusScale,
+          hPad: isNarrow ? 10 : 14,
+          vPad: isNarrow ? 2 : 4,
+        })
+      }
     }
 
     // ── Headline ────────────────────────────────────────────────────────
@@ -641,14 +679,15 @@ function init(stage: HTMLDivElement) {
     for (let i = 0; i < orbs.length; i++) {
       const orb = orbs[i]!
       const el = orbEls[i]!
-      if (i >= activeOrbCount) { el.style.display = 'none'; continue }
+      if (!orbsActive || i >= activeOrbCount) { el.style.display = 'none'; continue }
       const r = orb.r * orbRadiusScale
       el.style.display = ''
       el.style.left = `${orb.x - r}px`
       el.style.top = `${orb.y - r}px`
       el.style.width = `${r * 2}px`
       el.style.height = `${r * 2}px`
-      el.style.opacity = orb.paused ? '0.45' : '1'
+      const baseOpacity = orb.paused ? 0.45 : 1
+      el.style.opacity = `${baseOpacity * orbsFadeIn}`
     }
 
     // ── Cursor ──────────────────────────────────────────────────────────
@@ -682,6 +721,7 @@ function init(stage: HTMLDivElement) {
       if (e.pointerType === 'touch') enterTextSelect()
       return
     }
+    if (!orbsActive) return
     const activeOrbCount = window.innerWidth < NARROW_BREAKPOINT ? NARROW_ACTIVE_ORBS : orbs.length
     const scale = window.innerWidth < NARROW_BREAKPOINT ? NARROW_ORB_SCALE : 1
     const hit = hitTestOrbs(orbs, e.clientX, e.clientY, activeOrbCount, scale)
@@ -719,6 +759,20 @@ function init(stage: HTMLDivElement) {
 
   window.addEventListener('resize', () => scheduleRender())
   document.addEventListener('selectionchange', () => { syncSelection(); scheduleRender() })
+
+  // ── "See the Network Breathe" activation button ──────────────────────
+  const breatheBtn = document.getElementById('le-breathe-btn')
+  const hintEl = document.querySelector('.le-hint')
+  if (breatheBtn) {
+    breatheBtn.addEventListener('click', () => {
+      if (orbsActive) return
+      orbsActive = true
+      orbsFadeIn = 0
+      breatheBtn.classList.add('le-hidden')
+      if (hintEl) hintEl.classList.add('le-visible')
+      scheduleRender()
+    })
+  }
 
   // ── Start ─────────────────────────────────────────────────────────────
   scheduleRender()
