@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "description": "CLI scaffolder for swarming visualization projects",
   "license": "MIT",
+  "type": "module",
   "bin": {
-    "create-swarming-app": "./dist/index.js"
+    "create-swarming-app": "./dist/index.mjs"
   },
   "files": [
     "dist",

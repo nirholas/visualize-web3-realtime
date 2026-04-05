@@ -236,7 +236,7 @@ export default function EditorialOverlay({ graphBounds }: EditorialOverlayProps)
     if (!ctaRef.current) {
       const cta = document.createElement('a')
       cta.href = '/world'
-      cta.textContent = 'ENTER THE WORLD \u2192'
+      cta.textContent = 'TRY LIVE DEMO \u2192'
       cta.style.position = 'absolute'
       cta.style.fontFamily = `'IBM Plex Mono', monospace`
       cta.style.fontSize = '13px'

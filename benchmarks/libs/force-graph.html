@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Benchmark: force-graph (3D, vasturiano)</title>
+  <style>html,body{margin:0;overflow:hidden;width:100%;height:100%;background:#111}</style>
+</head>
+<body>
+<div id="graph"></div>
+<script src="https://unpkg.com/3d-force-graph@1.73.3/dist/3d-force-graph.min.js"></script>
+<script src="harness.js"></script>
+<script src="gen-graph.js"></script>
+<script>
+(function() {
+  const N = parseInt(new URLSearchParams(location.search).get('nodes') || '1000');
+  const { nodes, edges } = generateGraph(N);
+
+  const graphData = {
+    nodes: nodes.map(n => ({ id: n.id })),
+    links: edges.map(e => ({ source: e.source, target: e.target })),
+  };
+
+  const graph = ForceGraph3D()(document.getElementById('graph'))
+    .graphData(graphData)
+    .nodeColor(() => '#4fc3f7')
+    .nodeRelSize(3)
+    .linkColor(() => '#444444')
+    .linkOpacity(0.3)
+    .enableNodeDrag(false)
+    .width(window.innerWidth)
+    .height(window.innerHeight)
+    .d3AlphaDecay(0.01)
+    .d3VelocityDecay(0.4);
+
+  BenchHarness.markFirstFrame();
+  BenchHarness.markInteractive();
+
+  // Proxy frame timing through rAF
+  let lastFrame = performance.now();
+  function track() {
+    requestAnimationFrame((now) => {
+      BenchHarness.reportRenderFrame(now - lastFrame);
+      lastFrame = now;
+      track();
+    });
+  }
+  track();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+name: Good First Issue
+description: A beginner-friendly issue with clear guidance (maintainers only)
+labels: ["good-first-issue", "help-wanted"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This template is for maintainers to create beginner-friendly issues.
+        Each good first issue should have a clear description, pointers to the relevant files, and expected behavior.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What needs to change? Be specific and beginner-friendly.
+      placeholder: |
+        Currently, the error message when a WebSocket connection fails says "Connection error".
+        It should include the URL that failed and a suggestion to check the network connection.
+    validations:
+      required: true
+
+  - type: textarea
+    id: files
+    attributes:
+      label: Files to Modify
+      description: Which file(s) need to be changed?
+      placeholder: |
+        - `packages/providers/src/shared/WebSocketManager.ts` (lines 45-52)
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should it look like when the issue is resolved?
+      placeholder: |
+        The error message should read: "Failed to connect to wss://example.com — check your network connection and try again."
+    validations:
+      required: true
+
+  - type: textarea
+    id: hints
+    attributes:
+      label: Hints / Getting Started
+      description: Any tips to help a new contributor get started?
+      placeholder: |
+        1. Run `npm run dev` to start the dev server
+        2. Open the browser console to see the current error message
+        3. The relevant function is `handleConnectionError` in WebSocketManager.ts
+    validations:
+      required: false
+
+  - type: dropdown
+    id: mentored
+    attributes:
+      label: Mentored?
+      description: Will a maintainer actively guide the contributor?
+      options:
+        - "Yes — a maintainer will help via PR comments"
+        - "No — but the issue is self-contained"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: difficulty
+    attributes:
+      label: Difficulty
+      description: How difficult is this for someone new to the codebase?
+      options:
+        - Easy (< 30 min)
+        - Medium (1-2 hours)
+        - Moderate (half day)
+    validations:
+      required: true

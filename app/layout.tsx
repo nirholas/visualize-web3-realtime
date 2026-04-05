@@ -10,7 +10,7 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://swarming.world'),
+  metadataBase: new URL('https://swarming.dev'),
   title: {
     default: 'Swarming — Real-time Data Visualization at 60fps',
     template: '%s | Swarming',
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
     locale: 'en_US',
     images: [
       {
-        url: '/og-preview.png',
+        url: '/opengraph-image',
         width: 1200,
         height: 630,
         alt: 'Swarming — real-time 3D network visualization at 60fps',
@@ -58,7 +58,7 @@ export const metadata: Metadata = {
     title: 'Swarming — Real-time Data Visualization',
     description:
       'GPU-accelerated 3D network visualization. 5,000+ nodes at 60fps. Open source React component.',
-    images: ['/og-preview.png'],
+    images: ['/opengraph-image'],
   },
   robots: {
     index: true,
@@ -81,7 +81,7 @@ const jsonLd = {
     'GPU-accelerated real-time 3D network visualization for any streaming data source. React component with 5,000+ nodes at 60fps.',
   applicationCategory: 'DeveloperApplication',
   operatingSystem: 'Web Browser',
-  url: 'https://swarming.world',
+  url: 'https://swarming.dev',
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
   license: 'https://opensource.org/licenses/MIT',
   programmingLanguage: ['TypeScript', 'React', 'Three.js'],

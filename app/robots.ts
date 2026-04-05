@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/api/', '/embed'],
       },
     ],
-    sitemap: 'https://swarming.world/sitemap.xml',
+    sitemap: 'https://swarming.dev/sitemap.xml',
   };
 }

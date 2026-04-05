@@ -16,9 +16,9 @@ export interface PostProcessingProps {
 
 const PostProcessing = memo<PostProcessingProps>(({
   enabled = true,
-  bloomIntensity = 1.2,
-  bloomThreshold = 0.85,
-  aoIntensity = 0.5,
+  bloomIntensity = 1.5,
+  bloomThreshold = 0.6,
+  aoIntensity = 0.8,
 }) => {
   if (!enabled) return null;
 

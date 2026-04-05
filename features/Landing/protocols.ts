@@ -1,4 +1,4 @@
-/** Protocol metadata for the landing page visualization */
+/** Data source metadata for the landing page visualization */
 
 export interface ProtocolNode {
   id: string
@@ -9,29 +9,29 @@ export interface ProtocolNode {
 }
 
 export const PROTOCOLS: ProtocolNode[] = [
-  { id: 'morpho', name: 'Morpho', color: '#3d63ff', radius: 1.8, position: [0, 0, 0] },
-  { id: 'aave', name: 'Aave', color: '#b6509e', radius: 2.2, position: [3.5, 1.2, -1] },
-  { id: 'compound', name: 'Compound', color: '#00d395', radius: 1.5, position: [-3, -0.8, 1.5] },
-  { id: 'moonwell', name: 'Moonwell', color: '#2f6bff', radius: 1.2, position: [-1.5, 2.5, -2] },
-  { id: 'euler', name: 'Euler', color: '#00b88d', radius: 1.0, position: [2, -2, 2.5] },
-  { id: 'fluid', name: 'Fluid', color: '#00b3ff', radius: 1.3, position: [-3.5, 1.8, -1.5] },
-  { id: 'uniswap', name: 'Uniswap', color: '#ff007a', radius: 2.0, position: [1, 3, -2.5] },
-  { id: 'lido', name: 'Lido', color: '#00a3ff', radius: 1.6, position: [-2, -2.5, -1] },
+  { id: 'api-gateway', name: 'API Gateway', color: '#3d63ff', radius: 1.8, position: [0, 0, 0] },
+  { id: 'agents', name: 'AI Agents', color: '#b6509e', radius: 2.2, position: [3.5, 1.2, -1] },
+  { id: 'sensors', name: 'IoT Sensors', color: '#00d395', radius: 1.5, position: [-3, -0.8, 1.5] },
+  { id: 'social', name: 'Social Graph', color: '#2f6bff', radius: 1.2, position: [-1.5, 2.5, -2] },
+  { id: 'trading', name: 'Trading', color: '#00b88d', radius: 1.0, position: [2, -2, 2.5] },
+  { id: 'cicd', name: 'CI/CD', color: '#00b3ff', radius: 1.3, position: [-3.5, 1.8, -1.5] },
+  { id: 'blockchain', name: 'Blockchain', color: '#ff007a', radius: 2.0, position: [1, 3, -2.5] },
+  { id: 'logs', name: 'Log Streams', color: '#00a3ff', radius: 1.6, position: [-2, -2.5, -1] },
 ]
 
 /** Landing page copy for the editorial text overlay */
-export const LANDING_COPY = `Welcome to the neural network of Web3. A living, breathing visualization of the decentralized financial system — rendered in real time.
+export const LANDING_COPY = `Your systems are alive. Thousands of events per second — API calls, agent decisions, sensor readings, trades, deploys, messages — flowing through networks too complex for dashboards. What if you could see the whole system breathe?
 
-Every node you see represents an autonomous agent or protocol actively managing capital across the open internet. Watch as transactions flow between Aave, Morpho, Compound, and dozens of other protocols. See liquidity move like a pulse through interconnected markets.
+Every node you see represents an entity in your data. Watch as events flow between services, agents, devices, and users. See traffic patterns emerge like a pulse through interconnected systems.
 
-This is not a dashboard. This is the financial system made visible. Cross-chain liquidity, agent behaviors, token launches, and DeFi interactions — all mapped in three dimensions without skipping a frame.
+This is not a dashboard. This is your system made visible. Network traffic, agent orchestration, device telemetry, social interactions — all mapped in three dimensions without skipping a frame.
 
-Built for researchers, traders, and the curious. Explore protocol relationships, trace whale movements, and discover patterns invisible to traditional interfaces. The engine processes thousands of real-time WebSocket events, projecting them into a force-directed graph that breathes with the rhythm of the blockchain.
+Built for engineers, researchers, and the curious. Explore service dependencies, trace anomalies, and discover patterns invisible to traditional interfaces. The engine processes thousands of real-time events, projecting them into a force-directed graph that breathes with the rhythm of your data.
 
-Each connection tells a story. Each cluster reveals a community. Each pulse is a transaction that just happened — somewhere on Ethereum, Solana, Base, or Arbitrum. The visualization adapts, grows, and evolves as the network itself does.
+Each connection tells a story. Each cluster reveals a relationship. Each pulse is an event that just happened — in your infrastructure, your network, your world. The visualization adapts, grows, and evolves as the system itself does.
 
-Enter the world. Start a data stream. Watch the universe come alive.`
+Plug in any data stream. Watch the universe come alive.`
 
 /** Headline text */
-export const HEADLINE = 'Visualize the Pulse of Decentralized Finance'
-export const SUBHEAD = 'Real-time 3D visualization of AI agents, protocols, and cross-chain liquidity'
+export const HEADLINE = 'Real-time Network Visualization'
+export const SUBHEAD = 'GPU-accelerated force-directed graphs for any streaming data source'

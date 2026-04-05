@@ -1,0 +1,56 @@
+{
+  "name": "swarming",
+  "version": "0.1.0",
+  "description": "3D force-directed graph visualization — render thousands of nodes via CDN script tag or ES module",
+  "license": "MIT",
+  "main": "./dist/swarming.umd.js",
+  "module": "./dist/swarming.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/swarming.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/swarming.umd.js"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "unpkg": "./dist/swarming.umd.js",
+  "jsdelivr": "./dist/swarming.umd.js",
+  "sideEffects": false,
+  "keywords": [
+    "3d", "force-graph", "visualization", "react", "three",
+    "webgl", "network", "graph", "swarming", "realtime", "cdn"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.18.0",
+    "@react-three/postprocessing": "^2.19.1",
+    "d3-force-3d": "^3.0.6",
+    "postprocessing": "^6.39.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "three": "^0.169.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@types/three": "^0.169.0",
+    "@web3viz/core": "*",
+    "@web3viz/react-graph": "*",
+    "tsup": "^8.0.0",
+    "typescript": "^5.5.0"
+  }
+}

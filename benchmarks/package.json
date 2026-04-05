@@ -1,0 +1,15 @@
+{
+  "name": "@web3viz/benchmarks",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "bench": "tsx runner.ts",
+    "bench:report": "tsx report.ts"
+  },
+  "dependencies": {
+    "playwright": "^1.44.0",
+    "tsx": "^4.11.0",
+    "serve": "^14.2.0"
+  }
+}

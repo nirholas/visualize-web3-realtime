@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Benchmark: d3-force + Canvas 2D</title>
+  <style>html,body{margin:0;overflow:hidden;width:100%;height:100%;background:#111}</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="https://unpkg.com/d3@7/dist/d3.min.js"></script>
+<script src="harness.js"></script>
+<script src="gen-graph.js"></script>
+<script>
+(function() {
+  const N = parseInt(new URLSearchParams(location.search).get('nodes') || '1000');
+  const { nodes, edges } = generateGraph(N);
+
+  const canvas = document.getElementById('c');
+  const width = canvas.width = window.innerWidth;
+  const height = canvas.height = window.innerHeight;
+  const ctx = canvas.getContext('2d');
+
+  const sim = d3.forceSimulation(nodes)
+    .force('charge', d3.forceManyBody().strength(-30))
+    .force('link', d3.forceLink(edges).id(d => d.id).distance(20))
+    .force('center', d3.forceCenter(width / 2, height / 2))
+    .alphaDecay(0.01)
+    .velocityDecay(0.4);
+
+  let firstFrame = true;
+
+  function draw() {
+    requestAnimationFrame(draw);
+
+    const t0 = performance.now();
+    sim.tick();
+    BenchHarness.reportPhysicsTick(performance.now() - t0);
+
+    const t1 = performance.now();
+    ctx.clearRect(0, 0, width, height);
+
+    ctx.strokeStyle = 'rgba(68,68,68,0.3)';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    for (const e of edges) {
+      ctx.moveTo(e.source.x, e.source.y);
+      ctx.lineTo(e.target.x, e.target.y);
+    }
+    ctx.stroke();
+
+    ctx.fillStyle = '#4fc3f7';
+    for (const n of nodes) {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    BenchHarness.reportRenderFrame(performance.now() - t1);
+
+    if (firstFrame) {
+      BenchHarness.markFirstFrame();
+      BenchHarness.markInteractive();
+      firstFrame = false;
+    }
+  }
+  draw();
+})();
+</script>
+</body>
+</html>

@@ -1,27 +1,28 @@
-## Summary
+## What does this PR do?
 
-<!-- What does this PR do? Keep it to 1-3 bullet points. -->
+<!-- Brief description of the change and why it's needed -->
 
--
+## How to test
 
-## Motivation
+<!-- Steps to verify the change works -->
 
-<!-- Why is this change needed? Link to issues if applicable. -->
+1. 
+2. 
+3. 
 
-## Changes
+## Screenshots (if visual change)
 
-<!-- List the key changes made. -->
+<!-- Before/after screenshots or recordings. This is a 3D visualization app — visuals matter! -->
 
--
+## Checklist
 
-## Test Plan
-
-<!-- How did you verify this works? -->
-
-- [ ] `npm run build` passes
-- [ ] `npm run lint` passes
+- [ ] Linting passes (`npm run lint`)
+- [ ] Types check (`npm run typecheck`)
+- [ ] Build passes (`npm run build`)
 - [ ] Tested locally with `npm run dev`
+- [ ] No visual regressions in the force graph
+- [ ] Documentation updated (if applicable)
 
-## Screenshots / GIFs
+## Related Issues
 
-<!-- If this is a visual change, include before/after screenshots or a GIF. -->
+<!-- Closes #123 -->

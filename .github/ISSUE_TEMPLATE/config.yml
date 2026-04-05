@@ -6,3 +6,6 @@ contact_links:
   - name: Feature Ideas
     url: https://github.com/nirholas/swarming.world/discussions/categories/ideas
     about: Brainstorm and discuss feature ideas
+  - name: Good First Issues
+    url: https://github.com/nirholas/swarming.world/issues?q=is%3Aissue+is%3Aopen+label%3Agood-first-issue
+    about: Find beginner-friendly issues to get started contributing

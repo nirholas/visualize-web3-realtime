@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Benchmark: d3-force + SVG</title>
+  <style>html,body{margin:0;overflow:hidden;width:100%;height:100%;background:#111}svg{width:100%;height:100%}</style>
+</head>
+<body>
+<svg id="svg"></svg>
+<script src="https://unpkg.com/d3@7/dist/d3.min.js"></script>
+<script src="harness.js"></script>
+<script src="gen-graph.js"></script>
+<script>
+(function() {
+  const N = parseInt(new URLSearchParams(location.search).get('nodes') || '1000');
+  const { nodes, edges } = generateGraph(N);
+
+  const svg = d3.select('#svg');
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  svg.attr('viewBox', [0, 0, width, height]);
+
+  const link = svg.append('g')
+    .attr('stroke', '#444')
+    .attr('stroke-opacity', 0.3)
+    .selectAll('line')
+    .data(edges)
+    .join('line');
+
+  const node = svg.append('g')
+    .selectAll('circle')
+    .data(nodes)
+    .join('circle')
+    .attr('r', 3)
+    .attr('fill', '#4fc3f7');
+
+  const sim = d3.forceSimulation(nodes)
+    .force('charge', d3.forceManyBody().strength(-30))
+    .force('link', d3.forceLink(edges).id(d => d.id).distance(20))
+    .force('center', d3.forceCenter(width / 2, height / 2))
+    .alphaDecay(0.01)
+    .velocityDecay(0.4);
+
+  let firstFrame = true;
+
+  sim.on('tick', () => {
+    const t0 = performance.now();
+    link
+      .attr('x1', d => d.source.x)
+      .attr('y1', d => d.source.y)
+      .attr('x2', d => d.target.x)
+      .attr('y2', d => d.target.y);
+
+    node
+      .attr('cx', d => d.x)
+      .attr('cy', d => d.y);
+
+    const ms = performance.now() - t0;
+    BenchHarness.reportRenderFrame(ms);
+    BenchHarness.reportPhysicsTick(ms);
+
+    if (firstFrame) {
+      BenchHarness.markFirstFrame();
+      BenchHarness.markInteractive();
+      firstFrame = false;
+    }
+  });
+})();
+</script>
+</body>
+</html>

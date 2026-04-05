@@ -51,7 +51,7 @@ interface ForceEdge extends SimulationLinkDatum<ForceNode> {
 const MAX_AGENT_NODES = 5000;
 const HUB_BASE_RADIUS = 0.8;
 const HUB_MAX_RADIUS = 3.0;
-const AGENT_RADIUS = 0.18;
+const AGENT_RADIUS = 0.35;
 
 // Edge highlight bloom color (overbright blue triggers selective bloom)
 const EDGE_HIGHLIGHT_R = 0.48;
@@ -314,7 +314,7 @@ function HubNodeMesh({
 
     const baseScale = nodeData.radius;
     // Gentle breathe animation — each hub out of phase via paletteIndex
-    const breathe = 1 + Math.sin(state.clock.getElapsedTime() * 1.5 + paletteIndex * 1.3) * 0.03;
+    const breathe = 1 + Math.sin(state.clock.getElapsedTime() * 1.5 + paletteIndex * 1.3) * 0.08;
     if (isHighlighted) {
       const pulse = 1 + Math.sin(state.clock.getElapsedTime() * Math.PI) * 0.05;
       meshRef.current.scale.setScalar(baseScale * 2 * pulse);
@@ -323,7 +323,7 @@ function HubNodeMesh({
     }
     // Pulse emissive intensity in sync with breathe
     if (materialRef.current) {
-      materialRef.current.emissiveIntensity = defaultEmissiveIntensity + Math.sin(state.clock.getElapsedTime() * 1.5 + paletteIndex * 1.3) * 0.4;
+      materialRef.current.emissiveIntensity = defaultEmissiveIntensity + Math.sin(state.clock.getElapsedTime() * 1.5 + paletteIndex * 1.3) * 0.8;
     }
     radiusRef.current = nodeData.radius;
 
@@ -481,24 +481,22 @@ const AgentNodes = memo<{
         isSearchedAgent = parts.length >= 2 && parts[1].toLowerCase() === searchLower;
       }
 
-      // Orbital drift — each agent slowly orbits its sim position in 3D
-      const orbitAngle = state.clock.getElapsedTime() * 0.15 + i * 0.37;
-      const orbitTilt = state.clock.getElapsedTime() * 0.1 + i * 0.53;
-      const orbitDrift = 0.5;
-      const driftX = Math.cos(orbitAngle) * Math.cos(orbitTilt) * orbitDrift;
-      const driftY = Math.sin(orbitTilt) * orbitDrift;
-      const driftZ = Math.sin(orbitAngle) * Math.cos(orbitTilt) * orbitDrift;
+      // Subtle shimmer — small position jitter to feel alive without chaos
+      const shimmerPhase = state.clock.getElapsedTime() * 0.3 + i * 2.17;
+      const shimmer = 0.12;
+      const sx = Math.sin(shimmerPhase) * shimmer;
+      const sz = Math.cos(shimmerPhase * 0.7 + i) * shimmer;
 
       if (isSearchedAgent) {
         // Searched agent: 3x size with gentle pulse, bright blue
         const pulse = 1 + Math.sin(state.clock.getElapsedTime() * Math.PI) * 0.05;
-        tempObj.position.set((node.x ?? 0) + driftX, (node.y ?? 0) + driftY, (node.z ?? 0) + driftZ);
+        tempObj.position.set((node.x ?? 0) + sx, 0, (node.y ?? 0) + sz);
         tempObj.scale.setScalar(node.radius * 3 * pulse);
         tempObj.updateMatrix();
         mesh.setMatrixAt(i, tempObj.matrix);
         tempColor.set('#818cf8');
       } else {
-        tempObj.position.set((node.x ?? 0) + driftX, (node.y ?? 0) + driftY, (node.z ?? 0) + driftZ);
+        tempObj.position.set((node.x ?? 0) + sx, 0, (node.y ?? 0) + sz);
         tempObj.scale.setScalar(node.radius);
         tempObj.updateMatrix();
         mesh.setMatrixAt(i, tempObj.matrix);
@@ -507,14 +505,18 @@ const AgentNodes = memo<{
           tempColor.set('#818cf8').multiplyScalar(0.8);
         } else if (hasFilter) {
           if (ac && node.hubTokenAddress === activeProtocol) {
-            // Agents near active protocol get a tint of its palette color
             tempColor.set(ac).multiplyScalar(0.7);
           } else {
             tempColor.copy(dimColor).multiplyScalar(0.35);
           }
         } else {
-          // Default: bright on dark bg, darker on light bg
-          tempColor.set(isDark ? PROTOCOL_COLORS.agentDefault : '#2a6090');
+          // Color agents by their hub's chain color (desaturated)
+          const hub = node.hubTokenAddress ? sim.nodeMap.get(node.hubTokenAddress) : null;
+          if (hub?.color) {
+            tempColor.set(hub.color).multiplyScalar(isDark ? 0.6 : 0.4);
+          } else {
+            tempColor.set(isDark ? PROTOCOL_COLORS.agentDefault : '#2a6090');
+          }
         }
       }
       mesh.setColorAt(i, tempColor);
@@ -619,9 +621,9 @@ const Edges = memo<{
         if (activeProtocol) {
           const srcRelated = src.id === activeProtocol || src.hubTokenAddress === activeProtocol;
           const tgtRelated = tgt.id === activeProtocol || tgt.hubTokenAddress === activeProtocol;
-          attenuation = (srcRelated || tgtRelated) ? (isHubEdge ? 0.35 : 0.25) : 0.05;
+          attenuation = (srcRelated || tgtRelated) ? (isHubEdge ? 0.55 : 0.4) : 0.08;
         } else {
-          attenuation = isDark ? (isHubEdge ? 0.4 : 0.25) : (isHubEdge ? 0.3 : 0.2);
+          attenuation = isDark ? (isHubEdge ? 0.6 : 0.4) : (isHubEdge ? 0.35 : 0.25);
         }
 
         if (hubNode && hubNode.color) {
@@ -644,7 +646,7 @@ const Edges = memo<{
   return (
     <lineSegments ref={lineRef}>
       <bufferGeometry />
-      <lineBasicMaterial vertexColors transparent opacity={0.6} toneMapped={false} />
+      <lineBasicMaterial vertexColors transparent opacity={0.85} toneMapped={false} />
     </lineSegments>
   );
 });
@@ -922,8 +924,9 @@ const NetworkScene = memo<{
     <>
       {shareColors && <SceneBackground color={shareColors.background} />}
 
-      <Environment preset="studio" environmentIntensity={0.4} background={false} />
-      <directionalLight position={[20, 40, 20]} intensity={0.3} />
+      <Environment preset="studio" environmentIntensity={0.6} background={false} />
+      <directionalLight position={[20, 40, 20]} intensity={0.4} />
+      <directionalLight position={[-20, 30, -30]} intensity={0.15} color="#a78bfa" />
 
       <Edges
         sim={sim}
@@ -991,8 +994,8 @@ const CameraSetup = memo<{ apiRef: React.MutableRefObject<CameraApi | null> }>((
     const controls = controlsRef.current;
     if (!controls) return;
 
-    // Angled orbital view — ~35° from horizontal, looking at the node cluster
-    controls.setLookAt(0, 30, 50, 0, 0, 0, false);
+    // Angled orbital view — ~25° from horizontal for clearer depth
+    controls.setLookAt(0, 25, 65, 0, 0, 0, false);
 
     // Smooth damping for premium feel
     controls.smoothTime = 0.35;
@@ -1028,7 +1031,7 @@ const CameraSetup = memo<{ apiRef: React.MutableRefObject<CameraApi | null> }>((
     if (idleTime > 8000) {
       // Ramp up rotation speed smoothly over 2s
       const ramp = Math.min(1, (idleTime - 8000) / 2000);
-      autoRotateSpeed.current = ramp * 0.08;
+      autoRotateSpeed.current = ramp * 0.12;
       controls.azimuthAngle += autoRotateSpeed.current * delta;
     }
   });

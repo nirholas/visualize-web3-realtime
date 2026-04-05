@@ -2,21 +2,21 @@
  * Editorial text content for the landing page.
  */
 
-export const HEADLINE_TEXT = 'SEE THE BLOCKCHAIN BREATHE'
+export const HEADLINE_TEXT = 'SEE YOUR DATA SWARM'
 
-export const BODY_TEXT = `Blockchains produce millions of events every day. Token launches, swaps, liquidity flows, agent trades, whale movements — all reduced to rows in a database or numbers on a dashboard. The most dynamic financial system ever built, rendered as static text. What if you could actually see it?
+export const BODY_TEXT = `Your systems produce millions of events every day. Network requests, agent orchestrations, sensor readings, trading signals, social interactions — all reduced to rows in a database or numbers on a dashboard. The most dynamic systems ever built, rendered as static text. What if you could actually see them?
 
-This is not a dashboard. This is a living, breathing network. Every node is a token or a trader. Every connection is capital flowing between them. The graph grows, contracts, and reorganizes in real time as the blockchain itself evolves — thousands of nodes rendered at sixty frames per second in a three-dimensional force-directed simulation.
+This is not a dashboard. This is a living, breathing network. Every node is an entity in your data. Every connection is a relationship between them. The graph grows, contracts, and reorganizes in real time as your data evolves — thousands of nodes rendered at sixty frames per second in a three-dimensional force-directed simulation.
 
-Watch a new token launch on PumpFun and see its node bloom into existence, attracting traders like gravity. See clusters form as communities coalesce around shared positions. Watch liquidity migrate across protocols as yields shift. The patterns that are invisible in spreadsheets become unmistakable when the data breathes.
+Connect any streaming data source and watch nodes bloom into existence, attracting related entities like gravity. See clusters form as communities emerge around shared connections. Watch traffic migrate across services as load shifts. The patterns that are invisible in spreadsheets become unmistakable when the data breathes.
 
-The engine processes real-time WebSocket streams from Solana, Ethereum, Base, and centralized exchanges. Every swap, every transfer, every agent execution is projected into the graph the moment it happens. No polling. No refresh buttons. The network is always live.
+The engine processes real-time WebSocket streams, REST APIs, and custom data providers. Every event is projected into the graph the moment it happens. No polling. No refresh buttons. The network is always live.
 
-An operating system for exploration sits on top. Draggable windows for filters, live event feeds, animated statistics, AI-powered chat, timeline scrubbing, and one-click sharing. Power without complexity — a desktop metaphor for navigating the most complex financial network on earth.
+An operating system for exploration sits on top. Draggable windows for filters, live event feeds, animated statistics, AI-powered chat, timeline scrubbing, and one-click sharing. Power without complexity — a desktop metaphor for navigating complex networks.
 
-Search for any address and watch the graph reorganize around it. Toggle data sources on and off. Scrub backward through time. Ask the AI what happened. Screenshot and share. Embed it in your own site. The visualization is not just something to look at — it is an instrument for understanding.
+Search for any entity and watch the graph reorganize around it. Toggle data sources on and off. Scrub backward through time. Ask the AI what happened. Screenshot and share. Embed it in your own site. The visualization is not just something to look at — it is an instrument for understanding.
 
-Every trader. Every token. Every second. The network is live.`
+Every node. Every edge. Every second. The network is live.`
 
 export const PULLQUOTE_TEXTS = [
   '5,000 NODES. 60 FRAMES PER SECOND. ZERO LATENCY.',

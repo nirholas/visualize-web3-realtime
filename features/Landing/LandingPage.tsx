@@ -79,7 +79,7 @@ export default function LandingPage() {
           onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff' }}
           onMouseLeave={(e) => { e.currentTarget.style.color = '#94a3b8' }}
         >
-          Open App
+          Try Live Demo
         </a>
         <a
           href="/tools"
@@ -124,7 +124,7 @@ export default function LandingPage() {
           textTransform: 'uppercase',
         }}
       >
-        swarming.world
+        swarming
       </div>
     </div>
   )

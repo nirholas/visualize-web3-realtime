@@ -2,8 +2,20 @@
 * @nirholas
 
 # Core packages
-packages/core/ @nirholas
+packages/core/        @nirholas
 packages/react-graph/ @nirholas
+packages/providers/   @nirholas
+packages/ui/          @nirholas
+packages/utils/       @nirholas
+packages/mcp/         @nirholas
 
-# CI/CD
-.github/ @nirholas
+# App and features
+app/                  @nirholas
+features/             @nirholas
+
+# CI/CD and repo config
+.github/              @nirholas
+
+# Documentation
+CONTRIBUTING.md       @nirholas
+CLAUDE.md             @nirholas

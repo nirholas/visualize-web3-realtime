@@ -1,0 +1,50 @@
+# Configuration for actions/labeler
+# Auto-labels PRs based on files changed
+
+core:
+  - changed-files:
+      - any-glob-to-any-file: 'packages/core/**'
+
+react-graph:
+  - changed-files:
+      - any-glob-to-any-file: 'packages/react-graph/**'
+
+providers:
+  - changed-files:
+      - any-glob-to-any-file: 'packages/providers/**'
+
+ui:
+  - changed-files:
+      - any-glob-to-any-file: 'packages/ui/**'
+
+mcp:
+  - changed-files:
+      - any-glob-to-any-file: 'packages/mcp/**'
+
+docs:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'docs/**'
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file: '.github/**'
+
+app:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'app/**'
+          - 'features/**'
+
+theme:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/ui/src/theme/**'
+          - 'packages/tailwind-config/**'
+
+performance:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'packages/core/src/engine/**'
+          - 'features/World/ForceGraph*'

@@ -32,3 +32,71 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  bundle-size:
+    name: Bundle Size Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build and measure bundle
+        run: npm run build
+
+      - name: Report bundle size
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            // Read Next.js build output for size info
+            const buildDir = '.next';
+            let totalSize = 0;
+            const sizes = [];
+
+            function getDirectorySize(dir) {
+              if (!fs.existsSync(dir)) return 0;
+              let size = 0;
+              const files = fs.readdirSync(dir, { withFileTypes: true });
+              for (const file of files) {
+                const filePath = path.join(dir, file.name);
+                if (file.isDirectory()) {
+                  size += getDirectorySize(filePath);
+                } else {
+                  size += fs.statSync(filePath).size;
+                }
+              }
+              return size;
+            }
+
+            // Measure static pages and chunks
+            const staticDir = path.join(buildDir, 'static');
+            if (fs.existsSync(staticDir)) {
+              const staticSize = getDirectorySize(staticDir);
+              totalSize += staticSize;
+              sizes.push(`Static assets: ${(staticSize / 1024).toFixed(1)} KB`);
+            }
+
+            const body = [
+              '## Bundle Size Report',
+              '',
+              ...sizes,
+              `**Total static size:** ${(totalSize / 1024).toFixed(1)} KB`,
+              '',
+              '_Measured from `.next/static/` directory._'
+            ].join('\n');
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });
