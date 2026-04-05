@@ -14,7 +14,7 @@ export interface EthereumPluginConfig {
   minValueEth?: number;
 }
 
-export const ethereumPlugin = definePlugin<EthereumPluginConfig>({
+export const ethereumPlugin = definePlugin({
   name: 'swarming-plugin-ethereum',
   type: 'source',
   meta: {

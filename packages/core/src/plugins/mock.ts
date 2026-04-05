@@ -34,7 +34,7 @@ function randomAddress(): string {
   return addr;
 }
 
-export const mockPlugin = definePlugin<MockPluginConfig>({
+export const mockPlugin = definePlugin({
   name: 'swarming-plugin-mock',
   type: 'source',
   meta: {

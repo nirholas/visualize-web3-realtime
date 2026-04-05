@@ -18,7 +18,7 @@ export interface WebSocketPluginConfig {
   maxReconnectMs?: number;
 }
 
-export const websocketPlugin = definePlugin<WebSocketPluginConfig>({
+export const websocketPlugin = definePlugin({
   name: 'swarming-plugin-websocket',
   type: 'source',
   meta: {

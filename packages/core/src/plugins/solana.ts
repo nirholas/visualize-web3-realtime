@@ -15,7 +15,7 @@ export interface SolanaPluginConfig {
   rpcWsUrl?: string;
 }
 
-export const solanaPlugin = definePlugin<SolanaPluginConfig>({
+export const solanaPlugin = definePlugin({
   name: 'swarming-plugin-solana',
   type: 'source',
   meta: {
