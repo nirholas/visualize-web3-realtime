@@ -39,8 +39,6 @@ function EmbedInner() {
         topTokens={topTokens}
         traderEdges={stats.traderEdges}
         height="100%"
-        background={bg}
-        showLabels={showLabels}
         isDark={isDark}
       />
 

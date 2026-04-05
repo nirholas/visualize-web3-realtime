@@ -33,5 +33,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "packages/executor", "apps/playground", "packages/react-native", "apps/mobile-demo", "providers", "temp", "extracted", "scripts"]
+  "exclude": ["node_modules", "packages/executor", "apps/playground", "packages/react-native", "apps/mobile-demo", "providers", "temp", "extracted", "scripts", "benchmarks"]
 }
