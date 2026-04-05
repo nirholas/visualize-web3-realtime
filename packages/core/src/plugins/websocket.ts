@@ -41,7 +41,7 @@ export const websocketPlugin = definePlugin({
     { id: 'wsEvents', label: 'WebSocket Events', icon: '⚡', color: '#60a5fa', sourceId: 'websocket' },
   ],
   createProvider: {
-    connect(config: WebSocketPluginConfig, emit: (event: Record<string, unknown>) => void) {
+    connect(config: WebSocketPluginConfig, emit: (event: DataProviderEvent) => void) {
       let ws: WebSocket | null = null;
       let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
       let reconnectDelay = 1000;
