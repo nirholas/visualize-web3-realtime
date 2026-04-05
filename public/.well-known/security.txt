@@ -1,0 +1,7 @@
+# Security Policy
+# https://securitytxt.org/
+
+Contact: mailto:security@visualize-web3.app
+Preferred-Languages: en
+Canonical: https://visualize-web3.app/.well-known/security.txt
+Expires: 2027-04-05T00:00:00.000Z

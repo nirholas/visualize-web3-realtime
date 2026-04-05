@@ -1,0 +1,9 @@
+{
+  "status": "OK",
+  "tag": "payRequest",
+  "commentAllowed": 255,
+  "callback": "https://visualize-web3.app/api/lnurlp/callback",
+  "minSendable": 1000,
+  "maxSendable": 100000000,
+  "metadata": "[[\"text/plain\",\"Visualize Web3 Realtime\"]]"
+}

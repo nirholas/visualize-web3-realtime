@@ -1,0 +1,20 @@
+{
+  "$schema": "https://x402.org/schema/manifest.json",
+  "version": "1",
+  "info": {
+    "name": "Visualize Web3 Realtime",
+    "description": "Real-time visualization of Web3 network activity",
+    "url": "https://visualize-web3.app"
+  },
+  "accepts": [
+    {
+      "scheme": "exact",
+      "network": "base-sepolia",
+      "asset": "USDC",
+      "maxAmountRequired": "100000",
+      "resource": "https://visualize-web3.app/api/premium",
+      "description": "Access to premium real-time data feeds",
+      "payTo": "0x0000000000000000000000000000000000000000"
+    }
+  ]
+}

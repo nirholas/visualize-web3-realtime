@@ -255,9 +255,11 @@ function HubNodeMesh({
   const materialRef = useRef<THREE.MeshStandardMaterial>(null!);
   const ringRef = useRef<THREE.Mesh>(null!);
   const ringMaterialRef = useRef<THREE.MeshStandardMaterial>(null!);
+  const glowRef = useRef<THREE.MeshStandardMaterial>(null!);
   const targetColor = useRef(new THREE.Color(PROTOCOL_COLORS.default));
   const targetOpacity = useRef(1);
   const targetRingOpacity = useRef(0);
+  const targetGlowOpacity = useRef(0);
   const radiusRef = useRef(HUB_BASE_RADIUS);
 
   const node = useMemo(() => sim.nodeMap.get(nodeId), [sim, nodeId]);
@@ -304,11 +306,17 @@ function HubNodeMesh({
     groupRef.current.position.set(nodeData.x ?? 0, 0, nodeData.y ?? 0);
 
     const baseScale = nodeData.radius;
+    // Gentle breathe animation — each hub out of phase via paletteIndex
+    const breathe = 1 + Math.sin(state.clock.getElapsedTime() * 1.5 + paletteIndex * 1.3) * 0.03;
     if (isHighlighted) {
       const pulse = 1 + Math.sin(state.clock.getElapsedTime() * Math.PI) * 0.05;
       meshRef.current.scale.setScalar(baseScale * 2 * pulse);
     } else {
-      meshRef.current.scale.setScalar(baseScale);
+      meshRef.current.scale.setScalar(baseScale * breathe);
+    }
+    // Pulse emissive intensity in sync with breathe
+    if (materialRef.current) {
+      materialRef.current.emissiveIntensity = defaultEmissiveIntensity + Math.sin(state.clock.getElapsedTime() * 1.5 + paletteIndex * 1.3) * 0.4;
     }
     radiusRef.current = nodeData.radius;
 
@@ -320,6 +328,12 @@ function HubNodeMesh({
     // Animate ring opacity for agent hubs
     if (ringMaterialRef.current) {
       ringMaterialRef.current.opacity += (targetRingOpacity.current - ringMaterialRef.current.opacity) * lerpFactor;
+    }
+    // Animate hover glow
+    targetGlowOpacity.current = isHovered ? 0.35 : 0;
+    if (glowRef.current) {
+      glowRef.current.opacity += (targetGlowOpacity.current - glowRef.current.opacity) * lerpFactor;
+      glowRef.current.emissive.lerp(targetColor.current, lerpFactor);
     }
   });
 
@@ -349,6 +363,22 @@ function HubNodeMesh({
           emissiveIntensity={defaultEmissiveIntensity}
           envMapIntensity={1.2}
           toneMapped={false}
+        />
+      </mesh>
+      {/* Hover glow halo — triggers bloom when hovered */}
+      <mesh scale={1.35}>
+        <sphereGeometry args={[1, 16, 16]} />
+        <meshStandardMaterial
+          ref={glowRef}
+          color={defaultHubColor}
+          transparent
+          opacity={0}
+          roughness={1}
+          metalness={0}
+          emissive={defaultHubColor}
+          emissiveIntensity={4.0}
+          toneMapped={false}
+          depthWrite={false}
         />
       </mesh>
       {isAgentHub && (
@@ -444,16 +474,22 @@ const AgentNodes = memo<{
         isSearchedAgent = parts.length >= 2 && parts[1].toLowerCase() === searchLower;
       }
 
+      // Orbital drift — each agent slowly orbits its sim position
+      const orbitAngle = state.clock.getElapsedTime() * 0.15 + i * 0.37;
+      const orbitDrift = 0.5;
+      const driftX = Math.cos(orbitAngle) * orbitDrift;
+      const driftZ = Math.sin(orbitAngle) * orbitDrift;
+
       if (isSearchedAgent) {
         // Searched agent: 3x size with gentle pulse, bright blue
         const pulse = 1 + Math.sin(state.clock.getElapsedTime() * Math.PI) * 0.05;
-        tempObj.position.set(node.x ?? 0, 0, node.y ?? 0);
+        tempObj.position.set((node.x ?? 0) + driftX, 0, (node.y ?? 0) + driftZ);
         tempObj.scale.setScalar(node.radius * 3 * pulse);
         tempObj.updateMatrix();
         mesh.setMatrixAt(i, tempObj.matrix);
         tempColor.set('#818cf8');
       } else {
-        tempObj.position.set(node.x ?? 0, 0, node.y ?? 0);
+        tempObj.position.set((node.x ?? 0) + driftX, 0, (node.y ?? 0) + driftZ);
         tempObj.scale.setScalar(node.radius);
         tempObj.updateMatrix();
         mesh.setMatrixAt(i, tempObj.matrix);
@@ -501,6 +537,7 @@ const Edges = memo<{
   const posAttr = useRef<THREE.Float32BufferAttribute | null>(null);
   const colorAttr = useRef<THREE.Float32BufferAttribute | null>(null);
   const maxEdges = 20000;
+  const edgeColor = useMemo(() => new THREE.Color(), []);
 
   useEffect(() => {
     const geo = new THREE.BufferGeometry();
@@ -566,20 +603,27 @@ const Edges = memo<{
         cA.array[idx] = EDGE_HIGHLIGHT_R; cA.array[idx + 1] = EDGE_HIGHLIGHT_G; cA.array[idx + 2] = EDGE_HIGHLIGHT_B;
         cA.array[idx + 3] = EDGE_HIGHLIGHT_R; cA.array[idx + 4] = EDGE_HIGHLIGHT_G; cA.array[idx + 5] = EDGE_HIGHLIGHT_B;
       } else {
-        let gray: number;
+        // Derive color from the hub node's chain color
+        const hubNode = src.type === 'hub' ? src : tgt.type === 'hub' ? tgt : null;
+        let attenuation: number;
+
         if (activeProtocol) {
           const srcRelated = src.id === activeProtocol || src.hubTokenAddress === activeProtocol;
           const tgtRelated = tgt.id === activeProtocol || tgt.hubTokenAddress === activeProtocol;
-          if (isDark) {
-            gray = (srcRelated || tgtRelated) ? (isHubEdge ? 0.45 : 0.35) : 0.08;
-          } else {
-            gray = (srcRelated || tgtRelated) ? (isHubEdge ? 0.3 : 0.4) : 0.75;
-          }
+          attenuation = (srcRelated || tgtRelated) ? (isHubEdge ? 0.35 : 0.25) : 0.05;
         } else {
-          gray = isDark ? (isHubEdge ? 0.55 : 0.35) : (isHubEdge ? 0.35 : 0.55);
+          attenuation = isDark ? (isHubEdge ? 0.4 : 0.25) : (isHubEdge ? 0.3 : 0.2);
         }
-        cA.array[idx] = gray; cA.array[idx + 1] = gray; cA.array[idx + 2] = gray;
-        cA.array[idx + 3] = gray; cA.array[idx + 4] = gray; cA.array[idx + 5] = gray;
+
+        if (hubNode && hubNode.color) {
+          edgeColor.set(hubNode.color);
+          cA.array[idx] = edgeColor.r * attenuation; cA.array[idx + 1] = edgeColor.g * attenuation; cA.array[idx + 2] = edgeColor.b * attenuation;
+          cA.array[idx + 3] = edgeColor.r * attenuation; cA.array[idx + 4] = edgeColor.g * attenuation; cA.array[idx + 5] = edgeColor.b * attenuation;
+        } else {
+          const gray = attenuation;
+          cA.array[idx] = gray; cA.array[idx + 1] = gray; cA.array[idx + 2] = gray;
+          cA.array[idx + 3] = gray; cA.array[idx + 4] = gray; cA.array[idx + 5] = gray;
+        }
       }
     }
 
@@ -596,6 +640,103 @@ const Edges = memo<{
   );
 });
 Edges.displayName = 'Edges';
+
+// ---------------------------------------------------------------------------
+// Animated edge particles — glowing dots flowing along edges (agent → hub)
+// ---------------------------------------------------------------------------
+
+const PARTICLE_COUNT = 300;
+const PARTICLE_SPEED = 2.5;
+
+const EdgeParticles = memo<{ sim: ForceGraphSimulation; isDark?: boolean }>(({ sim, isDark = true }) => {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const tempObj = useMemo(() => new THREE.Object3D(), []);
+  const tempColor = useMemo(() => new THREE.Color(), []);
+  const geometry = useMemo(() => new THREE.SphereGeometry(1, 6, 6), []);
+  const material = useMemo(
+    () => new THREE.MeshStandardMaterial({
+      roughness: 0.2,
+      metalness: 0.0,
+      emissive: new THREE.Color('#ffffff'),
+      emissiveIntensity: isDark ? 3.0 : 1.0,
+      transparent: true,
+      opacity: 0.9,
+      toneMapped: false,
+    }),
+    [isDark],
+  );
+
+  // Per-particle state: edge index + phase (0..1 along edge)
+  const particleState = useRef<{ edgeIdx: number; phase: number; speed: number }[]>([]);
+
+  // Initialize particle assignments
+  useEffect(() => {
+    const state: { edgeIdx: number; phase: number; speed: number }[] = [];
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      state.push({
+        edgeIdx: Math.floor(Math.random() * Math.max(1, sim.edges.length)),
+        phase: Math.random(),
+        speed: 0.6 + Math.random() * 0.8,
+      });
+    }
+    particleState.current = state;
+  }, [sim]);
+
+  useFrame((_, delta) => {
+    const mesh = meshRef.current;
+    if (!mesh || sim.edges.length === 0) { if (mesh) mesh.count = 0; return; }
+
+    const edges = sim.edges;
+    const particles = particleState.current;
+    const count = Math.min(particles.length, PARTICLE_COUNT);
+    mesh.count = count;
+
+    for (let i = 0; i < count; i++) {
+      const p = particles[i];
+      // Advance phase
+      p.phase += delta * PARTICLE_SPEED * p.speed / 20;
+      if (p.phase >= 1) {
+        p.phase -= 1;
+        // Reassign to a random edge for variety
+        p.edgeIdx = Math.floor(Math.random() * edges.length);
+      }
+      // Ensure edge index is valid
+      if (p.edgeIdx >= edges.length) p.edgeIdx = p.edgeIdx % edges.length;
+
+      const edge = edges[p.edgeIdx];
+      const src = edge.source as ForceNode;
+      const tgt = edge.target as ForceNode;
+
+      // Interpolate position along the edge with a slight arc
+      const t = p.phase;
+      const x = (src.x ?? 0) + ((tgt.x ?? 0) - (src.x ?? 0)) * t;
+      const z = (src.y ?? 0) + ((tgt.y ?? 0) - (src.y ?? 0)) * t;
+      const arc = Math.sin(t * Math.PI) * 0.8; // arc height
+
+      tempObj.position.set(x, arc, z);
+      tempObj.scale.setScalar(0.08);
+      tempObj.updateMatrix();
+      mesh.setMatrixAt(i, tempObj.matrix);
+
+      // Color from the hub node's chain color
+      const hubNode = src.type === 'hub' ? src : tgt.type === 'hub' ? tgt : null;
+      if (hubNode?.color) {
+        tempColor.set(hubNode.color);
+      } else {
+        tempColor.set(isDark ? '#7dd3fc' : '#3b82f6');
+      }
+      mesh.setColorAt(i, tempColor);
+    }
+
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+  });
+
+  return (
+    <instancedMesh ref={meshRef} args={[geometry, material, PARTICLE_COUNT]} frustumCulled={false} />
+  );
+});
+EdgeParticles.displayName = 'EdgeParticles';
 
 /** Scene background color controller */
 const SceneBackground = memo<{ color: string }>(({ color }) => {
@@ -773,6 +914,7 @@ const NetworkScene = memo<{
         highlightedAddress={highlightedAddress}
         isDark={isDark}
       />
+      <EdgeParticles sim={sim} isDark={isDark} />
       {hubIds.map((hub, i) => (
         <HubNodeMesh
           key={hub.id}
@@ -824,16 +966,17 @@ interface CameraApi {
 /** Camera controller: unrestricted 360° spherical rotation with smooth damping */
 const CameraSetup = memo<{ apiRef: React.MutableRefObject<CameraApi | null> }>(({ apiRef }) => {
   const controlsRef = useRef<CameraControlsImpl>(null);
+  const lastInteraction = useRef(Date.now());
+  const autoRotateSpeed = useRef(0);
 
   useEffect(() => {
     const controls = controlsRef.current;
     if (!controls) return;
 
     // Angled orbital view — ~35° from horizontal, looking at the node cluster
-    // This gives a 3D perspective where you can see depth and height of nodes
     controls.setLookAt(0, 30, 50, 0, 0, 0, false);
 
-    // Smooth damping for premium feel (matches world.gizatech.xyz)
+    // Smooth damping for premium feel
     controls.smoothTime = 0.35;
     controls.draggingSmoothTime = 0.15;
 
@@ -852,7 +995,25 @@ const CameraSetup = memo<{ apiRef: React.MutableRefObject<CameraApi | null> }>((
     // Interaction tuning
     controls.dollySpeed = 0.5;
     controls.truckSpeed = 1.0;
+
+    // Reset idle timer on any user interaction
+    const onControl = () => { lastInteraction.current = Date.now(); autoRotateSpeed.current = 0; };
+    controls.addEventListener('control', onControl);
+    return () => { controls.removeEventListener('control', onControl); };
   }, []);
+
+  // Auto-rotate after 8s of inactivity
+  useFrame((_, delta) => {
+    const controls = controlsRef.current;
+    if (!controls) return;
+    const idleTime = Date.now() - lastInteraction.current;
+    if (idleTime > 8000) {
+      // Ramp up rotation speed smoothly over 2s
+      const ramp = Math.min(1, (idleTime - 8000) / 2000);
+      autoRotateSpeed.current = ramp * 0.08;
+      controls.azimuthAngle += autoRotateSpeed.current * delta;
+    }
+  });
 
   useEffect(() => {
     apiRef.current = {
