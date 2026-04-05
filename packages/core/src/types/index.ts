@@ -83,6 +83,14 @@ export interface TopToken {
   volumeUsd?: number;
   /** Provider source identifier (e.g. 'pumpfun', 'agents') */
   source?: string;
+  /** Bonding curve progress 0–1 (PumpFun tokens only) */
+  bondingCurveProgress?: number;
+  /** Whether this token has graduated from the bonding curve */
+  graduated?: boolean;
+  /** Token image URL from metadata */
+  imageUrl?: string;
+  /** Token description from metadata */
+  description?: string;
 }
 
 /** An edge between a participant and a hub (for graph visualization) */
@@ -98,6 +106,10 @@ export interface TraderEdge {
   volumeSol?: number;
   /** Provider source identifier */
   source?: string;
+  /** Whether this trader has been flagged as a whale (high volume) */
+  isWhale?: boolean;
+  /** Whether this trader has been flagged as a sniper bot */
+  isSniper?: boolean;
 }
 
 /** A claim event (e.g. fee claims, social claims) */

@@ -37,6 +37,14 @@ interface ForceNode extends SimulationNodeDatum3D {
   hubTokenAddress?: string;
   /** Source provider that owns this node */
   source?: string;
+  /** Whether this agent is a whale trader */
+  isWhale?: boolean;
+  /** Whether this agent is a detected sniper bot */
+  isSniper?: boolean;
+  /** Bonding curve progress 0–1 (for hub nodes, PumpFun only) */
+  bondingCurveProgress?: number;
+  /** Whether this hub token has graduated */
+  graduated?: boolean;
 }
 
 interface ForceEdge extends SimulationLinkDatum<ForceNode> {
@@ -118,6 +126,8 @@ class ForceGraphSimulation {
         existing.radius = scaledRadius;
         existing.label = t.symbol || t.name;
         existing.source = t.source;
+        existing.bondingCurveProgress = t.bondingCurveProgress;
+        existing.graduated = t.graduated;
       } else {
         // Distribute hubs on a sphere using spherical coordinates
         const phi = Math.acos(1 - 2 * (i + 0.5) / Math.max(topTokens.length, 1));
@@ -130,6 +140,8 @@ class ForceGraphSimulation {
           radius: scaledRadius,
           color: CHAIN_COLORS[t.chain ?? ''] || COLOR_PALETTE[i % COLOR_PALETTE.length],
           source: t.source,
+          bondingCurveProgress: t.bondingCurveProgress,
+          graduated: t.graduated,
           x: Math.sin(phi) * Math.cos(theta) * dist,
           y: Math.sin(phi) * Math.sin(theta) * dist,
           z: Math.cos(phi) * dist,
@@ -164,6 +176,8 @@ class ForceGraphSimulation {
         color: '#555566',
         hubTokenAddress: edge.tokenAddress,
         source: edge.source,
+        isWhale: edge.isWhale,
+        isSniper: edge.isSniper,
         x: (hub?.x ?? 0) + Math.sin(aPhi) * Math.cos(aTheta) * dist,
         y: (hub?.y ?? 0) + Math.sin(aPhi) * Math.sin(aTheta) * dist,
         z: (hub?.z ?? 0) + Math.cos(aPhi) * dist,
@@ -324,8 +338,15 @@ function HubNodeMesh({
       meshRef.current.scale.setScalar(baseScale * breathe);
     }
     // Pulse emissive intensity in sync with breathe
+    // Bonding curve progress amplifies glow (0% → base, 100% → 2× base)
     if (materialRef.current) {
-      materialRef.current.emissiveIntensity = defaultEmissiveIntensity + Math.sin(state.clock.getElapsedTime() * 1.5 + paletteIndex * 1.3) * 0.8;
+      const curveBoost = (nodeData.bondingCurveProgress ?? 0) * defaultEmissiveIntensity;
+      // Graduated tokens get a fast pulse to signal they've graduated
+      const gradPulse = nodeData.graduated
+        ? Math.abs(Math.sin(state.clock.getElapsedTime() * 4)) * 1.5
+        : 0;
+      materialRef.current.emissiveIntensity = defaultEmissiveIntensity + curveBoost + gradPulse
+        + Math.sin(state.clock.getElapsedTime() * 1.5 + paletteIndex * 1.3) * 0.8;
     }
     radiusRef.current = nodeData.radius;
 
@@ -499,8 +520,10 @@ const AgentNodes = memo<{
         mesh.setMatrixAt(i, tempObj.matrix);
         tempColor.set('#818cf8');
       } else {
+        // Whales are 1.8× size, snipers are 1.4× size
+        const sizeMultiplier = node.isWhale ? 1.8 : node.isSniper ? 1.4 : 1;
         tempObj.position.set((node.x ?? 0) + sx, (node.y ?? 0) + sy, (node.z ?? 0) + sz);
-        tempObj.scale.setScalar(node.radius);
+        tempObj.scale.setScalar(node.radius * sizeMultiplier);
         tempObj.updateMatrix();
         mesh.setMatrixAt(i, tempObj.matrix);
 
@@ -514,11 +537,18 @@ const AgentNodes = memo<{
           }
         } else {
           // Color agents by their hub's chain color (desaturated)
-          const hub = node.hubTokenAddress ? sim.nodeMap.get(node.hubTokenAddress) : null;
-          if (hub?.color) {
-            tempColor.set(hub.color).multiplyScalar(isDark ? 0.6 : 0.4);
+          // Whales get bright teal, snipers get orange
+          if (node.isWhale) {
+            tempColor.set('#38bdf8');
+          } else if (node.isSniper) {
+            tempColor.set('#f97316');
           } else {
-            tempColor.set(isDark ? PROTOCOL_COLORS.agentDefault : '#2a6090');
+            const hub = node.hubTokenAddress ? sim.nodeMap.get(node.hubTokenAddress) : null;
+            if (hub?.color) {
+              tempColor.set(hub.color).multiplyScalar(isDark ? 0.6 : 0.4);
+            } else {
+              tempColor.set(isDark ? PROTOCOL_COLORS.agentDefault : '#2a6090');
+            }
           }
         }
       }
@@ -616,6 +646,14 @@ const Edges = memo<{
         // Bright values > 1.0 trigger selective bloom via toneMapped={false}
         cA.array[idx] = EDGE_HIGHLIGHT_R; cA.array[idx + 1] = EDGE_HIGHLIGHT_G; cA.array[idx + 2] = EDGE_HIGHLIGHT_B;
         cA.array[idx + 3] = EDGE_HIGHLIGHT_R; cA.array[idx + 4] = EDGE_HIGHLIGHT_G; cA.array[idx + 5] = EDGE_HIGHLIGHT_B;
+      } else if (!isHubEdge && (src.isWhale || tgt.isWhale)) {
+        // Whale trader edges: bright teal
+        cA.array[idx] = 0.22; cA.array[idx + 1] = 0.74; cA.array[idx + 2] = 0.97;
+        cA.array[idx + 3] = 0.22; cA.array[idx + 4] = 0.74; cA.array[idx + 5] = 0.97;
+      } else if (!isHubEdge && (src.isSniper || tgt.isSniper)) {
+        // Sniper bot edges: bright orange
+        cA.array[idx] = 0.98; cA.array[idx + 1] = 0.45; cA.array[idx + 2] = 0.09;
+        cA.array[idx + 3] = 0.98; cA.array[idx + 4] = 0.45; cA.array[idx + 5] = 0.09;
       } else {
         // Derive color from the hub node's chain color
         const hubNode = src.type === 'hub' ? src : tgt.type === 'hub' ? tgt : null;

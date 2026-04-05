@@ -11,6 +11,15 @@ import type {
 } from '@web3viz/core';
 import { getCategoriesForSource, SOURCE_CONFIGS } from '@web3viz/core';
 import { BoundedMap, BoundedSet, WebSocketManager, safeJsonParse, isObject, getString, getNumber } from '../shared';
+import {
+  BondingCurveTracker,
+  WhaleTracker,
+  SniperDetector,
+  TokenMetadataEnricher,
+  makeBondingCurveEvent,
+  makeWhaleEvent,
+  makeSniperEvent,
+} from './analytics';
 
 export interface PumpFunProviderOptions {
   rpcWsUrl?: string;
@@ -65,10 +74,16 @@ export class PumpFunProvider implements DataProvider {
   private seenWallets = new BoundedSet<string>(50_000);
   private recentEvents: DataProviderEvent[] = [];
   private rawEvents: RawEvent[] = [];
-  private counts = { launches: 0, agentLaunches: 0, trades: 0, claimsWallet: 0, claimsGithub: 0, claimsFirst: 0 };
+  private counts = { launches: 0, agentLaunches: 0, trades: 0, bondingCurve: 0, whales: 0, snipers: 0, claimsWallet: 0, claimsGithub: 0, claimsFirst: 0 };
   private totalVolumeSol = 0;
   private solanaSubIds: number[] = [];
   private solanaNextId = 1;
+
+  // Analytics trackers
+  private bondingCurve = new BondingCurveTracker();
+  private whaleTracker = new WhaleTracker();
+  private sniperDetector = new SniperDetector();
+  private metadataEnricher = new TokenMetadataEnricher();
 
   constructor(options: PumpFunProviderOptions = {}) {
     this.maxEvents = options.maxEvents ?? 200;
@@ -90,10 +105,32 @@ export class PumpFunProvider implements DataProvider {
     const topTokens = Array.from(this.tokenAcc.values())
       .sort((a, b) => b.volume - a.volume)
       .slice(0, this.maxTopTokens);
+
+    // Enrich top tokens with bonding curve progress and metadata
+    for (const token of topTokens) {
+      const curve = this.bondingCurve.get(token.tokenAddress);
+      if (curve) {
+        token.bondingCurveProgress = curve.progress;
+        token.graduated = curve.graduated;
+      }
+      const meta = this.metadataEnricher.get(token.tokenAddress);
+      if (meta) {
+        token.imageUrl = meta.imageUrl;
+        token.description = meta.description;
+      }
+    }
+
     const topAddresses = new Set(topTokens.map((t) => t.tokenAddress));
     const traderEdges = Array.from(this.traderAcc.values())
       .filter((e) => topAddresses.has(e.tokenAddress))
       .slice(0, 5000);
+
+    // Annotate edges with whale/sniper flags
+    for (const edge of traderEdges) {
+      edge.isWhale = this.whaleTracker.isWhale(edge.trader);
+      edge.isSniper = this.sniperDetector.isSniper(edge.trader);
+    }
+
     return {
       counts: { ...this.counts },
       totalVolume: { solana: this.totalVolumeSol },
@@ -242,6 +279,13 @@ export class PumpFunProvider implements DataProvider {
         isAgent,
       },
     });
+
+    // Analytics: record creation time for sniper detection
+    this.sniperDetector.recordTokenCreation(mint, Date.now());
+
+    // Analytics: enqueue metadata fetch if URI available
+    const uri = getString(raw, 'uri', '');
+    if (uri) this.metadataEnricher.enqueue(mint, uri);
   }
 
   private handleTrade(raw: Record<string, unknown>): void {
@@ -312,6 +356,38 @@ export class PumpFunProvider implements DataProvider {
         symbol: cached?.symbol,
       },
     });
+
+    const now = Date.now();
+    const symbol = cached?.symbol || '???';
+
+    // Analytics: bonding curve progress
+    const vTokens = getNumber(raw, 'vTokensInBondingCurve', 0);
+    const vSol = getNumber(raw, 'vSolInBondingCurve', 0);
+    if (vTokens > 0) {
+      const curveState = this.bondingCurve.update(mint, vTokens, vSol);
+      // Emit milestone events at 25%, 50%, 75%, 90%, and graduation
+      const pct = Math.floor(curveState.progress * 100);
+      if (curveState.graduated || pct === 90 || pct === 75 || pct === 50 || pct === 25) {
+        this.counts.bondingCurve++;
+        this.emitEvent(makeBondingCurveEvent(curveState, symbol));
+      }
+    }
+
+    // Analytics: whale detection
+    const whale = this.whaleTracker.recordTrade(traderPublicKey, solAmount, mint, now);
+    if (whale.isWhale) {
+      this.counts.whales++;
+      if (whale.justBecameWhale) {
+        this.emitEvent(makeWhaleEvent(traderPublicKey, solAmount, mint, symbol));
+      }
+    }
+
+    // Analytics: sniper detection
+    const sniperHit = this.sniperDetector.checkTrade(traderPublicKey, mint, txType, now);
+    if (sniperHit) {
+      this.counts.snipers++;
+      this.emitEvent(makeSniperEvent(traderPublicKey, mint, sniperHit.delayMs, symbol));
+    }
   }
 
   private connectClaims(): void {

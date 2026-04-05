@@ -91,6 +91,26 @@ class PumpFunProvider implements DataProvider {
     ];
   }
 
+  /** Analytics: bonding curve progress for all tracked tokens */
+  getBondingCurves() {
+    return this.pumpFunWs.bondingCurve.getAll();
+  }
+
+  /** Analytics: number of whale wallets detected */
+  getWhaleCount() {
+    return this.pumpFunWs.whaleTracker.getWhaleCount();
+  }
+
+  /** Analytics: number of confirmed sniper bots */
+  getSniperCount() {
+    return this.pumpFunWs.sniperDetector.getSniperCount();
+  }
+
+  /** Analytics: social cluster data */
+  getSocialClusters() {
+    return this.pumpFunWs.socialClusters.getClusters();
+  }
+
   onEvent(callback: (event: DataProviderEvent) => void): () => void {
     this.listeners.add(callback);
     return () => this.listeners.delete(callback);

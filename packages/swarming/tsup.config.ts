@@ -28,7 +28,7 @@ export default defineConfig([
   },
   // ESM bundle — for <script type="module"> and bundler consumers
   {
-    entry: { swarming: 'src/index.ts' },
+    entry: { swarming: 'src/umd.ts' },
     format: ['esm'],
     outDir: 'dist',
     outExtension: () => ({ js: '.mjs' }),

@@ -4,6 +4,18 @@
  */
 
 import type { DataProviderEvent, RawEvent, TopToken, TraderEdge } from '@web3viz/core';
+import {
+  BondingCurveTracker,
+  WhaleTracker,
+  SniperDetector,
+  SocialClusterDetector,
+  makeBondingCurveEvent,
+  makeWhaleEvent,
+  makeSniperEvent,
+  makeClusterEvent,
+  type BondingCurveState,
+  type SocialCluster,
+} from './analytics';
 
 export interface PumpFunWSConfig {
   onEvent: (event: DataProviderEvent) => void;
@@ -35,12 +47,31 @@ export class PumpFunWebSocket {
   private tokenAcc = new Map<string, TopToken>();
   private traderAcc = new Map<string, TraderEdge>();
 
+  // Analytics trackers
+  readonly bondingCurve = new BondingCurveTracker();
+  readonly whaleTracker = new WhaleTracker();
+  readonly sniperDetector = new SniperDetector();
+  readonly socialClusters = new SocialClusterDetector();
+  private clusterComputeInterval: NodeJS.Timeout | null = null;
+
   constructor(config: PumpFunWSConfig) {
     this.config = config;
   }
 
   connect(): void {
     if (this.ws?.readyState === WebSocket.OPEN) return;
+
+    // Periodically recompute social clusters (every 30s)
+    if (!this.clusterComputeInterval) {
+      this.clusterComputeInterval = setInterval(() => {
+        const clusters = this.socialClusters.computeClusters();
+        for (const cluster of clusters.slice(0, 5)) {
+          if (cluster.wallets.length >= 3) {
+            this.config.onEvent(makeClusterEvent(cluster));
+          }
+        }
+      }, 30_000);
+    }
 
     const ws = new WebSocket(WS_URL);
     this.ws = ws;
@@ -88,6 +119,10 @@ export class PumpFunWebSocket {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
     }
+    if (this.clusterComputeInterval) {
+      clearInterval(this.clusterComputeInterval);
+      this.clusterComputeInterval = null;
+    }
     this.ws?.close();
     this.ws = null;
   }
@@ -100,9 +135,13 @@ export class PumpFunWebSocket {
     const tokenName = (raw.name as string) || 'Unknown';
     const tokenSymbol = (raw.symbol as string) || '???';
     const mint = raw.mint as string;
+    const now = Date.now();
 
     // Cache token metadata
     this.tokenCache.set(mint, { name: tokenName, symbol: tokenSymbol });
+
+    // Record creation timestamp for sniper detection
+    this.sniperDetector.recordTokenCreation(mint, now);
 
     const isAgent = isAgentLaunch(tokenName, tokenSymbol);
 
@@ -150,6 +189,48 @@ export class PumpFunWebSocket {
     const mint = raw.mint as string;
     const cached = this.tokenCache.get(mint);
     const solAmount = ((raw.solAmount as number) || 0) / 1e9; // lamports → SOL
+    const trader = (raw.traderPublicKey as string) || '';
+    const txType = (raw.txType as string) || 'buy';
+    const symbol = cached?.symbol || '???';
+    const now = Date.now();
+
+    // --- Analytics: Bonding Curve ---
+    const vTokens = (raw.vTokensInBondingCurve as number) || 0;
+    const vSol = (raw.vSolInBondingCurve as number) || 0;
+    if (vTokens > 0) {
+      const prevState = this.bondingCurve.get(mint);
+      const prevPct = prevState ? prevState.progress * 100 : 0;
+      const curveState = this.bondingCurve.update(mint, vTokens, vSol);
+      const pct = curveState.progress * 100;
+
+      // Emit event when crossing 25%, 50%, 75%, 90%, or graduation
+      const thresholds = [25, 50, 75, 90];
+      const crossedThreshold = thresholds.some((t) => pct >= t && prevPct < t);
+      if (curveState.graduated || crossedThreshold) {
+        this.config.onEvent(makeBondingCurveEvent(curveState, symbol));
+      }
+    }
+
+    // --- Analytics: Whale Tracking ---
+    if (trader) {
+      const whaleResult = this.whaleTracker.recordTrade(trader, solAmount, mint, now);
+      if (whaleResult.isWhale) {
+        this.config.onEvent(makeWhaleEvent(trader, solAmount, mint, symbol));
+      }
+    }
+
+    // --- Analytics: Sniper Detection ---
+    if (trader) {
+      const sniperHit = this.sniperDetector.checkTrade(trader, mint, txType, now);
+      if (sniperHit) {
+        this.config.onEvent(makeSniperEvent(trader, mint, sniperHit.delayMs, symbol));
+      }
+    }
+
+    // --- Analytics: Social Clustering ---
+    if (trader) {
+      this.socialClusters.recordTrade(trader, mint);
+    }
 
     // Emit raw event
     this.config.onRawEvent({
@@ -158,20 +239,25 @@ export class PumpFunWebSocket {
         tokenAddress: mint,
         chain: 'solana',
         signature: (raw.signature as string) || '',
-        traderAddress: (raw.traderPublicKey as string) || '',
-        txType: (raw.txType as string) || 'buy',
+        traderAddress: trader,
+        txType,
         tokenAmount: (raw.tokenAmount as number) || 0,
         nativeAmount: solAmount,
         nativeSymbol: 'SOL',
         marketCap: (raw.marketCapSol as number) || 0,
-        timestamp: Date.now(),
+        timestamp: now,
         name: cached?.name,
         symbol: cached?.symbol,
         meta: {
           newTokenBalance: (raw.newTokenBalance as number) || 0,
           bondingCurveKey: (raw.bondingCurveKey as string) || '',
-          vTokensInBondingCurve: (raw.vTokensInBondingCurve as number) || 0,
-          vSolInBondingCurve: (raw.vSolInBondingCurve as number) || 0,
+          vTokensInBondingCurve: vTokens,
+          vSolInBondingCurve: vSol,
+          bondingCurveProgress: vTokens > 0
+            ? this.bondingCurve.get(mint)?.progress ?? 0
+            : undefined,
+          isWhale: this.whaleTracker.whales.has(trader),
+          isSniper: this.sniperDetector.confirmedSnipers.has(trader),
         },
       },
     });
@@ -204,14 +290,14 @@ export class PumpFunWebSocket {
 
     // Build trader → token edges for top-token mints only
     const topAddrs = new Set(sorted.map((t) => t.tokenAddress));
-    const traderKey = `${raw.traderPublicKey}:${mint}`;
+    const traderKey = `${trader}:${mint}`;
     const existingEdge = this.traderAcc.get(traderKey);
     if (existingEdge) {
       existingEdge.trades++;
       existingEdge.volume += solAmount;
     } else {
       this.traderAcc.set(traderKey, {
-        trader: (raw.traderPublicKey as string) || '',
+        trader,
         tokenAddress: mint,
         chain: 'solana',
         trades: 1,
@@ -230,15 +316,17 @@ export class PumpFunWebSocket {
       providerId: 'solana-pumpfun',
       category: 'trades',
       chain: 'solana',
-      timestamp: Date.now(),
-      label: `${cached?.symbol || '???'} ${raw.txType}`,
+      timestamp: now,
+      label: `${symbol} ${txType}`,
       amount: solAmount,
       nativeSymbol: 'SOL',
-      address: (raw.traderPublicKey as string) || '',
+      address: trader,
       tokenAddress: mint,
       meta: {
         symbol: cached?.symbol,
-        txType: raw.txType,
+        txType,
+        isWhale: this.whaleTracker.whales.has(trader),
+        isSniper: this.sniperDetector.confirmedSnipers.has(trader),
       },
     });
 

@@ -143,4 +143,5 @@ const SwarmingCanvas = forwardRef<SwarmingHandle, SwarmingCanvasProps>(function 
   );
 });
 
-export default memo(SwarmingCanvas);
+const SwarmingCanvasMemo = memo(SwarmingCanvas);
+export { SwarmingCanvasMemo as SwarmingCanvas };

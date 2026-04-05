@@ -10,6 +10,9 @@ Real-time Web3 + AI agent visualization built with Next.js 14, React Three Fiber
 npm run build        # Build the main web app (runs next build)
 npm run dev          # Dev server on port 3100
 npm run lint         # ESLint
+npm run typecheck    # TypeScript check (root tsconfig, excludes broken packages)
+npm test             # Run all tests (vitest)
+npm test -- --run packages/core  # Run tests for a specific package
 ```
 
 **Do NOT use `turbo run build`** — `packages/executor` (missing `ws` dep) and `apps/playground` (broken import) will fail. Use `npm run build` which only builds the main Next.js app.
@@ -32,15 +35,24 @@ features/
     verification/       # Giza LuminAIR verification components
   Agents/               # Agent visualization — AgentForceGraph, AgentSidebar
 packages/
-  core/                 # Core types and interfaces
-  providers/            # Data providers (WebSocket, bounded collections, validation)
+  core/                 # Core types and interfaces (see packages/core/CLAUDE.md)
+  providers/            # Data providers (see packages/providers/CLAUDE.md)
   react-graph/          # React graph components
   ui/                   # Shared UI components
   utils/                # Shared utilities
   mcp/                  # MCP server (DeFi Llama, cookie.fun, proof registry)
-  executor/             # Agent execution (ClaudeAgentClient) — excluded from build
+  executor/             # ⚠️ BROKEN — missing ws dep (see README)
 apps/
-  playground/           # Broken — excluded from build
+  playground/           # ⚠️ BROKEN — broken import (see README)
+```
+
+## Verification After Changes
+
+Always verify your changes with:
+```bash
+npm run build          # Must pass
+npm run typecheck      # Must pass
+npm test               # Must pass
 ```
 
 ## Key Conventions
@@ -51,6 +63,13 @@ apps/
 - `WebSocketManager` in `packages/providers/src/shared/` handles reconnection with exponential backoff
 - Verification components use inline styles (no Tailwind dependency)
 - `@gizatech/luminair-web` degrades gracefully if not installed (demo mode)
+- All external data must be validated with `packages/providers/src/shared/validate.ts` helpers
+
+## Testing
+
+Tests use vitest with jsdom. Config in `vitest.config.ts`. Tests live in `__tests__/` directories adjacent to source.
+
+Coverage targets: `packages/core/src`, `packages/providers/src`, `packages/utils/src`, `features/World/utils`
 
 ## Code Style
 

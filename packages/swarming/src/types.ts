@@ -1,5 +1,4 @@
 import type { CSSProperties } from 'react';
-import type { CollaborationConfig } from './collaboration/types';
 
 // ---------------------------------------------------------------------------
 // Node & Edge types
@@ -139,11 +138,6 @@ export interface SwarmingConfig {
   linkDistance?: number;
   /** Center gravity strength (default: 0.03) */
   centerPull?: number;
-
-  // -- Collaboration --
-
-  /** Enable multiplayer mode — shared cursors, annotations, presenter mode */
-  collaboration?: CollaborationConfig;
 
   // -- Events --
 
