@@ -76,6 +76,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             to { transform: rotate(360deg); }
           }
         `}} />
+        {/* Boot-loader dismissal script — placed in <head> so it runs
+            independently of React hydration. The body <script> approach
+            doesn't work reliably in Next.js App Router because it gets
+            serialized into the RSC payload instead of rendering as inline HTML. */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
+            function dismiss() {
+              var el = document.getElementById('boot-loader');
+              if (!el || !el.parentNode) return;
+              el.classList.add('hide');
+              setTimeout(function() { if (el.parentNode) el.remove(); }, 400);
+            }
+            window.addEventListener('webgl-ready', dismiss);
+            // Safety: force-remove after 4s even if React never hydrates
+            setTimeout(dismiss, 4000);
+          })();
+        `}} />
       </head>
       <body>
         {/* Hardcoded boot loader — visible before React hydrates */}
@@ -84,26 +101,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <span className="label">Initializing</span>
         </div>
         {children}
-        {/* Remove boot loader once React has hydrated and painted */}
-        <script dangerouslySetInnerHTML={{ __html: `
-          (function() {
-            // Hide the boot loader after a short delay to allow React to paint
-            var el = document.getElementById('boot-loader');
-            if (!el) return;
-            // Listen for the custom event dispatched by LoadingScreen
-            window.addEventListener('webgl-ready', function() {
-              el.classList.add('hide');
-              setTimeout(function() { el.remove(); }, 400);
-            });
-            // Safety: force-remove after 4s even if event never fires
-            setTimeout(function() {
-              if (el && el.parentNode) {
-                el.classList.add('hide');
-                setTimeout(function() { el.remove(); }, 400);
-              }
-            }, 4000);
-          })();
-        `}} />
       </body>
     </html>
   );
