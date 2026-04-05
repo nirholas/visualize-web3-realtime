@@ -111,7 +111,7 @@ export const mockPlugin = definePlugin({
       return () => clearInterval(timer);
     },
 
-    getHubs(config) {
+    getHubs(config: MockPluginConfig) {
       const numTokens = Math.min(config.numTokens ?? 5, MOCK_TOKENS.length);
       return MOCK_TOKENS.slice(0, numTokens).map((t) => ({
         tokenAddress: randomAddress(),
