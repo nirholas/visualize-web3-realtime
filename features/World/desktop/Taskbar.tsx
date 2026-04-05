@@ -22,6 +22,8 @@ interface TaskbarProps {
   isLive: boolean;
   isPlaying: boolean;
   onTogglePlay: () => void;
+  /** Number of new events since livefeed was last viewed */
+  liveFeedBadge?: number;
 }
 
 export const Taskbar = memo<TaskbarProps>(({
@@ -33,6 +35,7 @@ export const Taskbar = memo<TaskbarProps>(({
   isLive,
   isPlaying,
   onTogglePlay,
+  liveFeedBadge,
 }) => {
   const [startHovered, setStartHovered] = useState(false);
 
@@ -108,6 +111,7 @@ export const Taskbar = memo<TaskbarProps>(({
             isOpen={w?.isOpen ?? false}
             isMinimized={w?.isMinimized ?? false}
             onClick={() => onToggleWindow(id)}
+            badge={id === 'livefeed' ? liveFeedBadge : undefined}
           />
         );
       })}

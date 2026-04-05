@@ -10,6 +10,8 @@ interface TaskbarAppIconProps {
   isOpen: boolean;
   isMinimized: boolean;
   onClick: () => void;
+  /** Optional numeric badge (e.g. unread count) */
+  badge?: number;
 }
 
 export const TaskbarAppIcon = memo<TaskbarAppIconProps>(({
@@ -19,6 +21,7 @@ export const TaskbarAppIcon = memo<TaskbarAppIconProps>(({
   isOpen,
   isMinimized,
   onClick,
+  badge,
 }) => {
   const [hovered, setHovered] = useState(false);
 
@@ -51,6 +54,31 @@ export const TaskbarAppIcon = memo<TaskbarAppIconProps>(({
       }}
     >
       {icon}
+
+      {/* Badge */}
+      {badge != null && badge > 0 && (
+        <div style={{
+          position: 'absolute',
+          top: 2,
+          right: 2,
+          minWidth: 16,
+          height: 16,
+          padding: '0 4px',
+          borderRadius: 8,
+          background: '#ef4444',
+          color: '#fff',
+          fontSize: 9,
+          fontWeight: 700,
+          fontFamily: "'IBM Plex Mono', monospace",
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          lineHeight: 1,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.4)',
+        }}>
+          {badge > 99 ? '99+' : badge}
+        </div>
+      )}
 
       {/* Active indicator dot */}
       {isOpen && (
