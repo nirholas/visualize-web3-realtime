@@ -3,12 +3,7 @@ import { CodeBlock } from '../components/CodeBlock';
 
 export function BuildingRealtimeVizContent() {
   return (
-    <BlogLayout
-      title="Building a Real-Time Data Visualization Engine from Scratch"
-      date="2025-01-05"
-      readingTime="12 min"
-      tags={['architecture', 'react', 'three-js']}
-    >
+    <BlogLayout>
       <p>
         When we started building Swarming, the goal was deceptively simple: take any stream of
         real-time data and make it beautiful. Tokens being traded, agents executing strategies,
