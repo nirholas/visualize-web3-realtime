@@ -204,7 +204,7 @@ ws.connect();`} />
   tick(): void {
     this.simulation.tick();
   }
-}`} /
+}`} />
 
       <p>
         A few things worth noting about the force configuration. Hub charge strength is -200,
