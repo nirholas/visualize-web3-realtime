@@ -41,6 +41,25 @@ export const Window = memo<WindowProps>(({
   const [dragPos, setDragPos] = useState(position);
   const posRef = useRef(position);
 
+  // Maximize / restore state
+  const [maximized, setMaximized] = useState(false);
+  const preMaxRef = useRef<{ pos: { x: number; y: number }; size?: { width: number; height: number } } | null>(null);
+
+  const toggleMaximize = useCallback(() => {
+    if (maximized) {
+      // Restore
+      if (preMaxRef.current) {
+        onPositionChange(preMaxRef.current.pos);
+      }
+      setMaximized(false);
+    } else {
+      // Save current state and maximize
+      preMaxRef.current = { pos: posRef.current, size };
+      onPositionChange({ x: 0, y: 0 });
+      setMaximized(true);
+    }
+  }, [maximized, size, onPositionChange]);
+
   // Sync external position changes
   useEffect(() => {
     if (!dragging) {
@@ -88,12 +107,13 @@ export const Window = memo<WindowProps>(({
     <div
       onMouseDown={onFocus}
       style={{
-        position: 'absolute',
-        left: dragPos.x,
-        top: dragPos.y,
-        width: size?.width ?? 360,
+        position: maximized ? 'fixed' : 'absolute',
+        left: maximized ? 8 : dragPos.x,
+        top: maximized ? 8 : dragPos.y,
+        width: maximized ? 'calc(100vw - 16px)' : (size?.width ?? 360),
         minHeight: 100,
-        maxHeight: size?.height ? size.height + 40 : '80vh',
+        maxHeight: maximized ? 'calc(100vh - 84px)' : (size?.height ? size.height + 40 : '80vh'),
+        height: maximized ? 'calc(100vh - 84px)' : undefined,
         zIndex,
         display: 'flex',
         flexDirection: 'column',
@@ -101,12 +121,13 @@ export const Window = memo<WindowProps>(({
         backdropFilter: GLASS.blur,
         WebkitBackdropFilter: GLASS.blur,
         border: GLASS.border,
-        borderRadius: GLASS.radiusLg,
+        borderRadius: maximized ? GLASS.radiusSm : GLASS.radiusLg,
         boxShadow: GLASS.shadow,
         overflow: 'hidden',
         animation: 'winOpen 200ms ease-out',
         fontFamily: "'IBM Plex Mono', monospace",
         userSelect: dragging ? 'none' : undefined,
+        transition: maximized ? 'all 200ms ease' : undefined,
       }}
     >
       {/* Title bar */}
@@ -114,6 +135,7 @@ export const Window = memo<WindowProps>(({
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onDoubleClick={toggleMaximize}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -172,6 +194,36 @@ export const Window = memo<WindowProps>(({
             title="Minimize"
           >
             &#x2015;
+          </button>
+          {/* Maximize / Restore */}
+          <button
+            onClick={(e) => { e.stopPropagation(); toggleMaximize(); }}
+            style={{
+              width: 28,
+              height: 28,
+              borderRadius: 6,
+              border: 'none',
+              background: 'transparent',
+              color: '#64748b',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: maximized ? 12 : 10,
+              transition: 'background 150ms, color 150ms',
+            }}
+            onMouseEnter={(e) => {
+              (e.target as HTMLElement).style.background = 'rgba(255,255,255,0.08)';
+              (e.target as HTMLElement).style.color = '#e2e8f0';
+            }}
+            onMouseLeave={(e) => {
+              (e.target as HTMLElement).style.background = 'transparent';
+              (e.target as HTMLElement).style.color = '#64748b';
+            }}
+            type="button"
+            title={maximized ? 'Restore' : 'Maximize'}
+          >
+            {maximized ? '\u29C9' : '\u25A1'}
           </button>
           {/* Close */}
           <button

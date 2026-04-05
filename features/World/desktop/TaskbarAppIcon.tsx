@@ -13,6 +13,7 @@ interface TaskbarAppIconProps {
 }
 
 export const TaskbarAppIcon = memo<TaskbarAppIconProps>(({
+  id,
   label,
   icon,
   isOpen,
@@ -23,6 +24,7 @@ export const TaskbarAppIcon = memo<TaskbarAppIconProps>(({
 
   return (
     <button
+      data-app-id={id}
       onClick={onClick}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}

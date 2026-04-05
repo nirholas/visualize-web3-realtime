@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, Suspense, useCallback, useState } from 'react';
+import { memo, Suspense, useCallback, useEffect, useState } from 'react';
 import type { DataProvider, ConnectionState, CategoryConfig, SourceConfig } from '@web3viz/core';
 import type { CustomProviderFormData } from '../AddCustomProviderForm';
 import type { ShareColors } from '../SharePanel';
@@ -28,6 +28,7 @@ import { WorldChat } from '../ai/WorldChat';
 import TimelineBar from '../TimelineBar';
 import ShareOverlay from '../ShareOverlay';
 import { KeyboardShortcuts } from './KeyboardShortcuts';
+import { ConnectionToasts } from './ConnectionToasts';
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                             */
@@ -104,6 +105,9 @@ export interface DesktopShellProps {
 
   /* Onboarding */
   onStartOnboarding?: () => void;
+
+  /* External access to window manager */
+  onRegisterOpenWindow?: (fn: (id: WindowId) => void) => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -127,10 +131,16 @@ export const DesktopShell = memo<DesktopShellProps>((props) => {
     hasActiveProvider, highlightedAddress, searchError,
     demoMode, onToggleDemo,
     onStartOnboarding,
+    onRegisterOpenWindow,
   } = props;
 
   const wm = useWindowManager();
   const [startMenuOpen, setStartMenuOpen] = useState(false);
+
+  // Expose openWindow to parent via callback registration
+  useEffect(() => {
+    onRegisterOpenWindow?.(wm.openWindow);
+  }, [onRegisterOpenWindow, wm.openWindow]);
 
   const toggleStartMenu = useCallback(() => setStartMenuOpen((p) => !p), []);
   const closeStartMenu = useCallback(() => setStartMenuOpen(false), []);
@@ -326,6 +336,9 @@ export const DesktopShell = memo<DesktopShellProps>((props) => {
         onToggleWindow={wm.toggleWindow}
         onTogglePlay={onTogglePlay}
       />
+
+      {/* Connection status toasts */}
+      <ConnectionToasts connections={connections} />
     </>
   );
 });

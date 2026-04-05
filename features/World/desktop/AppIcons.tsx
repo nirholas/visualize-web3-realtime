@@ -77,6 +77,15 @@ export const StartMenuIcon = memo(() => (
 ));
 StartMenuIcon.displayName = 'StartMenuIcon';
 
+export const HelpIcon = memo(() => (
+  <svg {...sz}>
+    <circle cx="12" cy="12" r="10" />
+    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+    <line x1="12" y1="17" x2="12.01" y2="17" />
+  </svg>
+));
+HelpIcon.displayName = 'HelpIcon';
+
 export const JourneyIcon = memo(() => (
   <svg {...sz}>
     <path d="M12 2L2 7l10 5 10-5-10-5z" />

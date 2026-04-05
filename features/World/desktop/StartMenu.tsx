@@ -3,7 +3,7 @@
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { GLASS, APPS, TASKBAR_HEIGHT } from './desktopConstants';
 import type { WindowId } from './desktopTypes';
-import { getAppIcon, JourneyIcon } from './AppIcons';
+import { getAppIcon, JourneyIcon, HelpIcon } from './AppIcons';
 
 interface StartMenuProps {
   isOpen: boolean;
@@ -202,7 +202,7 @@ export const StartMenu = memo<StartMenuProps>(({
         )}
 
         {/* How to use — onboarding walkthrough */}
-        {(!search || 'how to use guide tour help'.includes(search.toLowerCase())) && onStartOnboarding && (
+        {(!search || 'how to use guide tour help'.split(' ').some((w) => w.includes(search.toLowerCase()))) && onStartOnboarding && (
           <AppTile
             label="How to use"
             icon={<HelpIcon />}

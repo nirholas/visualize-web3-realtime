@@ -11,7 +11,7 @@
  * - Pointer events for drag/pause interaction
  */
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import {
   prepareWithSegments,
   layoutWithLines,
@@ -58,7 +58,6 @@ import {
   stepPhysics,
   hitTestOrbs,
   orbStyle,
-  type Orb,
 } from './orbPhysics'
 
 import { syncPool, projectLines } from './domPool'
@@ -106,48 +105,89 @@ type HeadlineFit = {
   lines: PositionedLine[]
 }
 
+// ── Animated counter hook ───────────────────────────────────────────────────
+
+function useAnimatedCounter(target: number, duration: number = 2000, delay: number = 0): number {
+  const [value, setValue] = useState(0)
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      const start = performance.now()
+      function tick() {
+        const elapsed = performance.now() - start
+        const t = Math.min(elapsed / duration, 1)
+        // ease-out cubic
+        const eased = 1 - Math.pow(1 - t, 3)
+        setValue(Math.round(target * eased))
+        if (t < 1) requestAnimationFrame(tick)
+      }
+      requestAnimationFrame(tick)
+    }, delay)
+    return () => clearTimeout(timeout)
+  }, [target, duration, delay])
+  return value
+}
+
 // ── Component ───────────────────────────────────────────────────────────────
 
 export default function LandingEngine() {
   const stageRef = useRef<HTMLDivElement>(null)
-  const mountedRef = useRef(false)
+  const cleanupRef = useRef<(() => void) | null>(null)
+
+  // Animated stat counters
+  const nodeCount = useAnimatedCounter(5000, 2200, 300)
+  const fpsCount = useAnimatedCounter(60, 1800, 500)
 
   useEffect(() => {
-    if (mountedRef.current) return
-    mountedRef.current = true
-
     const stage = stageRef.current
-    if (!stage) return
+    if (!stage || cleanupRef.current) return
 
-    // ── Wait for fonts, then initialize ─────────────────────────────────
     document.fonts.ready.then(() => {
-      init(stage)
+      if (!stageRef.current) return // unmounted during font load
+      cleanupRef.current = init(stage)
     })
+
+    return () => {
+      cleanupRef.current?.()
+      cleanupRef.current = null
+    }
   }, [])
 
   return (
     <>
-      {/* Inline styles for positioned text spans */}
       <style>{`
-        .le-stage { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+        .le-stage {
+          position: relative; width: 100vw; height: 100vh; overflow: hidden;
+          background: radial-gradient(ellipse at 50% 30%, rgba(40, 50, 80, 0.12) 0%, rgba(10, 10, 18, 1) 60%);
+        }
         .le-line {
           position: absolute; white-space: pre; z-index: 1;
           color: ${TEXT_COLOR};
           user-select: text; -webkit-user-select: text;
+          transition: opacity 0.4s ease;
         }
         .le-headline-line {
           position: absolute; white-space: pre; z-index: 2;
-          font-weight: 200; color: ${HEADLINE_COLOR};
+          font-weight: 300; color: ${HEADLINE_COLOR};
           letter-spacing: 0.06em; text-transform: uppercase;
           user-select: text; -webkit-user-select: text;
+          opacity: 0; transform: translateY(8px);
+          animation: le-headline-in 0.6s ease forwards;
+        }
+        @keyframes le-headline-in {
+          to { opacity: 1; transform: translateY(0); }
         }
         .le-drop-cap {
           position: absolute; pointer-events: none; z-index: 2;
           font-weight: 600; color: ${DROP_CAP_COLOR};
+          opacity: 0; animation: le-fade-in 0.8s ease 0.4s forwards;
+        }
+        @keyframes le-fade-in {
+          to { opacity: 1; }
         }
         .le-orb {
           position: absolute; border-radius: 50%; pointer-events: none; z-index: 10;
           will-change: transform;
+          transition: box-shadow 0.3s ease, transform 0.3s ease;
         }
         .le-pq-box {
           position: absolute; pointer-events: none; z-index: 3;
@@ -155,8 +195,10 @@ export default function LandingEngine() {
           backdrop-filter: ${GLASS.blur};
           -webkit-backdrop-filter: ${GLASS.blur};
           border: ${GLASS.border};
+          border-left: 3px solid ${ACCENT_INDIGO};
           border-radius: ${GLASS.radius}px;
           box-shadow: ${GLASS.shadow};
+          opacity: 0; animation: le-fade-in 0.6s ease 0.8s forwards;
         }
         .le-pq-line {
           position: absolute; white-space: pre; z-index: 4;
@@ -188,7 +230,9 @@ export default function LandingEngine() {
           padding: 8px 18px; border-radius: 9999px;
           border: 1px solid rgba(255,255,255,0.04);
           pointer-events: none; white-space: nowrap;
+          display: none;
         }
+        .le-hint.le-visible { display: block; }
         .le-stats {
           position: fixed; top: 18px; right: 24px; z-index: 100;
           display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
@@ -225,8 +269,6 @@ export default function LandingEngine() {
           border-color: rgba(129, 140, 248, 0.5);
           box-shadow: 0 4px 32px rgba(129, 140, 248, 0.15), 0 4px 24px rgba(0,0,0,0.4);
         }
-        .le-hint { display: none; }
-        .le-hint.le-visible { display: block; }
         .le-breathe-btn {
           position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
           z-index: 100;
@@ -252,17 +294,22 @@ export default function LandingEngine() {
         .le-breathe-btn.le-hidden { display: none; }
         @media (max-width: 760px) {
           .le-hint { display: none !important; }
+          .le-stats { display: none; }
         }
         @media (prefers-reduced-motion: reduce) {
           .le-orb { transition: none !important; }
+          .le-headline-line { animation: none !important; opacity: 1 !important; transform: none !important; }
+          .le-drop-cap { animation: none !important; opacity: 1 !important; }
+          .le-pq-box { animation: none !important; opacity: 1 !important; }
+          .le-line { transition: none !important; }
         }
       `}</style>
 
       <div ref={stageRef} className="le-stage" />
       <a className="le-brand" href="/">SWARMING<span className="le-brand-tld">.world</span></a>
       <div className="le-stats">
-        <span className="le-stats-line"><strong>5,000</strong> Nodes</span>
-        <span className="le-stats-line"><strong>60</strong> Frames Per Second</span>
+        <span className="le-stats-line"><strong>{nodeCount.toLocaleString()}</strong> Nodes</span>
+        <span className="le-stats-line"><strong>{fpsCount}</strong> Frames Per Second</span>
         <span className="le-stats-line"><strong>Zero</strong> Latency</span>
         <span className="le-stats-line">Not a Dashboard. A Living Network.</span>
       </div>
@@ -274,8 +321,9 @@ export default function LandingEngine() {
 }
 
 // ── Engine initialization (runs once after fonts load) ──────────────────────
+// Returns a cleanup function for React unmount.
 
-function init(stage: HTMLDivElement) {
+function init(stage: HTMLDivElement): () => void {
   const W0 = window.innerWidth
   const H0 = window.innerHeight
 
@@ -294,7 +342,6 @@ function init(stage: HTMLDivElement) {
 
   // ── Create DOM elements ─────────────────────────────────────────────────
 
-  // Drop cap
   const dropCapEl = document.createElement('div')
   dropCapEl.className = 'le-drop-cap'
   dropCapEl.textContent = dropCapText
@@ -302,18 +349,16 @@ function init(stage: HTMLDivElement) {
   dropCapEl.style.lineHeight = `${dropCapSize}px`
   stage.appendChild(dropCapEl)
 
-  // Orb elements
-  const orbEls = ORB_DEFS.map(def => {
+  const orbStyles = ORB_DEFS.map(def => orbStyle(def.colorIndex))
+  const orbEls = ORB_DEFS.map((def, i) => {
     const el = document.createElement('div')
     el.className = 'le-orb'
-    const style = orbStyle(def.colorIndex)
-    el.style.background = style.background
-    el.style.boxShadow = style.boxShadow
+    el.style.background = orbStyles[i]!.background
+    el.style.boxShadow = orbStyles[i]!.boxShadow
     stage.appendChild(el)
     return el
   })
 
-  // Pools
   const bodyLinePool: HTMLSpanElement[] = []
   const headlineLinePool: HTMLSpanElement[] = []
   const pqLinePool: HTMLSpanElement[] = []
@@ -322,9 +367,10 @@ function init(stage: HTMLDivElement) {
   // ── State ───────────────────────────────────────────────────────────────
 
   const orbs = createOrbs(ORB_DEFS, W0, H0)
-
-  let orbsActive = false        // orbs start hidden; activated by CTA button
-  let orbsFadeIn = 0             // 0..1 fade progress for orbs
+  let orbsActive = false
+  let orbsFadeIn = 0
+  let firstRender = true      // for body text entrance fade
+  let renderCount = 0
 
   let pointer: PointerSample = { x: -9999, y: -9999 }
   let drag: DragState | null = null
@@ -355,7 +401,7 @@ function init(stage: HTMLDivElement) {
 
     while (lo <= hi) {
       const size = Math.floor((lo + hi) / 2)
-      const font = `200 ${size}px ${HEADLINE_FONT_FAMILY}`
+      const font = `300 ${size}px ${HEADLINE_FONT_FAMILY}`
       const lineHeight = Math.round(size * 1.05)
       const prepared = prepareWithSegments(HEADLINE_TEXT, font)
       let breaksWord = false
@@ -446,7 +492,7 @@ function init(stage: HTMLDivElement) {
   // ── Render frame ────────────────────────────────────────────────────────
 
   function render(now: number): boolean {
-    if (isTextSelectActive() && drag === null) return false
+    const skipPhysics = isTextSelectActive() && drag === null
 
     const pageWidth = document.documentElement.clientWidth
     const pageHeight = document.documentElement.clientHeight
@@ -457,49 +503,51 @@ function init(stage: HTMLDivElement) {
     const orbRadiusScale = isNarrow ? NARROW_ORB_SCALE : 1
     const activeOrbCount = isNarrow ? Math.min(NARROW_ACTIVE_ORBS, orbs.length) : orbs.length
 
-    // ── Process events ──────────────────────────────────────────────────
-    if (events.pointerDown !== null) {
-      const down = events.pointerDown
-      pointer = down
-      if (drag === null) {
-        const idx = hitTestOrbs(orbs, down.x, down.y, activeOrbCount, orbRadiusScale)
-        if (idx !== -1) {
-          const orb = orbs[idx]!
-          drag = {
-            orbIndex: idx,
-            startPointerX: down.x,
-            startPointerY: down.y,
-            startOrbX: orb.x,
-            startOrbY: orb.y,
+    // ── Process events (skip if text selecting) ─────────────────────────
+    if (!skipPhysics) {
+      if (events.pointerDown !== null) {
+        const down = events.pointerDown
+        pointer = down
+        if (drag === null) {
+          const idx = hitTestOrbs(orbs, down.x, down.y, activeOrbCount, orbRadiusScale)
+          if (idx !== -1) {
+            const orb = orbs[idx]!
+            drag = {
+              orbIndex: idx,
+              startPointerX: down.x,
+              startPointerY: down.y,
+              startOrbX: orb.x,
+              startOrbY: orb.y,
+            }
           }
         }
       }
-    }
 
-    if (events.pointerMove !== null) {
-      const move = events.pointerMove
-      pointer = move
-      if (drag !== null) {
-        const orb = orbs[drag.orbIndex]!
-        orb.x = drag.startOrbX + (move.x - drag.startPointerX)
-        orb.y = drag.startOrbY + (move.y - drag.startPointerY)
-      }
-    }
-
-    if (events.pointerUp !== null) {
-      const up = events.pointerUp
-      pointer = up
-      if (drag !== null) {
-        const dx = up.x - drag.startPointerX
-        const dy = up.y - drag.startPointerY
-        const orb = orbs[drag.orbIndex]!
-        if (dx * dx + dy * dy < 16) {
-          orb.paused = !orb.paused
-        } else {
-          orb.x = drag.startOrbX + dx
-          orb.y = drag.startOrbY + dy
+      if (events.pointerMove !== null) {
+        const move = events.pointerMove
+        pointer = move
+        if (drag !== null) {
+          const orb = orbs[drag.orbIndex]!
+          orb.x = drag.startOrbX + (move.x - drag.startPointerX)
+          orb.y = drag.startOrbY + (move.y - drag.startPointerY)
         }
-        drag = null
+      }
+
+      if (events.pointerUp !== null) {
+        const up = events.pointerUp
+        pointer = up
+        if (drag !== null) {
+          const dx = up.x - drag.startPointerX
+          const dy = up.y - drag.startPointerY
+          const orb = orbs[drag.orbIndex]!
+          if (dx * dx + dy * dy < 16) {
+            orb.paused = !orb.paused
+          } else {
+            orb.x = drag.startOrbX + dx
+            orb.y = drag.startOrbY + dy
+          }
+          drag = null
+        }
       }
     }
 
@@ -510,8 +558,7 @@ function init(stage: HTMLDivElement) {
 
     let stillAnimating = false
 
-    if (orbsActive) {
-      // Fade in orbs over ~0.6s
+    if (orbsActive && !skipPhysics) {
       if (orbsFadeIn < 1) {
         orbsFadeIn = Math.min(1, orbsFadeIn + dt / 0.6)
         stillAnimating = true
@@ -543,12 +590,12 @@ function init(stage: HTMLDivElement) {
       headlineWidth, maxHeadlineHeight, isNarrow ? 32 : 72,
     )
     const hlLineHeight = Math.round(hlSize * 1.05)
-    const hlFont = `200 ${hlSize}px ${HEADLINE_FONT_FAMILY}`
+    const hlFont = `300 ${hlSize}px ${HEADLINE_FONT_FAMILY}`
     const hlHeight = hlLines.length * hlLineHeight
 
     // ── Body columns ────────────────────────────────────────────────────
     const bodyTop = gutter + hlHeight + (isNarrow ? 14 : 24)
-    const bodyHeight = pageHeight - bodyTop - bottomGap - 60 // 60 for CTA area
+    const bodyHeight = pageHeight - bodyTop - bottomGap - 60
     const columnCount = pageWidth > 1000 ? 3 : pageWidth > 640 ? 2 : 1
     const totalGutter = gutter * 2 + colGap * (columnCount - 1)
     const maxCW = Math.min(pageWidth, MAX_CONTENT_WIDTH)
@@ -589,7 +636,7 @@ function init(stage: HTMLDivElement) {
 
     // ── Layout body text across columns ─────────────────────────────────
     const allBodyLines: PositionedLine[] = []
-    let cursor: LayoutCursor = { segmentIndex: 0, graphemeIndex: 1 } // skip drop cap char
+    let cursor: LayoutCursor = { segmentIndex: 0, graphemeIndex: 1 }
 
     for (let ci = 0; ci < columnCount; ci++) {
       const colX = contentLeft + ci * (colW + colGap)
@@ -629,13 +676,22 @@ function init(stage: HTMLDivElement) {
     }
 
     if (!projEqual(committedProjection, projection)) {
-      // Headline
+      // Headline — stagger animation delay per line
       syncPool(headlineLinePool, projection.headlineLines.length, stage, () => {
         const el = document.createElement('span')
         el.className = 'le-headline-line'
         return el
       })
-      projectLines(headlineLinePool, projection.headlineLines, projection.headlineFont, projection.headlineLineHeight)
+      for (let i = 0; i < projection.headlineLines.length; i++) {
+        const el = headlineLinePool[i]!
+        const line = projection.headlineLines[i]!
+        el.textContent = line.text
+        el.style.left = `${projection.headlineLeft + line.x}px`
+        el.style.top = `${projection.headlineTop + line.y}px`
+        el.style.font = projection.headlineFont
+        el.style.lineHeight = `${projection.headlineLineHeight}px`
+        el.style.animationDelay = `${i * 0.15}s`
+      }
 
       // Body
       syncPool(bodyLinePool, projection.bodyLines.length, stage, () => {
@@ -644,6 +700,22 @@ function init(stage: HTMLDivElement) {
         return el
       })
       projectLines(bodyLinePool, projection.bodyLines, projection.bodyFont, projection.bodyLineHeight)
+
+      // Body entrance fade on first render
+      if (firstRender) {
+        firstRender = false
+        for (let i = 0; i < bodyLinePool.length; i++) {
+          const el = bodyLinePool[i]!
+          if (el.style.display === 'none') continue
+          el.style.opacity = '0'
+          const delay = 0.3 + i * 0.008 // stagger across all lines
+          el.style.transitionDelay = `${delay}s`
+          // Force a reflow to start the transition, then set opacity to 1
+          requestAnimationFrame(() => {
+            el.style.opacity = '1'
+          })
+        }
+      }
 
       // Pullquotes
       syncPool(pqLinePool, projection.pullquoteLines.length, stage, () => {
@@ -675,7 +747,9 @@ function init(stage: HTMLDivElement) {
       box.style.height = `${pq.h}px`
     }
 
-    // ── Orb positions ───────────────────────────────────────────────────
+    // ── Orb positions + hover glow ──────────────────────────────────────
+    const hoveredOrb = orbsActive ? hitTestOrbs(orbs, pointer.x, pointer.y, activeOrbCount, orbRadiusScale) : -1
+
     for (let i = 0; i < orbs.length; i++) {
       const orb = orbs[i]!
       const el = orbEls[i]!
@@ -688,17 +762,21 @@ function init(stage: HTMLDivElement) {
       el.style.height = `${r * 2}px`
       const baseOpacity = orb.paused ? 0.45 : 1
       el.style.opacity = `${baseOpacity * orbsFadeIn}`
+      // Hover glow intensification
+      const isHovered = i === hoveredOrb
+      el.style.boxShadow = isHovered ? orbStyles[i]!.boxShadowHover : orbStyles[i]!.boxShadow
+      el.style.transform = isHovered ? 'scale(1.05)' : 'scale(1)'
     }
 
     // ── Cursor ──────────────────────────────────────────────────────────
-    const hovered = hitTestOrbs(orbs, pointer.x, pointer.y, activeOrbCount, orbRadiusScale)
     stage.style.userSelect = drag !== null ? 'none' : ''
     stage.style.webkitUserSelect = drag !== null ? 'none' : ''
-    document.body.style.cursor = drag !== null ? 'grabbing' : hovered !== -1 ? 'grab' : ''
+    document.body.style.cursor = drag !== null ? 'grabbing' : hoveredOrb !== -1 ? 'grab' : ''
 
     // ── Bookkeeping ─────────────────────────────────────────────────────
     events.pointerDown = events.pointerMove = events.pointerUp = null
     lastFrameTime = stillAnimating ? now : null
+    renderCount++
 
     return stillAnimating
   }
@@ -714,66 +792,89 @@ function init(stage: HTMLDivElement) {
     })
   }
 
-  // ── Event listeners ─────────────────────────────────────────────────────
+  // ── Event listeners (named for cleanup) ─────────────────────────────────
 
-  stage.addEventListener('pointerdown', e => {
+  const onPointerDown = (e: PointerEvent) => {
     if (isSelectableTarget(e.target)) {
       if (e.pointerType === 'touch') enterTextSelect()
       return
     }
     if (!orbsActive) return
-    const activeOrbCount = window.innerWidth < NARROW_BREAKPOINT ? NARROW_ACTIVE_ORBS : orbs.length
+    const count = window.innerWidth < NARROW_BREAKPOINT ? NARROW_ACTIVE_ORBS : orbs.length
     const scale = window.innerWidth < NARROW_BREAKPOINT ? NARROW_ORB_SCALE : 1
-    const hit = hitTestOrbs(orbs, e.clientX, e.clientY, activeOrbCount, scale)
+    const hit = hitTestOrbs(orbs, e.clientX, e.clientY, count, scale)
     if (hit !== -1) e.preventDefault()
     else if (e.pointerType === 'touch' && selectionActive) { enterTextSelect(); return }
     events.pointerDown = { x: e.clientX, y: e.clientY }
     scheduleRender()
-  })
+  }
 
-  stage.addEventListener('touchmove', e => {
+  const onTouchMove = (e: TouchEvent) => {
     if (isTextSelectActive()) return
     e.preventDefault()
-  }, { passive: false })
+  }
 
-  window.addEventListener('pointermove', e => {
+  const onPointerMove = (e: PointerEvent) => {
     if (e.pointerType === 'touch' && isTextSelectActive() && drag === null) return
     events.pointerMove = { x: e.clientX, y: e.clientY }
     scheduleRender()
-  })
+  }
 
-  window.addEventListener('pointerup', e => {
+  const onPointerUp = (e: PointerEvent) => {
     if (e.pointerType === 'touch' && isTextSelectActive() && drag === null) {
       syncSelection(); return
     }
     if (e.pointerType === 'touch') syncSelection()
     events.pointerUp = { x: e.clientX, y: e.clientY }
     scheduleRender()
-  })
+  }
 
-  window.addEventListener('pointercancel', e => {
+  const onPointerCancel = (e: PointerEvent) => {
     if (e.pointerType === 'touch') syncSelection()
     events.pointerUp = { x: e.clientX, y: e.clientY }
     scheduleRender()
-  })
+  }
 
-  window.addEventListener('resize', () => scheduleRender())
-  document.addEventListener('selectionchange', () => { syncSelection(); scheduleRender() })
+  const onResize = () => scheduleRender()
+  const onSelectionChange = () => { syncSelection(); scheduleRender() }
+
+  stage.addEventListener('pointerdown', onPointerDown)
+  stage.addEventListener('touchmove', onTouchMove, { passive: false })
+  window.addEventListener('pointermove', onPointerMove)
+  window.addEventListener('pointerup', onPointerUp)
+  window.addEventListener('pointercancel', onPointerCancel)
+  window.addEventListener('resize', onResize)
+  document.addEventListener('selectionchange', onSelectionChange)
 
   // ── "See the Network Breathe" activation button ──────────────────────
   const breatheBtn = document.getElementById('le-breathe-btn')
   const hintEl = document.querySelector('.le-hint')
-  if (breatheBtn) {
-    breatheBtn.addEventListener('click', () => {
-      if (orbsActive) return
-      orbsActive = true
-      orbsFadeIn = 0
-      breatheBtn.classList.add('le-hidden')
-      if (hintEl) hintEl.classList.add('le-visible')
-      scheduleRender()
-    })
+
+  const onBreatheClick = () => {
+    if (orbsActive) return
+    orbsActive = true
+    orbsFadeIn = 0
+    breatheBtn?.classList.add('le-hidden')
+    hintEl?.classList.add('le-visible')
+    scheduleRender()
   }
+
+  breatheBtn?.addEventListener('click', onBreatheClick)
 
   // ── Start ─────────────────────────────────────────────────────────────
   scheduleRender()
+
+  // ── Cleanup function for React unmount ────────────────────────────────
+  return () => {
+    if (scheduledRaf !== null) cancelAnimationFrame(scheduledRaf)
+    stage.removeEventListener('pointerdown', onPointerDown)
+    stage.removeEventListener('touchmove', onTouchMove)
+    window.removeEventListener('pointermove', onPointerMove)
+    window.removeEventListener('pointerup', onPointerUp)
+    window.removeEventListener('pointercancel', onPointerCancel)
+    window.removeEventListener('resize', onResize)
+    document.removeEventListener('selectionchange', onSelectionChange)
+    breatheBtn?.removeEventListener('click', onBreatheClick)
+    document.body.style.cursor = ''
+  }
 }

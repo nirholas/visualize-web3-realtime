@@ -17,6 +17,7 @@ import { buildShareUrl, buildShareText, parseShareParams, shareOnX, shareOnLinke
 import type { ForceGraphHandle } from '@/features/World/ForceGraph';
 import { DarkModeProvider } from '@/features/World/DarkModeContext';
 import { DesktopShell, TASKBAR_HEIGHT } from '@/features/World/desktop';
+import type { WindowId } from '@/features/World/desktop';
 import { useOnboarding, OnboardingCoachMark, OnboardingPrompt } from '@/features/World/onboarding';
 
 // Lazy-load the 3D force graph to avoid SSR issues with Three.js
@@ -35,13 +36,19 @@ function getTotalVolume(volumeMap: Record<string, number>): number {
 // Welcome overlay — shown when no providers are active
 // ---------------------------------------------------------------------------
 
-const WelcomeOverlay = memo<{ visible: boolean }>(({ visible }) => (
+interface WelcomeOverlayProps {
+  visible: boolean;
+  onOpenSources: () => void;
+  onStartDemo: () => void;
+}
+
+const WelcomeOverlay = memo<WelcomeOverlayProps>(({ visible, onOpenSources, onStartDemo }) => (
   <div
     style={{
       alignItems: 'center',
       display: 'flex',
       flexDirection: 'column',
-      gap: 16,
+      gap: 20,
       left: '50%',
       opacity: visible ? 1 : 0,
       pointerEvents: visible ? 'auto' : 'none',
@@ -70,11 +77,91 @@ const WelcomeOverlay = memo<{ visible: boolean }>(({ visible }) => (
         fontFamily: "'IBM Plex Mono', monospace",
         fontSize: 12,
         letterSpacing: '0.04em',
-        maxWidth: 320,
+        maxWidth: 360,
         textAlign: 'center',
       }}
     >
-      Open the start menu or click an app in the taskbar to begin visualizing live blockchain activity.
+      Visualize live blockchain activity in real time. Connect a data source to get started.
+    </span>
+
+    {/* Quick-start action buttons */}
+    <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
+      <button
+        onClick={onOpenSources}
+        type="button"
+        style={{
+          padding: '10px 20px',
+          fontSize: 12,
+          fontWeight: 600,
+          fontFamily: "'IBM Plex Mono', monospace",
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          color: '#fff',
+          background: 'linear-gradient(135deg, #818cf8 0%, #60a5fa 100%)',
+          border: 'none',
+          borderRadius: 10,
+          cursor: 'pointer',
+          transition: 'transform 150ms ease, box-shadow 150ms ease',
+          boxShadow: '0 2px 12px rgba(96, 165, 250, 0.3)',
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget).style.transform = 'translateY(-1px)';
+          (e.currentTarget).style.boxShadow = '0 4px 20px rgba(96, 165, 250, 0.4)';
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget).style.transform = 'translateY(0)';
+          (e.currentTarget).style.boxShadow = '0 2px 12px rgba(96, 165, 250, 0.3)';
+        }}
+      >
+        Connect Source
+      </button>
+      <button
+        onClick={onStartDemo}
+        type="button"
+        style={{
+          padding: '10px 20px',
+          fontSize: 12,
+          fontWeight: 600,
+          fontFamily: "'IBM Plex Mono', monospace",
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          color: '#94a3b8',
+          background: 'rgba(255, 255, 255, 0.06)',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+          borderRadius: 10,
+          cursor: 'pointer',
+          transition: 'background 150ms ease, color 150ms ease',
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget).style.background = 'rgba(255, 255, 255, 0.10)';
+          (e.currentTarget).style.color = '#e2e8f0';
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget).style.background = 'rgba(255, 255, 255, 0.06)';
+          (e.currentTarget).style.color = '#94a3b8';
+        }}
+      >
+        Try Demo
+      </button>
+    </div>
+
+    {/* Keyboard hint */}
+    <span
+      style={{
+        color: '#475569',
+        fontFamily: "'IBM Plex Mono', monospace",
+        fontSize: 10,
+        letterSpacing: '0.04em',
+      }}
+    >
+      Press <kbd style={{
+        padding: '1px 5px',
+        fontSize: 9,
+        background: 'rgba(255,255,255,0.06)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 3,
+        color: '#64748b',
+      }}>?</kbd> for keyboard shortcuts
     </span>
   </div>
 ));
@@ -105,6 +192,7 @@ export default function WorldPage() {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState<'world' | 'snapshot' | null>(null);
   const [demoMode, setDemoMode] = useState(false);
+  const openWindowRef = useRef<(id: WindowId) => void>(() => {});
 
   // Custom providers added by the user at runtime
   const [customProviders, setCustomProviders] = useState<DataProvider[]>([]);
@@ -451,7 +539,11 @@ export default function WorldPage() {
     <DarkModeProvider background={effectiveBg}>
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: '#0a0a12' }}>
       {/* Welcome overlay — visible until a provider is enabled */}
-      <WelcomeOverlay visible={!hasActiveProvider && !demoMode} />
+      <WelcomeOverlay
+        visible={!hasActiveProvider && !demoMode}
+        onOpenSources={() => openWindowRef.current('sources')}
+        onStartDemo={handleToggleDemo}
+      />
 
       {/* 3D Force Graph — full screen, leave space for taskbar */}
       <div style={{
@@ -578,6 +670,7 @@ export default function WorldPage() {
         demoMode={demoMode}
         onToggleDemo={handleToggleDemo}
         onStartOnboarding={onboarding.startOnboarding}
+        onRegisterOpenWindow={(fn: (id: WindowId) => void) => { openWindowRef.current = fn; }}
       />
     </div>
     </DarkModeProvider>

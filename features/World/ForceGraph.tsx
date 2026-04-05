@@ -465,7 +465,7 @@ const AgentNodes = memo<{
             // Agents near active protocol get a tint of its palette color
             tempColor.set(ac).multiplyScalar(0.7);
           } else {
-            tempColor.copy(dimColor).multiplyScalar(0.15);
+            tempColor.copy(dimColor).multiplyScalar(0.35);
           }
         } else {
           // Default: bright on dark bg, darker on light bg
@@ -1037,12 +1037,12 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
     },
   }));
 
-  const tokenKey = topTokens.map((t) => `${t.tokenAddress}:${t.trades}`).join(',');
-  const edgeCount = traderEdges.length;
+  const tokenKey = topTokens.map((t) => `${t.tokenAddress}:${t.trades}:${t.volume}`).join(',');
+  const edgeKey = traderEdges.length + ':' + traderEdges.slice(0, 20).map((e) => e.trader.slice(0, 6)).join(',');
   useEffect(() => {
     sim.update(topTokens, traderEdges);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tokenKey, edgeCount]);
+  }, [tokenKey, edgeKey]);
 
   useEffect(() => {
     return () => {
