@@ -25,6 +25,7 @@ import {
 } from 'react';
 import type {
   ResolvedPlugin,
+  PluginDefinition,
   PluginManager,
   ThemeConfig,
   RendererPluginHooks,
@@ -56,8 +57,8 @@ const SwarmingContext = createContext<SwarmingContextValue | null>(null);
 // ---------------------------------------------------------------------------
 
 export interface SwarmingProviderProps {
-  /** Array of resolved plugins (from calling definePlugin factories) */
-  plugins: ResolvedPlugin[];
+  /** Array of plugin definitions (from calling definePlugin) */
+  plugins: PluginDefinition[];
   /** Whether to auto-connect source providers on mount (default: true) */
   autoConnect?: boolean;
   children: ReactNode;
@@ -79,7 +80,7 @@ export function SwarmingProvider({
 
   // Register/unregister plugins when the prop changes
   useEffect(() => {
-    const currentNames = new Set(manager.getAll().map((p) => p.name));
+    const currentNames = new Set(manager.getAll().map((p) => p.definition.name));
     const nextNames = new Set(pluginsProp.map((p) => p.name));
 
     // Unregister removed plugins

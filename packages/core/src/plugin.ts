@@ -43,22 +43,28 @@ export interface RendererPluginHooks {
 export type PluginProviderFactory = (config: Record<string, unknown>) => unknown;
 
 export interface SourcePluginDefinition {
+  name: string;
   type: 'source';
-  meta: PluginMeta;
+  meta: Record<string, unknown>;
   configSchema?: PluginConfigSchema;
-  createProvider: PluginProviderFactory;
+  createProvider: PluginProviderFactory | Record<string, unknown>;
+  [key: string]: unknown;
 }
 
 export interface ThemePluginDefinition {
+  name: string;
   type: 'theme';
-  meta: PluginMeta;
+  meta: Record<string, unknown>;
   theme: ThemeConfig;
+  [key: string]: unknown;
 }
 
 export interface RendererPluginDefinition {
+  name: string;
   type: 'renderer';
-  meta: PluginMeta;
+  meta: Record<string, unknown>;
   hooks: RendererPluginHooks;
+  [key: string]: unknown;
 }
 
 export type PluginDefinition =
@@ -76,6 +82,12 @@ export interface PluginManager {
   unregister: (id: string) => void;
   get: (id: string) => ResolvedPlugin | undefined;
   getAll: () => ResolvedPlugin[];
+  connectAll: () => void;
+  disconnectAll: () => void;
+  onChange: (listener: () => void) => () => void;
+  getActiveTheme: () => ThemeConfig | undefined;
+  getRendererHooks: () => RendererPluginHooks;
+  getProviders: () => unknown[];
 }
 
 export function definePlugin<T>(def: T): T {
@@ -84,18 +96,58 @@ export function definePlugin<T>(def: T): T {
 
 export function createPluginManager(): PluginManager {
   const plugins = new Map<string, ResolvedPlugin>();
+  const listeners = new Set<() => void>();
+
+  function notify() {
+    for (const fn of listeners) fn();
+  }
+
   return {
     register(plugin) {
-      plugins.set(plugin.meta.id, { definition: plugin, config: {} });
+      plugins.set(plugin.name, { definition: plugin, config: {} });
+      notify();
     },
     unregister(id) {
       plugins.delete(id);
+      notify();
     },
     get(id) {
       return plugins.get(id);
     },
     getAll() {
       return Array.from(plugins.values());
+    },
+    connectAll() {
+      // no-op for now — providers manage their own connections
+    },
+    disconnectAll() {
+      // no-op for now — providers manage their own connections
+    },
+    onChange(listener) {
+      listeners.add(listener);
+      return () => { listeners.delete(listener); };
+    },
+    getActiveTheme() {
+      for (const p of plugins.values()) {
+        if (p.definition.type === 'theme') {
+          return (p.definition as ThemePluginDefinition).theme;
+        }
+      }
+      return undefined;
+    },
+    getRendererHooks() {
+      const merged: RendererPluginHooks = {};
+      for (const p of plugins.values()) {
+        if (p.definition.type === 'renderer') {
+          const hooks = (p.definition as RendererPluginDefinition).hooks;
+          if (hooks.onBeforeRender) merged.onBeforeRender = hooks.onBeforeRender;
+          if (hooks.onAfterRender) merged.onAfterRender = hooks.onAfterRender;
+        }
+      }
+      return merged;
+    },
+    getProviders() {
+      return [];
     },
   };
 }
