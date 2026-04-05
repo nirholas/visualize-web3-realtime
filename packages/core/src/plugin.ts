@@ -74,7 +74,7 @@ export interface PluginManager {
   getAll: () => ResolvedPlugin[];
 }
 
-export function definePlugin<T extends PluginDefinition>(def: T): T {
+export function definePlugin<T>(def: T): T {
   return def;
 }
 

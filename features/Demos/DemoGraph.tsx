@@ -7,7 +7,7 @@ import { useDemoSimulation } from './useDemoSimulation';
 import type { ForceGraphConfig } from '@web3viz/core';
 
 const ForceGraph = dynamic(
-  () => import('@web3viz/react-graph').then((m) => m.default),
+  () => import('@web3viz/react-graph').then((m) => m.ForceGraph),
   { ssr: false, loading: () => <div style={{ width: '100%', height: '100%', background: '#0a0a12' }} /> },
 );
 
@@ -67,7 +67,7 @@ function DemoGraph({
           fontSize: 10,
           padding: '2px 8px',
         }}
-        postProcessing={{ bloom: true, bloomIntensity: 0.8, bloomThreshold: 0.3 }}
+        postProcessing={{ enabled: true, bloomIntensity: 0.8, bloomThreshold: 0.3 }}
       />
 
       {/* Legend */}

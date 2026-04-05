@@ -1,6 +1,19 @@
 import { BlogLayout } from '../components/BlogLayout';
 import { CodeBlock } from '../components/CodeBlock';
 
+const goldenAngleCode = `// Golden-angle spiral distributes hubs evenly on a sphere
+const phi = Math.acos(1 - 2 * (i + 0.5) / topTokens.length);
+const theta = Math.PI * (1 + Math.sqrt(5)) * i; // golden angle
+const dist = 15 + Math.random() * 5;
+
+const node: ForceNode = {
+  id: token.tokenAddress,
+  type: 'hub',
+  x: Math.sin(phi) * Math.cos(theta) * dist,
+  y: Math.sin(phi) * Math.sin(theta) * dist,
+  z: Math.cos(phi) * dist,
+};`;
+
 export function BuildingRealtimeVizContent() {
   return (
     <BlogLayout>
@@ -258,18 +271,7 @@ ws.connect();`} />
         clusters that the simulation then refines into a stable layout.
       </p>
 
-      <CodeBlock language="typescript" code={`// Golden-angle spiral distributes hubs evenly on a sphere
-const phi = Math.acos(1 - 2 * (i + 0.5) / topTokens.length);
-const theta = Math.PI * (1 + Math.sqrt(5)) * i; // golden angle
-const dist = 15 + Math.random() * 5;
-
-const node: ForceNode = {
-  id: token.tokenAddress,
-  type: 'hub',
-  x: Math.sin(phi) * Math.cos(theta) * dist,
-  y: Math.sin(phi) * Math.sin(theta) * dist,
-  z: Math.cos(phi) * dist,
-};`} />
+      <CodeBlock language="typescript" code={goldenAngleCode} />
 
       <h2>State Management: Why React Refs Over Redux</h2>
 
