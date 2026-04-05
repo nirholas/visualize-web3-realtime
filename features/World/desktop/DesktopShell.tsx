@@ -96,6 +96,10 @@ export interface DesktopShellProps {
   hasActiveProvider: boolean;
   highlightedAddress: string | null;
   searchError: boolean;
+
+  /* Demo */
+  demoMode: boolean;
+  onToggleDemo: () => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -117,6 +121,7 @@ export const DesktopShell = memo<DesktopShellProps>((props) => {
     chatStats, onChatFilterChange,
     onStartJourney, journeyRunning,
     hasActiveProvider, highlightedAddress, searchError,
+    demoMode, onToggleDemo,
   } = props;
 
   const wm = useWindowManager();
@@ -206,6 +211,8 @@ export const DesktopShell = memo<DesktopShellProps>((props) => {
             onAddCustomProvider={onAddCustomProvider}
             onRemoveCustomProvider={onRemoveCustomProvider}
             customProviderIds={customProviderIds}
+            demoMode={demoMode}
+            onToggleDemo={onToggleDemo}
           />
         );
 
@@ -233,7 +240,7 @@ export const DesktopShell = memo<DesktopShellProps>((props) => {
     shareColors, onDownloadWorld, onDownloadSnapshot, onShareX, onShareLinkedIn, downloading,
     providers, connections, onAddCustomProvider, onRemoveCustomProvider, customProviderIds,
     timelineTimestamps, isLive, isPlaying, onInfoClick, onTimeChange, onTogglePlay, timeFilter,
-    wm,
+    wm, demoMode, onToggleDemo,
   ]);
 
   /* ---------------------------------------------------------------- */

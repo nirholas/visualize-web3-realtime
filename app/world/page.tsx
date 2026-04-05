@@ -11,6 +11,7 @@ import type { DataProvider } from '@web3viz/core';
 import { providers as builtInProviders } from './providers';
 import type { CustomProviderFormData } from '@/features/World/AddCustomProviderForm';
 import { useJourney } from '@/features/World/useJourney';
+import { DEMO_TOP_TOKENS, DEMO_TRADER_EDGES } from '@/features/World/demoData';
 import { captureCanvas, captureSnapshot, downloadBlob, timestampedFilename } from '@/features/World/utils/screenshot';
 import { buildShareUrl, buildShareText, parseShareParams, shareOnX, shareOnLinkedIn } from '@/features/World/utils/shareUrl';
 import type { ForceGraphHandle } from '@/features/World/ForceGraph';
@@ -102,6 +103,7 @@ export default function WorldPage() {
   const graphRef = useRef<ForceGraphHandle>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState<'world' | 'snapshot' | null>(null);
+  const [demoMode, setDemoMode] = useState(false);
 
   // Custom providers added by the user at runtime
   const [customProviders, setCustomProviders] = useState<DataProvider[]>([]);
@@ -168,6 +170,15 @@ export default function WorldPage() {
   toggleProviderRef.current = toggleProvider;
 
   const hasActiveProvider = enabledProviders.size > 0;
+
+  // Turn off demo mode when a real provider is enabled
+  useEffect(() => {
+    if (hasActiveProvider && demoMode) setDemoMode(false);
+  }, [hasActiveProvider, demoMode]);
+
+  const handleToggleDemo = useCallback(() => {
+    setDemoMode((prev) => !prev);
+  }, []);
 
   // -- Timeline timestamp accumulation --
   const [timelineTimestamps, setTimelineTimestamps] = useState<number[]>([]);
@@ -437,7 +448,7 @@ export default function WorldPage() {
     <DarkModeProvider background={effectiveBg}>
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: '#0a0a12' }}>
       {/* Welcome overlay — visible until a provider is enabled */}
-      <WelcomeOverlay visible={!hasActiveProvider} />
+      <WelcomeOverlay visible={!hasActiveProvider && !demoMode} />
 
       {/* 3D Force Graph — full screen, leave space for taskbar */}
       <div style={{
@@ -450,8 +461,8 @@ export default function WorldPage() {
       }}>
         <ForceGraph
           ref={graphRef}
-          topTokens={displayTopTokens}
-          traderEdges={displayTraderEdges}
+          topTokens={demoMode ? DEMO_TOP_TOKENS : displayTopTokens}
+          traderEdges={demoMode ? DEMO_TRADER_EDGES : displayTraderEdges}
           activeProtocol={activeHubMint}
           highlightedHubIndex={highlightedHubIndex}
           highlightedAddress={highlightedAddress}
@@ -460,7 +471,7 @@ export default function WorldPage() {
           height="100%"
           shareColors={undefined}
           isDark={isDark}
-          idle={!hasActiveProvider}
+          idle={!hasActiveProvider && !demoMode}
         />
       </div>
 
@@ -547,6 +558,8 @@ export default function WorldPage() {
         hasActiveProvider={hasActiveProvider}
         highlightedAddress={highlightedAddress}
         searchError={searchError}
+        demoMode={demoMode}
+        onToggleDemo={handleToggleDemo}
       />
     </div>
     </DarkModeProvider>

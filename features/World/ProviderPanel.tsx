@@ -21,6 +21,8 @@ interface ProviderPanelProps {
   onAddCustomProvider?: (data: CustomProviderFormData) => void;
   onRemoveCustomProvider?: (id: string) => void;
   customProviderIds?: Set<string>;
+  demoMode?: boolean;
+  onToggleDemo?: () => void;
 }
 
 // ============================================================================
@@ -252,6 +254,8 @@ const ProviderPanel = memo<ProviderPanelProps>(({
   onAddCustomProvider,
   onRemoveCustomProvider,
   customProviderIds,
+  demoMode,
+  onToggleDemo,
 }) => {
   const isDark = useDarkMode();
   const [showAddForm, setShowAddForm] = useState(false);
@@ -335,6 +339,43 @@ const ProviderPanel = memo<ProviderPanelProps>(({
           >
             Manage live data providers. Toggle sources on/off to control what appears in the visualization.
           </p>
+
+          {/* See Demo button — shown when no providers are active */}
+          {onToggleDemo && !enabledProviders.size && (
+            <button
+              type="button"
+              onClick={onToggleDemo}
+              style={{
+                alignItems: 'center',
+                background: demoMode
+                  ? 'linear-gradient(135deg, #818cf8 0%, #6366f1 100%)'
+                  : 'linear-gradient(135deg, #818cf8 0%, #a78bfa 100%)',
+                border: 'none',
+                borderRadius: 8,
+                color: '#fff',
+                cursor: 'pointer',
+                display: 'flex',
+                fontFamily: "'IBM Plex Mono', monospace",
+                fontSize: 12,
+                fontWeight: 600,
+                gap: 8,
+                justifyContent: 'center',
+                letterSpacing: '0.04em',
+                marginBottom: 16,
+                padding: '12px 0',
+                textTransform: 'uppercase',
+                width: '100%',
+                transition: 'opacity 150ms, transform 150ms',
+                boxShadow: demoMode
+                  ? '0 0 16px rgba(129,140,248,0.4)'
+                  : '0 2px 8px rgba(129,140,248,0.3)',
+              }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = '0.85'; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
+            >
+              {demoMode ? '⏹ Exit Demo' : '▶ See Demo'}
+            </button>
+          )}
 
           {/* Global stats */}
           <div
