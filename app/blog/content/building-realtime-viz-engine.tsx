@@ -54,7 +54,7 @@ export function BuildingRealtimeVizContent() {
         the simulation can run at its own tick rate, independent of the 60fps render loop.
       </p>
 
-      <CodeBlock language="text">{`WebSocket Events
+      <CodeBlock language="text" code={`WebSocket Events
     |
     v
 DataProvider          ← connect(), disconnect(), onEvent()
@@ -63,7 +63,7 @@ DataProvider          ← connect(), disconnect(), onEvent()
 ForceGraphSimulation  ← update(topTokens, traderEdges)
     |
     v
-React Three Fiber     ← useFrame() reads node positions every frame`}</CodeBlock>
+React Three Fiber     ← useFrame() reads node positions every frame`} /
 
       <p>
         This clean separation also makes the system testable. We can feed synthetic data into
@@ -81,7 +81,7 @@ React Three Fiber     ← useFrame() reads node positions every frame`}</CodeBlo
         to events, and read aggregate stats.
       </p>
 
-      <CodeBlock language="typescript">{`export interface DataProvider {
+      <CodeBlock language="typescript" code={`export interface DataProvider {
   readonly id: string;
   readonly name: string;
   readonly chains: string[];
@@ -93,7 +93,7 @@ React Three Fiber     ← useFrame() reads node positions every frame`}</CodeBlo
   getConnections(): ConnectionState[];
 
   onEvent(callback: (event: DataProviderEvent) => void): () => void;
-}`}</CodeBlock>
+}`} /
 
       <p>
         Why so minimal? Because providers are the boundary between "the outside world" and
@@ -120,7 +120,7 @@ React Three Fiber     ← useFrame() reads node positions every frame`}</CodeBlo
         connected, reconnecting, or failed.
       </p>
 
-      <CodeBlock language="typescript">{`const ws = new WebSocketManager({
+      <CodeBlock language="typescript" code={`const ws = new WebSocketManager({
   url: 'wss://data-source.example.com/stream',
   baseReconnectMs: 1000,
   maxReconnectMs: 30000,
@@ -130,7 +130,7 @@ React Three Fiber     ← useFrame() reads node positions every frame`}</CodeBlo
   onStateChange: (state) => updateConnectionStatus(state),
 });
 
-ws.connect();`}</CodeBlock>
+ws.connect();`} /
 
       <p>
         The state machine matters more than you might think. Without it, reconnection logic
@@ -168,7 +168,7 @@ ws.connect();`}</CodeBlock>
         into force-graph nodes and edges:
       </p>
 
-      <CodeBlock language="typescript">{`export class ForceGraphSimulation {
+      <CodeBlock language="typescript" code={`export class ForceGraphSimulation {
   nodes: ForceNode[] = [];
   edges: ForceEdge[] = [];
   private simulation: ReturnType<typeof forceSimulation<ForceNode>>;
@@ -204,7 +204,7 @@ ws.connect();`}</CodeBlock>
   tick(): void {
     this.simulation.tick();
   }
-}`}</CodeBlock>
+}`} /
 
       <p>
         A few things worth noting about the force configuration. Hub charge strength is -200,
@@ -258,7 +258,7 @@ ws.connect();`}</CodeBlock>
         clusters that the simulation then refines into a stable layout.
       </p>
 
-      <CodeBlock language="typescript">{`// Golden-angle spiral distributes hubs evenly on a sphere
+      <CodeBlock language="typescript" code={`// Golden-angle spiral distributes hubs evenly on a sphere
 const phi = Math.acos(1 - 2 * (i + 0.5) / topTokens.length);
 const theta = Math.PI * (1 + Math.sqrt(5)) * i; // golden angle
 const dist = 15 + Math.random() * 5;
@@ -269,7 +269,7 @@ const node: ForceNode = {
   x: Math.sin(phi) * Math.cos(theta) * dist,
   y: Math.sin(phi) * Math.sin(theta) * dist,
   z: Math.cos(phi) * dist,
-};`}</CodeBlock>
+};`} /
 
       <h2>State Management: Why React Refs Over Redux</h2>
 
@@ -296,7 +296,7 @@ const node: ForceNode = {
         attributes, and tell the GPU to re-render. React never knows the positions changed.
       </p>
 
-      <CodeBlock language="typescript">{`// Simulation runs outside React
+      <CodeBlock language="typescript" code={`// Simulation runs outside React
 const simRef = useRef(new ForceGraphSimulation());
 
 // Instanced mesh for thousands of agent nodes
@@ -319,7 +319,7 @@ useFrame(() => {
   }
   mesh.instanceMatrix.needsUpdate = true;
   mesh.count = agents.length;
-});`}</CodeBlock>
+});`} /
 
       <p>
         This pattern has a cost: we lose React&apos;s declarative model for the hot path. Debugging
@@ -359,7 +359,7 @@ useFrame(() => {
         cache built on top of the native Map insertion-order guarantee:
       </p>
 
-      <CodeBlock language="typescript">{`export class BoundedMap<K, V> extends Map<K, V> {
+      <CodeBlock language="typescript" code={`export class BoundedMap<K, V> extends Map<K, V> {
   private readonly maxSize: number;
 
   constructor(maxSize: number) {
@@ -379,7 +379,7 @@ useFrame(() => {
     }
     return this;
   }
-}`}</CodeBlock>
+}`} /
 
       <p>
         We now use <code>BoundedMap</code> everywhere a cache or accumulator might grow without
