@@ -5,6 +5,6 @@
 // ============================================================================
 
 export { detectRenderer, getRendererSync, type RendererType, type RendererCapabilities } from './auto-detect';
-export { WebGPUForceEngine, type GPUNodeData, type GPUEdgeData, type GPUSimParams } from './webgpu';
+export { WebGPUForceEngine, type GPUNodeData, type GPUEdgeData } from './webgpu';
 export { configureWebGLRenderer, WEBGL_CANVAS_PROPS, WEBGL_DPR } from './webgl';
 export { useWebGPUSimulation } from './useWebGPUSimulation';
