@@ -55,8 +55,8 @@ export const Taskbar = memo<TaskbarProps>(({
       height: TASKBAR_HEIGHT,
       display: 'flex',
       alignItems: 'center',
-      gap: 4,
-      padding: '4px 8px',
+      gap: 6,
+      padding: '4px 10px',
       background: GLASS.bgSolid,
       backdropFilter: GLASS.blur,
       WebkitBackdropFilter: GLASS.blur,
@@ -96,7 +96,7 @@ export const Taskbar = memo<TaskbarProps>(({
       </button>
 
       {/* Divider */}
-      <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.08)', margin: '0 4px' }} />
+      <div style={{ width: 1, height: 24, background: 'rgba(255,255,255,0.12)', margin: '0 6px' }} />
 
       {/* App icons */}
       {visibleIds.map((id) => {

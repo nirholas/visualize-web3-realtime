@@ -1,0 +1,6 @@
+#!/bin/sh
+# Pre-commit hook: runs lint-staged on changed files
+# Install with: cp scripts/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+# Or run: npm run prepare
+
+npx lint-staged --concurrent false

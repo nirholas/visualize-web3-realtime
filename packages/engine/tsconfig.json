@@ -8,6 +8,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "types": [],
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,

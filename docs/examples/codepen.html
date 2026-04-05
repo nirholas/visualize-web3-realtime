@@ -1,0 +1,63 @@
+<!--
+  Swarming — CodePen-Ready Example
+
+  Copy this into a new CodePen pen. The Swarming library is loaded
+  from unpkg CDN, so no build step is needed.
+
+  CDN URL: https://unpkg.com/swarming/dist/swarming.umd.js
+  Alt CDN: https://cdn.jsdelivr.net/npm/swarming/dist/swarming.umd.js
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Swarming — CodePen Example</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a1a; overflow: hidden; }
+    #viz { width: 100vw; height: 100vh; }
+  </style>
+</head>
+<body>
+  <div id="viz"></div>
+
+  <script src="https://unpkg.com/swarming/dist/swarming.umd.js"></script>
+  <script>
+    // --- Option A: Static data ---
+    Swarming.create('#viz', {
+      theme: 'dark',
+      data: {
+        nodes: [
+          { id: '1', label: 'Uniswap', group: 'protocols' },
+          { id: '2', label: 'Aave', group: 'protocols' },
+          { id: '3', label: 'Compound', group: 'protocols' },
+          { id: '4', label: 'MakerDAO', group: 'protocols' },
+          { id: '5', label: 'Trader A', group: 'users' },
+          { id: '6', label: 'Trader B', group: 'users' },
+          { id: '7', label: 'Trader C', group: 'users' },
+          { id: '8', label: 'Whale', group: 'users' },
+        ],
+        edges: [
+          { source: '5', target: '1' },
+          { source: '5', target: '2' },
+          { source: '6', target: '1' },
+          { source: '6', target: '3' },
+          { source: '7', target: '2' },
+          { source: '7', target: '4' },
+          { source: '8', target: '1' },
+          { source: '8', target: '3' },
+          { source: '8', target: '4' },
+        ]
+      }
+    });
+
+    // --- Option B: Live WebSocket data (uncomment to use) ---
+    // Swarming.create('#viz', {
+    //   source: 'wss://pumpportal.fun/api/data',
+    //   theme: 'dark',
+    //   maxNodes: 2000,
+    // });
+  </script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+// ============================================================================
+// Renderers — Public API
+//
+// Auto-detection, WebGPU compute engine, and WebGL configuration.
+// ============================================================================
+
+export { detectRenderer, getRendererSync, type RendererType, type RendererCapabilities } from './auto-detect';
+export { WebGPUForceEngine, type GPUNodeData, type GPUEdgeData, type GPUSimParams } from './webgpu';
+export { configureWebGLRenderer, WEBGL_CANVAS_PROPS, WEBGL_DPR } from './webgl';
+export { useWebGPUSimulation } from './useWebGPUSimulation';

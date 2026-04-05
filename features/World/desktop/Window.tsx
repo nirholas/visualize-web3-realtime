@@ -140,11 +140,11 @@ export const Window = memo<WindowProps>(({
           display: 'flex',
           alignItems: 'center',
           gap: 8,
-          padding: '8px 12px',
+          padding: '10px 14px',
           cursor: dragging ? 'grabbing' : 'grab',
           borderBottom: GLASS.borderLight,
           flexShrink: 0,
-          background: 'rgba(255, 255, 255, 0.02)',
+          background: 'rgba(255, 255, 255, 0.03)',
         }}
       >
         {icon && (
@@ -183,7 +183,7 @@ export const Window = memo<WindowProps>(({
               transition: 'background 150ms, color 150ms',
             }}
             onMouseEnter={(e) => {
-              (e.target as HTMLElement).style.background = 'rgba(255,255,255,0.08)';
+              (e.target as HTMLElement).style.background = 'rgba(255,255,255,0.12)';
               (e.target as HTMLElement).style.color = '#e2e8f0';
             }}
             onMouseLeave={(e) => {
@@ -213,7 +213,7 @@ export const Window = memo<WindowProps>(({
               transition: 'background 150ms, color 150ms',
             }}
             onMouseEnter={(e) => {
-              (e.target as HTMLElement).style.background = 'rgba(255,255,255,0.08)';
+              (e.target as HTMLElement).style.background = 'rgba(255,255,255,0.12)';
               (e.target as HTMLElement).style.color = '#e2e8f0';
             }}
             onMouseLeave={(e) => {
@@ -243,8 +243,8 @@ export const Window = memo<WindowProps>(({
               transition: 'background 150ms, color 150ms',
             }}
             onMouseEnter={(e) => {
-              (e.target as HTMLElement).style.background = 'rgba(239,68,68,0.25)';
-              (e.target as HTMLElement).style.color = '#ef4444';
+              (e.target as HTMLElement).style.background = 'rgba(239,68,68,0.4)';
+              (e.target as HTMLElement).style.color = '#fca5a5';
             }}
             onMouseLeave={(e) => {
               (e.target as HTMLElement).style.background = 'transparent';

@@ -9,6 +9,8 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "typeRoots": ["./node_modules/@types", "../../node_modules/@types"],
+    "types": ["react", "react-dom"],
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,

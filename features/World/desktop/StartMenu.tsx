@@ -133,8 +133,8 @@ export const StartMenu = memo<StartMenuProps>(({
           display: 'flex',
           alignItems: 'center',
           gap: 8,
-          background: 'rgba(255, 255, 255, 0.05)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
+          background: 'rgba(255, 255, 255, 0.07)',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
           borderRadius: 8,
           padding: '8px 12px',
         }}>

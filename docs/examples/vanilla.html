@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Swarming — Vanilla HTML Example</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a1a; color: #fff; font-family: system-ui, sans-serif; }
+
+    #viz { width: 100vw; height: 100vh; }
+
+    .controls {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 100;
+    }
+
+    .controls button {
+      padding: 8px 16px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 6px;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      font-size: 13px;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+    }
+    .controls button:hover { background: rgba(255,255,255,0.1); }
+
+    .info {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+      font-family: monospace;
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+  <div id="viz"></div>
+
+  <div class="controls">
+    <button onclick="addRandomNode()">Add Node</button>
+    <button onclick="toggleTheme()">Toggle Theme</button>
+    <button onclick="viz.pause()">Pause</button>
+    <button onclick="viz.resume()">Resume</button>
+  </div>
+
+  <div class="info" id="info">Loading...</div>
+
+  <!-- Load Swarming from CDN (use local path for development) -->
+  <script src="../../packages/swarming/dist/swarming.umd.js"></script>
+  <script>
+    // Create the visualization with static data
+    var viz = Swarming.create('#viz', {
+      theme: 'dark',
+      maxNodes: 2000,
+      showLabels: true,
+      data: {
+        nodes: [
+          { id: 'eth', label: 'Ethereum', group: 'protocols' },
+          { id: 'btc', label: 'Bitcoin', group: 'protocols' },
+          { id: 'sol', label: 'Solana', group: 'protocols' },
+          { id: 'arb', label: 'Arbitrum', group: 'protocols' },
+          { id: 'alice', label: 'Alice', group: 'users' },
+          { id: 'bob', label: 'Bob', group: 'users' },
+          { id: 'carol', label: 'Carol', group: 'users' },
+        ],
+        edges: [
+          { source: 'alice', target: 'eth', label: 'trades' },
+          { source: 'bob', target: 'btc', label: 'holds' },
+          { source: 'carol', target: 'sol', label: 'stakes' },
+          { source: 'alice', target: 'arb', label: 'bridges' },
+          { source: 'bob', target: 'eth', label: 'trades' },
+        ]
+      }
+    });
+
+    // Listen for events
+    viz.on('ready', function() {
+      document.getElementById('info').textContent = 'Visualization ready';
+    });
+
+    // Theme toggle
+    var isDark = true;
+    function toggleTheme() {
+      isDark = !isDark;
+      viz.setTheme(isDark ? 'dark' : 'light');
+    }
+
+    // Add random node
+    var counter = 0;
+    function addRandomNode() {
+      counter++;
+      var groups = ['protocols', 'users', 'tokens', 'agents'];
+      viz.addNode({
+        id: 'node-' + counter,
+        label: 'Node ' + counter,
+        group: groups[counter % groups.length],
+      });
+    }
+  </script>
+</body>
+</html>

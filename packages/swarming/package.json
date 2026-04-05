@@ -35,6 +35,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@swarming/engine": "*",
     "@web3viz/core": "*",
     "d3-force-3d": "^3.0.6"
   },

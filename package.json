@@ -38,13 +38,15 @@
     "build:web": "next build",
     "start": "next start -p 3100",
     "lint": "next lint",
-    "typecheck": "turbo run typecheck",
+    "typecheck": "tsc --noEmit",
+    "typecheck:turbo": "turbo run typecheck",
     "capture-assets": "npx tsx scripts/capture-assets.ts",
     "bench": "cd benchmarks && npm run bench",
     "bench:report": "cd benchmarks && npm run bench:report",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "prepare": "cp scripts/pre-commit .git/hooks/pre-commit 2>/dev/null && chmod +x .git/hooks/pre-commit 2>/dev/null || true"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.82.0",
@@ -90,5 +92,10 @@
     "turbo": "^2.0.0",
     "typescript": "^5.5.0",
     "vitest": "^4.1.2"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "next lint --fix --file"
+    ]
   }
 }

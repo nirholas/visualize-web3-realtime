@@ -3,8 +3,8 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@web3viz/core"><img src="https://img.shields.io/npm/v/@web3viz/core?style=flat-square&color=blueviolet" alt="npm version" /></a>
-  <a href="https://bundlephobia.com/package/@web3viz/react-graph"><img src="https://img.shields.io/bundlephobia/minzip/@web3viz/react-graph?style=flat-square&color=22c55e&label=bundle" alt="bundle size" /></a>
+  <a href="https://www.npmjs.com/package/@swarming/core"><img src="https://img.shields.io/npm/v/@swarming/core?style=flat-square&color=6366f1" alt="npm version" /></a>
+  <a href="https://bundlephobia.com/package/@swarming/react"><img src="https://img.shields.io/bundlephobia/minzip/@swarming/react?style=flat-square&color=22c55e&label=bundle" alt="bundle size" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="license" /></a>
   <a href="https://discord.gg/swarming"><img src="https://img.shields.io/discord/0000000000?style=flat-square&logo=discord&logoColor=white&color=5865F2&label=discord" alt="discord" /></a>
   <a href="https://github.com/nirholas/swarming.world/stargazers"><img src="https://img.shields.io/github/stars/nirholas/swarming.world?style=flat-square&color=f59e0b" alt="stars" /></a>
@@ -13,11 +13,11 @@
 <h1 align="center">swarming</h1>
 
 <p align="center">
-  <strong>GPU-accelerated real-time network visualization. 5,000+ nodes at 60fps. Any data source.</strong>
+  <strong>GPU-accelerated real-time network visualization. 5,000+ nodes at 60fps. Any data stream.</strong>
 </p>
 
 <p align="center">
-  <a href="https://swarming.world/world"><strong>Live Demo</strong></a> · <a href="docs/"><strong>Documentation</strong></a> · <a href="https://discord.gg/swarming"><strong>Discord</strong></a>
+  <a href="https://swarming.dev/world"><strong>Live Demo</strong></a> · <a href="docs/"><strong>Documentation</strong></a> · <a href="https://discord.gg/swarming"><strong>Discord</strong></a>
 </p>
 
 ---
@@ -25,18 +25,18 @@
 ## Get Started in 30 Seconds
 
 ```bash
-npm install @web3viz/core @web3viz/react-graph
+npm install @swarming/core @swarming/react
 ```
 
 ```tsx
-import { ForceGraph } from '@web3viz/react-graph'
+import { ForceGraph } from '@swarming/react'
 
 function App() {
-  return <ForceGraph topTokens={hubs} traderEdges={edges} />
+  return <ForceGraph nodes={hubs} edges={connections} />
 }
 ```
 
-That's it — GPU-accelerated force-directed graph with instanced rendering, mouse repulsion, proximity webs, and spring physics.
+GPU-accelerated force-directed graph with instanced rendering, mouse repulsion, proximity webs, and spring physics — out of the box.
 
 Or scaffold a full app:
 
@@ -95,12 +95,12 @@ Open **http://localhost:3100** — live visualization starts immediately. No API
 
 | | Application | Description |
 |---|---|---|
-| **Blockchain** | Transaction flows | DEX swaps, token launches, MEV, bridge messages in real-time |
-| **AI Agents** | Orchestration graphs | Multi-agent task execution, tool calls, swarm coordination |
 | **Infrastructure** | Service meshes | Kubernetes pods, API traffic, CI/CD pipelines, log clustering |
-| **Social** | Interaction networks | Chat flows, follow graphs, content virality cascades |
+| **AI Agents** | Orchestration graphs | Multi-agent task execution, tool calls, swarm coordination |
 | **IoT** | Sensor networks | Device telemetry, fleet tracking, energy grid flows |
+| **Social** | Interaction networks | Chat flows, follow graphs, content virality cascades |
 | **Finance** | Trading activity | Order flow, liquidity movements, market microstructure |
+| **Blockchain** | Transaction flows | DEX swaps, token launches, bridge messages in real-time |
 
 ---
 
@@ -125,8 +125,8 @@ swarming uses InstancedMesh (single draw call per node type), SpatialHash grids,
 
 | Prop | Type | Description |
 |---|---|---|
-| `topTokens` | `HubNode[]` | Hub nodes (up to 8) |
-| `traderEdges` | `Edge[]` | Participant-to-hub connections (up to 5,000) |
+| `nodes` | `HubNode[]` | Hub nodes (up to 8) |
+| `edges` | `Edge[]` | Connections between nodes (up to 5,000) |
 | `simulationConfig` | `SimulationConfig` | Physics parameters (charge, damping, springs) |
 | `background` | `string` | Scene background color |
 | `showLabels` | `boolean` | Toggle hub labels |
@@ -153,14 +153,14 @@ Full API reference: [docs/COMPONENTS.md](docs/COMPONENTS.md)
 Any streaming data source becomes a visualization:
 
 ```typescript
-import type { DataProvider } from '@web3viz/core'
+import type { DataProvider } from '@swarming/core'
 
 class MyProvider implements DataProvider {
   readonly id = 'my-source'
   readonly name = 'My Data Source'
-  readonly sourceConfig = { id: 'custom', label: 'Custom', color: '#ff6b6b', icon: '◉' }
+  readonly sourceConfig = { id: 'custom', label: 'Custom', color: '#6366f1', icon: '◉' }
   readonly categories = [
-    { id: 'events', label: 'Events', icon: '⚡', color: '#ff6b6b', source: 'custom' },
+    { id: 'events', label: 'Events', icon: '⚡', color: '#6366f1', source: 'custom' },
   ]
 
   connect() {
@@ -188,12 +188,11 @@ Guide: [docs/PROVIDERS.md](docs/PROVIDERS.md)
 
 | Package | Description |
 |---|---|
-| [`@web3viz/core`](packages/core/) | Types, physics engine, provider interface. Zero React deps. |
-| [`@web3viz/react-graph`](packages/react-graph/) | `<ForceGraph>` component (Three.js + React Three Fiber) |
-| [`@web3viz/providers`](packages/providers/) | Data providers (PumpFun, Mock, + build your own) |
-| [`@web3viz/ui`](packages/ui/) | Design system — buttons, panels, feeds, filters, theming |
-| [`@web3viz/utils`](packages/utils/) | Screenshots, share URLs, formatting helpers |
-| [`@web3viz/executor`](packages/executor/) | Agent execution server (WebSocket broadcast) |
+| [`@swarming/core`](packages/core/) | Types, physics engine, provider interface. Zero React deps. |
+| [`@swarming/react`](packages/react-graph/) | `<ForceGraph>` component (Three.js + React Three Fiber) |
+| [`@swarming/providers`](packages/providers/) | Data providers (Mock, WebSocket, + build your own) |
+| [`@swarming/ui`](packages/ui/) | Design system — buttons, panels, feeds, filters, theming |
+| [`@swarming/utils`](packages/utils/) | Screenshots, share URLs, formatting helpers |
 
 ---
 
@@ -229,7 +228,7 @@ Guide: [docs/PROVIDERS.md](docs/PROVIDERS.md)
 swarming is MIT-licensed and open to contributions.
 
 **High-impact areas:**
-- New data providers (Ethereum, Base, Arbitrum, Bitcoin)
+- New data providers (network traffic, IoT, social, blockchain)
 - Performance (WebGPU, compute shaders)
 - Mobile/touch interaction
 - Accessibility
@@ -237,7 +236,7 @@ swarming is MIT-licensed and open to contributions.
 
 If swarming is useful to you, consider [starring the repo](https://github.com/nirholas/swarming.world) — it helps others discover the project and motivates continued development.
 
-<a href="https://discord.gg/swarming">Join the Discord</a> · <a href="CONTRIBUTING.md">Contributing Guide</a> · <a href="https://swarming.world">Showcase Gallery</a>
+<a href="https://discord.gg/swarming">Join the Discord</a> · <a href="CONTRIBUTING.md">Contributing Guide</a> · <a href="https://swarming.dev">Showcase Gallery</a>
 
 ---
 
@@ -254,5 +253,5 @@ If swarming is useful to you, consider [starring the repo](https://github.com/ni
 </p>
 
 <p align="center">
-  <sub>Built for builders who want their data to look as good as it works.</sub>
+  <sub>See your data swarm.</sub>
 </p>
