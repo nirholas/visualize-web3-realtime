@@ -85,20 +85,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <span className="label">Initializing</span>
         </div>
         {children}
-        {/* Dismiss boot loader — uses next/script beforeInteractive so it
-            actually inlines into the HTML and runs even if React fails to hydrate */}
-        <Script id="boot-dismiss" strategy="beforeInteractive">{`
-          (function() {
-            function dismiss() {
-              var el = document.getElementById('boot-loader');
-              if (!el || !el.parentNode) return;
-              el.classList.add('hide');
-              setTimeout(function() { if (el.parentNode) el.remove(); }, 400);
-            }
-            window.addEventListener('webgl-ready', dismiss);
-            setTimeout(dismiss, 4000);
-          })();
-        `}</Script>
+        {/* Dismiss boot loader — beforeInteractive with src produces a real
+            <script> tag in the HTML that runs before React hydrates */}
+        <Script src="/boot-dismiss.js" strategy="beforeInteractive" />
       </body>
     </html>
   );

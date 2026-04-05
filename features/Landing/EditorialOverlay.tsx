@@ -291,7 +291,7 @@ export default function EditorialOverlay({ graphBounds }: EditorialOverlayProps)
         return el
       })
 
-      const headlineTop = GUTTER + 60
+      const headlineTop = GUTTER + 100
       let headlineBottom = headlineTop
       headlineFit.lines.forEach((line, i) => {
         const el = headlinePool[i]

@@ -192,6 +192,21 @@ export default function LandingEngine() {
           border: 1px solid rgba(255,255,255,0.04);
           pointer-events: none; white-space: nowrap;
         }
+        .le-stats {
+          position: fixed; top: 18px; right: 24px; z-index: 100;
+          display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+          pointer-events: none;
+        }
+        .le-stats-line {
+          font: 500 10px ${FONT_FAMILY};
+          letter-spacing: 0.14em; text-transform: uppercase;
+          color: ${MUTED_COLOR};
+          white-space: nowrap;
+        }
+        .le-stats-line strong {
+          color: ${HEADLINE_COLOR};
+          font-weight: 500;
+        }
         .le-cta {
           position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
           z-index: 100; text-decoration: none;
@@ -223,6 +238,12 @@ export default function LandingEngine() {
 
       <div ref={stageRef} className="le-stage" />
       <a className="le-brand" href="/">SWARMING<span className="le-brand-tld">.world</span></a>
+      <div className="le-stats">
+        <span className="le-stats-line"><strong>5,000</strong> Nodes</span>
+        <span className="le-stats-line"><strong>60</strong> Frames Per Second</span>
+        <span className="le-stats-line"><strong>Zero</strong> Latency</span>
+        <span className="le-stats-line">Not a Dashboard. A Living Network.</span>
+      </div>
       <div className="le-hint">Drag the orbs &middot; Click to pause &middot; Zero DOM reads</div>
       <a className="le-cta" href="/world">Enter World &rarr;</a>
     </>
