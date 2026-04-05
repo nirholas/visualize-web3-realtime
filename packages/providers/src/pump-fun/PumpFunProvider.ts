@@ -187,8 +187,31 @@ export class PumpFunProvider implements DataProvider {
     const category = isAgent ? 'agentLaunches' : 'launches';
     this.counts[category]++;
     const initialBuy = getNumber(raw, 'initialBuy', 0);
+    const initialVolSol = initialBuy ? initialBuy / 1e9 : 0;
     const signature = getString(raw, 'signature', '');
     const traderPublicKey = getString(raw, 'traderPublicKey', '');
+
+    // Seed tokenAcc so launched tokens show as hub nodes immediately
+    if (!this.tokenAcc.has(mint)) {
+      this.tokenAcc.set(mint, {
+        tokenAddress: mint, name: tokenName, symbol: tokenSymbol,
+        chain: 'solana', trades: initialBuy ? 1 : 0, volume: initialVolSol, volumeSol: initialVolSol,
+        nativeSymbol: 'SOL', source: 'pumpfun',
+      });
+      if (initialVolSol > 0) this.totalVolumeSol += initialVolSol;
+    }
+
+    // Seed a trader edge for the creator
+    if (traderPublicKey && initialVolSol > 0) {
+      const traderKey = `${traderPublicKey}:${mint}`;
+      if (!this.traderAcc.has(traderKey)) {
+        this.traderAcc.set(traderKey, {
+          trader: traderPublicKey, tokenAddress: mint,
+          chain: 'solana', trades: 1, volume: initialVolSol, volumeSol: initialVolSol,
+          source: 'pumpfun',
+        });
+      }
+    }
 
     this.emitEvent({
       id: signature || mint,
@@ -247,7 +270,7 @@ export class PumpFunProvider implements DataProvider {
 
     const traderKey = `${traderPublicKey}:${mint}`;
     const existingEdge = this.traderAcc.get(traderKey);
-    if (existingEdge) { existingEdge.trades++; existingEdge.volume += solAmount; }
+    if (existingEdge) { existingEdge.trades++; existingEdge.volume += solAmount; existingEdge.volumeSol = (existingEdge.volumeSol ?? 0) + solAmount; }
     else {
       this.traderAcc.set(traderKey, {
         trader: traderPublicKey, tokenAddress: mint,

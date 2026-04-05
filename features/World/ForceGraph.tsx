@@ -404,6 +404,7 @@ const AgentNodes = memo<{
       emissive: new THREE.Color(isDark ? '#ffffff' : '#333333'),
       emissiveIntensity: isDark ? 2.5 : 0.6,
       transparent: true,
+      opacity: 1.0,
       toneMapped: false,
     }),
     [isDark],

@@ -11,6 +11,7 @@ interface StartMenuProps {
   onOpenWindow: (id: WindowId) => void;
   onStartJourney?: () => void;
   journeyDisabled?: boolean;
+  onStartOnboarding?: () => void;
 }
 
 export const StartMenu = memo<StartMenuProps>(({
@@ -19,6 +20,7 @@ export const StartMenu = memo<StartMenuProps>(({
   onOpenWindow,
   onStartJourney,
   journeyDisabled,
+  onStartOnboarding,
 }) => {
   const [search, setSearch] = useState('');
   const ref = useRef<HTMLDivElement>(null);
@@ -196,6 +198,15 @@ export const StartMenu = memo<StartMenuProps>(({
             icon={<JourneyIcon />}
             onClick={() => { onStartJourney(); onClose(); }}
             disabled={journeyDisabled}
+          />
+        )}
+
+        {/* How to use — onboarding walkthrough */}
+        {(!search || 'how to use guide tour help'.includes(search.toLowerCase())) && onStartOnboarding && (
+          <AppTile
+            label="How to use"
+            icon={<HelpIcon />}
+            onClick={() => { onStartOnboarding(); onClose(); }}
           />
         )}
       </div>

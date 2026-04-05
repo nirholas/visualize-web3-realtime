@@ -17,6 +17,7 @@ import { buildShareUrl, buildShareText, parseShareParams, shareOnX, shareOnLinke
 import type { ForceGraphHandle } from '@/features/World/ForceGraph';
 import { DarkModeProvider } from '@/features/World/DarkModeContext';
 import { DesktopShell, TASKBAR_HEIGHT } from '@/features/World/desktop';
+import { useOnboarding, OnboardingCoachMark, OnboardingPrompt } from '@/features/World/onboarding';
 
 // Lazy-load the 3D force graph to avoid SSR issues with Three.js
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -426,6 +427,8 @@ export default function WorldPage() {
     userAddress,
   });
 
+  const onboarding = useOnboarding();
+
   const connectionEntries = useMemo(() => Object.entries(connections), [connections]);
 
   // --- AI Chat handlers ---
@@ -514,6 +517,20 @@ export default function WorldPage() {
         onClose={() => setInfoOpen(false)}
       />
 
+      {/* Onboarding — voluntary walkthrough for first-time users */}
+      <OnboardingPrompt
+        visible={onboarding.showPrompt}
+        onStart={onboarding.startOnboarding}
+        onDismiss={onboarding.dismissPrompt}
+      />
+      <OnboardingCoachMark
+        step={onboarding.currentStep}
+        stepIndex={onboarding.stepIndex}
+        totalSteps={onboarding.totalSteps}
+        onNext={onboarding.nextStep}
+        onSkip={onboarding.skipOnboarding}
+      />
+
       {/* Desktop Shell — Taskbar, Start Menu, Windows */}
       <DesktopShell
         providers={providers}
@@ -560,6 +577,7 @@ export default function WorldPage() {
         searchError={searchError}
         demoMode={demoMode}
         onToggleDemo={handleToggleDemo}
+        onStartOnboarding={onboarding.startOnboarding}
       />
     </div>
     </DarkModeProvider>

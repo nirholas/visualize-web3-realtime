@@ -345,6 +345,7 @@ All simulation parameters are configurable:
 |---|---|
 | Monorepo | Turborepo + npm workspaces |
 | Framework | Next.js 14 (App Router) |
+| Landing Page | Pretext Editorial Engine |
 | 3D Engine | Three.js + React Three Fiber |
 | Physics | d3-force-3d |
 | Animation | Framer Motion |

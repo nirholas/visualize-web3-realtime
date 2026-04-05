@@ -27,6 +27,7 @@ import ProviderPanel from '../ProviderPanel';
 import { WorldChat } from '../ai/WorldChat';
 import TimelineBar from '../TimelineBar';
 import ShareOverlay from '../ShareOverlay';
+import { KeyboardShortcuts } from './KeyboardShortcuts';
 
 /* ------------------------------------------------------------------ */
 /*  Props                                                             */
@@ -100,6 +101,9 @@ export interface DesktopShellProps {
   /* Demo */
   demoMode: boolean;
   onToggleDemo: () => void;
+
+  /* Onboarding */
+  onStartOnboarding?: () => void;
 }
 
 /* ------------------------------------------------------------------ */
@@ -122,6 +126,7 @@ export const DesktopShell = memo<DesktopShellProps>((props) => {
     onStartJourney, journeyRunning,
     hasActiveProvider, highlightedAddress, searchError,
     demoMode, onToggleDemo,
+    onStartOnboarding,
   } = props;
 
   const wm = useWindowManager();
@@ -301,6 +306,7 @@ export const DesktopShell = memo<DesktopShellProps>((props) => {
         onOpenWindow={wm.openWindow}
         onStartJourney={hasActiveProvider ? onStartJourney : undefined}
         journeyDisabled={journeyRunning}
+        onStartOnboarding={onStartOnboarding}
       />
 
       {/* Taskbar */}
@@ -312,6 +318,12 @@ export const DesktopShell = memo<DesktopShellProps>((props) => {
         connections={connections}
         isLive={isLive}
         isPlaying={isPlaying}
+        onTogglePlay={onTogglePlay}
+      />
+
+      {/* Keyboard shortcuts overlay (press ?) */}
+      <KeyboardShortcuts
+        onToggleWindow={wm.toggleWindow}
         onTogglePlay={onTogglePlay}
       />
     </>
