@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, Suspense, useCallback, useEffect, useState } from 'react';
+import { memo, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import type { DataProvider, ConnectionState, CategoryConfig, SourceConfig } from '@web3viz/core';
 import type { CustomProviderFormData } from '../AddCustomProviderForm';
 import type { ShareColors } from '../SharePanel';
@@ -144,6 +144,23 @@ export const DesktopShell = memo<DesktopShellProps>((props) => {
 
   const toggleStartMenu = useCallback(() => setStartMenuOpen((p) => !p), []);
   const closeStartMenu = useCallback(() => setStartMenuOpen(false), []);
+
+  // Live feed badge — count new events when livefeed window is not visible
+  const livefeedVisible = wm.windows.livefeed.isOpen && !wm.windows.livefeed.isMinimized;
+  const lastSeenCountRef = useRef(filteredEvents.length);
+  const [liveFeedBadge, setLiveFeedBadge] = useState(0);
+
+  useEffect(() => {
+    if (livefeedVisible) {
+      // User is viewing — reset badge
+      lastSeenCountRef.current = filteredEvents.length;
+      setLiveFeedBadge(0);
+    } else {
+      // Not viewing — show how many new events arrived
+      const diff = filteredEvents.length - lastSeenCountRef.current;
+      if (diff > 0) setLiveFeedBadge(diff);
+    }
+  }, [filteredEvents.length, livefeedVisible]);
 
   // Helper to check if share window is open (for overlay + bg color changes)
   const shareWindowOpen = wm.windows.share.isOpen && !wm.windows.share.isMinimized;
@@ -329,6 +346,7 @@ export const DesktopShell = memo<DesktopShellProps>((props) => {
         isLive={isLive}
         isPlaying={isPlaying}
         onTogglePlay={onTogglePlay}
+        liveFeedBadge={liveFeedBadge}
       />
 
       {/* Keyboard shortcuts overlay (press ?) */}
