@@ -171,12 +171,12 @@ export default function WorldPage() {
 
   const hasActiveProvider = enabledProviders.size > 0;
 
-  // Mark canvas ready once first data arrives
+  // Mark canvas ready shortly after mount – don't gate on WebSocket data
+  // arriving, as external services may be slow or unavailable.
   useEffect(() => {
-    if (!canvasReady && stats.topTokens.length > 0) {
-      setCanvasReady(true);
-    }
-  }, [canvasReady, stats.topTokens.length]);
+    const timer = setTimeout(() => setCanvasReady(true), 300);
+    return () => clearTimeout(timer);
+  }, []);
 
   // -- Timeline timestamp accumulation --
   const [timelineTimestamps, setTimelineTimestamps] = useState<number[]>([]);
@@ -445,8 +445,8 @@ export default function WorldPage() {
   return (
     <DarkModeProvider background={effectiveBg}>
     <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: '#0a0a12' }}>
-      {/* Loading screen — only show when a provider is enabled */}
-      {hasActiveProvider && <LoadingScreen ready={canvasReady} />}
+      {/* Loading screen — always mount so webgl-ready fires and boot loader dismisses */}
+      <LoadingScreen ready={canvasReady || !hasActiveProvider} />
 
       {/* Welcome overlay — visible until a provider is enabled */}
       <WelcomeOverlay visible={!hasActiveProvider} />

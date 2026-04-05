@@ -95,13 +95,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               el.classList.add('hide');
               setTimeout(function() { el.remove(); }, 400);
             });
-            // Safety: force-remove after 8s even if event never fires
+            // Safety: force-remove after 4s even if event never fires
             setTimeout(function() {
               if (el && el.parentNode) {
                 el.classList.add('hide');
                 setTimeout(function() { el.remove(); }, 400);
               }
-            }, 8000);
+            }, 4000);
           })();
         `}} />
       </body>

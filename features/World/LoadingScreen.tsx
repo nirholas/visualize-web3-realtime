@@ -17,9 +17,12 @@ const LoadingScreen = memo<LoadingScreenProps>(({ ready = false }) => {
     return () => clearTimeout(timer);
   }, [ready]);
 
-  // Force hide after 5 seconds even if not ready to prevent infinite loading
+  // Force hide after 3 seconds even if not ready to prevent infinite loading
   useEffect(() => {
-    const forceHideTimer = setTimeout(() => setVisible(false), 5000);
+    const forceHideTimer = setTimeout(() => {
+      window.dispatchEvent(new Event('webgl-ready'));
+      setVisible(false);
+    }, 3000);
     return () => clearTimeout(forceHideTimer);
   }, []);
 

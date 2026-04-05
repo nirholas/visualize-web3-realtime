@@ -31,6 +31,6 @@ export type PullquotePlacement = {
 }
 
 export const PULLQUOTE_PLACEMENTS: PullquotePlacement[] = [
-  { colIdx: 0, yFrac: 0.42, wFrac: 0.55, side: 'right' },
-  { colIdx: 1, yFrac: 0.30, wFrac: 0.50, side: 'left' },
+  { colIdx: 2, yFrac: 0.05, wFrac: 0.65, side: 'right' },
+  { colIdx: 2, yFrac: 0.18, wFrac: 0.65, side: 'right' },
 ]
