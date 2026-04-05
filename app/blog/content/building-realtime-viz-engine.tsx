@@ -130,7 +130,7 @@ React Three Fiber     ← useFrame() reads node positions every frame`} />
   onStateChange: (state) => updateConnectionStatus(state),
 });
 
-ws.connect();`} /
+ws.connect();`} />
 
       <p>
         The state machine matters more than you might think. Without it, reconnection logic
