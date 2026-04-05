@@ -28,7 +28,7 @@
   "packageManager": "npm@10.8.2",
   "workspaces": [
     "packages/*",
-    "apps/*"
+    "apps/playground"
   ],
   "scripts": {
     "dev": "next dev -p 3100",

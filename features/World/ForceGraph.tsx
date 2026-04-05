@@ -78,6 +78,7 @@ class ForceGraphSimulation {
   constructor() {
     // numDimensions=3 enables full volumetric (spherical) layout
     this.simulation = forceSimulation<ForceNode>([], 3)
+      .numDimensions(3)
       .force('charge', forceManyBody<ForceNode>().strength((d) => (d.type === 'hub' ? -200 : -8)))
       .force('center', forceCenter<ForceNode>(0, 0, 0).strength(0.03))
       .force('collide', forceCollide<ForceNode>().radius((d) => d.radius + 0.3).strength(0.7))
@@ -205,6 +206,7 @@ class ForceGraphSimulation {
       this.edges = newEdges;
 
       this.simulation.nodes(this.nodes);
+      this.simulation.numDimensions(3);
       (this.simulation.force('link') as ReturnType<typeof forceLink<ForceNode, ForceEdge>>)
         .links(this.edges);
       this.simulation.alpha(0.3).restart();
@@ -485,18 +487,19 @@ const AgentNodes = memo<{
       const shimmerPhase = state.clock.getElapsedTime() * 0.3 + i * 2.17;
       const shimmer = 0.12;
       const sx = Math.sin(shimmerPhase) * shimmer;
+      const sy = Math.sin(shimmerPhase * 0.5 + i * 1.37) * shimmer;
       const sz = Math.cos(shimmerPhase * 0.7 + i) * shimmer;
 
       if (isSearchedAgent) {
         // Searched agent: 3x size with gentle pulse, bright blue
         const pulse = 1 + Math.sin(state.clock.getElapsedTime() * Math.PI) * 0.05;
-        tempObj.position.set((node.x ?? 0) + sx, 0, (node.y ?? 0) + sz);
+        tempObj.position.set((node.x ?? 0) + sx, (node.y ?? 0) + sy, (node.z ?? 0) + sz);
         tempObj.scale.setScalar(node.radius * 3 * pulse);
         tempObj.updateMatrix();
         mesh.setMatrixAt(i, tempObj.matrix);
         tempColor.set('#818cf8');
       } else {
-        tempObj.position.set((node.x ?? 0) + sx, 0, (node.y ?? 0) + sz);
+        tempObj.position.set((node.x ?? 0) + sx, (node.y ?? 0) + sy, (node.z ?? 0) + sz);
         tempObj.scale.setScalar(node.radius);
         tempObj.updateMatrix();
         mesh.setMatrixAt(i, tempObj.matrix);
@@ -727,13 +730,22 @@ const EdgeParticles = memo<{ sim: ForceGraphSimulation; isDark?: boolean }>(({ s
       const z = sz + (tz - sz) * t;
       // Arc perpendicular to the edge direction for visual separation
       const arc = Math.sin(t * Math.PI) * 0.8;
-      // Compute a perpendicular offset using cross product with up vector
+      // Compute a perpendicular offset using cross product with a reference axis
       const dx = tx - sx, dy = ty - sy, dz = tz - sz;
       const len = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
-      // Cross with (0,1,0) to get perpendicular direction
-      const px = -dz / len, pz = dx / len;
+      const ndx = dx / len, ndy = dy / len, ndz = dz / len;
+      // Choose reference axis least aligned with edge to avoid degenerate cross product
+      const absX = Math.abs(ndx), absY = Math.abs(ndy), absZ = Math.abs(ndz);
+      let rx = 0, ry = 1, rz = 0;
+      if (absY > absX && absY > absZ) { rx = 1; ry = 0; rz = 0; }
+      // Cross product: edge × ref
+      let px = ndy * rz - ndz * ry;
+      let py = ndz * rx - ndx * rz;
+      let pz = ndx * ry - ndy * rx;
+      const pLen = Math.sqrt(px * px + py * py + pz * pz) || 1;
+      px /= pLen; py /= pLen; pz /= pLen;
 
-      tempObj.position.set(x + px * arc, y, z + pz * arc);
+      tempObj.position.set(x + px * arc, y + py * arc, z + pz * arc);
       tempObj.scale.setScalar(0.08);
       tempObj.updateMatrix();
       mesh.setMatrixAt(i, tempObj.matrix);
