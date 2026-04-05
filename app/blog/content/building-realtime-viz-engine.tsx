@@ -93,7 +93,7 @@ React Three Fiber     ← useFrame() reads node positions every frame`} />
   getConnections(): ConnectionState[];
 
   onEvent(callback: (event: DataProviderEvent) => void): () => void;
-}`} /
+}\`} />
 
       <p>
         Why so minimal? Because providers are the boundary between "the outside world" and
