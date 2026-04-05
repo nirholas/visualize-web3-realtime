@@ -269,7 +269,7 @@ const node: ForceNode = {
   x: Math.sin(phi) * Math.cos(theta) * dist,
   y: Math.sin(phi) * Math.sin(theta) * dist,
   z: Math.cos(phi) * dist,
-};`} /
+};`} />
 
       <h2>State Management: Why React Refs Over Redux</h2>
 
@@ -319,7 +319,7 @@ useFrame(() => {
   }
   mesh.instanceMatrix.needsUpdate = true;
   mesh.count = agents.length;
-});`} /
+});`} />
 
       <p>
         This pattern has a cost: we lose React&apos;s declarative model for the hot path. Debugging
@@ -379,7 +379,7 @@ useFrame(() => {
     }
     return this;
   }
-}`} /
+}`} />
 
       <p>
         We now use <code>BoundedMap</code> everywhere a cache or accumulator might grow without
