@@ -5,6 +5,7 @@ node_modules
 .turbo
 temp/
 data/
+!app/**/data/
 packages/*/data/
 *.db
 *.db-wal
