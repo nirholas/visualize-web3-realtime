@@ -240,7 +240,8 @@ export class PumpFunProvider implements DataProvider {
     } else {
       this.tokenAcc.set(mint, {
         tokenAddress: mint, name: cached?.name || mint.slice(0, 8), symbol: cached?.symbol || '???',
-        chain: 'solana', trades: 1, volume: solAmount, nativeSymbol: 'SOL',
+        chain: 'solana', trades: 1, volume: solAmount, volumeSol: solAmount, nativeSymbol: 'SOL',
+        source: 'pumpfun',
       });
     }
 
@@ -250,7 +251,8 @@ export class PumpFunProvider implements DataProvider {
     else {
       this.traderAcc.set(traderKey, {
         trader: traderPublicKey, tokenAddress: mint,
-        chain: 'solana', trades: 1, volume: solAmount,
+        chain: 'solana', trades: 1, volume: solAmount, volumeSol: solAmount,
+        source: 'pumpfun',
       });
     }
 

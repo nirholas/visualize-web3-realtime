@@ -1,6 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import {
+  registerProvider,
+  unregisterProvider,
+} from '@web3viz/core';
 import type {
   DataProvider,
   DataProviderEvent,
@@ -69,6 +73,13 @@ const DEFAULT_MAX_EVENTS = 300;
 
 export function useProviders(options: UseProvidersOptions): UseProvidersReturn {
   const { providers, paused = false, maxEvents = DEFAULT_MAX_EVENTS, startEnabled = true } = options;
+
+  // Register all providers in the global registry so cross-provider
+  // features (e.g. AgentProvider subscribing to PumpFun events) work.
+  useEffect(() => {
+    for (const p of providers) registerProvider(p);
+    return () => { for (const p of providers) unregisterProvider(p.id); };
+  }, [providers]);
 
   // Mutable refs for event buffering (avoids re-render loops)
   const eventBufferRef = useRef<DataProviderEvent[]>([]);

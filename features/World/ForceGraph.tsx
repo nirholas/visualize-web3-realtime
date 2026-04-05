@@ -51,7 +51,7 @@ interface ForceEdge extends SimulationLinkDatum<ForceNode> {
 const MAX_AGENT_NODES = 5000;
 const HUB_BASE_RADIUS = 0.8;
 const HUB_MAX_RADIUS = 3.0;
-const AGENT_RADIUS = 0.06;
+const AGENT_RADIUS = 0.18;
 
 // Edge highlight bloom color (overbright blue triggers selective bloom)
 const EDGE_HIGHLIGHT_R = 0.48;
@@ -266,7 +266,7 @@ function HubNodeMesh({
 
   // Theme-aware default colors: bright on dark bg, darker on light bg
   const defaultHubColor = isDark ? PROTOCOL_COLORS.default : '#2a5a9e';
-  const defaultEmissiveIntensity = isDark ? 2.0 : 0.8;
+  const defaultEmissiveIntensity = isDark ? 2.5 : 0.8;
 
   useEffect(() => {
     if (isHighlighted) {
@@ -402,7 +402,7 @@ const AgentNodes = memo<{
       roughness: 0.4,
       metalness: 0.0,
       emissive: new THREE.Color(isDark ? '#ffffff' : '#333333'),
-      emissiveIntensity: isDark ? 1.5 : 0.6,
+      emissiveIntensity: isDark ? 2.5 : 0.6,
       transparent: true,
       toneMapped: false,
     }),
@@ -575,7 +575,7 @@ const Edges = memo<{
             gray = (srcRelated || tgtRelated) ? (isHubEdge ? 0.3 : 0.4) : 0.75;
           }
         } else {
-          gray = isDark ? (isHubEdge ? 0.4 : 0.2) : (isHubEdge ? 0.35 : 0.55);
+          gray = isDark ? (isHubEdge ? 0.55 : 0.35) : (isHubEdge ? 0.35 : 0.55);
         }
         cA.array[idx] = gray; cA.array[idx + 1] = gray; cA.array[idx + 2] = gray;
         cA.array[idx + 3] = gray; cA.array[idx + 4] = gray; cA.array[idx + 5] = gray;
@@ -590,7 +590,7 @@ const Edges = memo<{
   return (
     <lineSegments ref={lineRef}>
       <bufferGeometry />
-      <lineBasicMaterial vertexColors transparent opacity={0.45} toneMapped={false} />
+      <lineBasicMaterial vertexColors transparent opacity={0.6} toneMapped={false} />
     </lineSegments>
   );
 });
