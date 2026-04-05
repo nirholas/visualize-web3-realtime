@@ -355,6 +355,21 @@ All simulation parameters are configurable:
 
 ---
 
+## Documentation
+
+| Document | Description |
+|---|---|
+| [README.md](README.md) | Project overview and quick start |
+| [SDK.md](SDK.md) | Package descriptions and usage |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Dev setup, code style, PR guidelines |
+| [CHANGELOG.md](CHANGELOG.md) | Notable changes by theme |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design, data flow, performance |
+| [docs/PROVIDERS.md](docs/PROVIDERS.md) | Guide to building custom data providers |
+| [docs/COMPONENTS.md](docs/COMPONENTS.md) | ForceGraph + UI component API reference |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Vercel, Docker, self-hosted deployment |
+
+---
+
 ## Contributing
 
 We welcome contributions. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
