@@ -1,0 +1,17 @@
+{
+  "extends": "../tsconfig/base.json",
+  "compilerOptions": {
+    "composite": false,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "lib": ["ES2022"],
+    "types": ["react-native"],
+    "rootDir": "..",
+    "paths": {
+      "@web3viz/core": ["../core/src/index.ts"],
+      "@web3viz/core/*": ["../core/src/*/index.ts"]
+    }
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}

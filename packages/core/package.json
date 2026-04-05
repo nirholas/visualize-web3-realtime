@@ -11,7 +11,10 @@
     "./types": "./src/types/index.ts",
     "./engine": "./src/engine/index.ts",
     "./categories": "./src/categories/index.ts",
-    "./providers": "./src/providers/index.ts"
+    "./providers": "./src/providers/index.ts",
+    "./plugin": "./src/plugin.ts",
+    "./plugins": "./src/plugins/index.ts",
+    "./themes": "./src/themes/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

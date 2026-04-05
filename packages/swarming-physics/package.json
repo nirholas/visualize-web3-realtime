@@ -1,0 +1,27 @@
+{
+  "name": "swarming-physics",
+  "version": "0.1.0",
+  "description": "WASM Barnes-Hut force simulation for swarming — 3-5x faster than d3-force-3d",
+  "license": "MIT",
+  "main": "./pkg/swarming_physics.js",
+  "types": "./pkg/swarming_physics.d.ts",
+  "files": [
+    "pkg",
+    "src",
+    "Cargo.toml"
+  ],
+  "scripts": {
+    "build": "wasm-pack build --target web --out-dir pkg --release",
+    "build:bundler": "wasm-pack build --target bundler --out-dir pkg --release",
+    "build:nodejs": "wasm-pack build --target nodejs --out-dir pkg --release",
+    "clean": "rm -rf pkg target"
+  },
+  "keywords": [
+    "wasm",
+    "physics",
+    "force-graph",
+    "barnes-hut",
+    "simulation",
+    "webassembly"
+  ]
+}

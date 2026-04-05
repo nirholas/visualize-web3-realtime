@@ -3,29 +3,28 @@
 //
 // Headless mode: manages the force simulation, WebSocket connection, and
 // data mapping without rendering anything. Users own the Canvas.
+//
+// Usage:
+//   import { useSwarmingEngine } from 'swarming'
+//
+//   function CustomVisualization() {
+//     const { nodes, edges, simulation, addNode, removeNode } = useSwarmingEngine({
+//       source: 'wss://...',
+//     })
+//     return (
+//       <Canvas>
+//         {nodes.map(node => <MyNode key={node.id} {...node} />)}
+//       </Canvas>
+//     )
+//   }
 // ============================================================================
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ForceGraphSimulation,
-  type ForceGraphConfig,
-  type TopToken,
-  type TraderEdge,
-  type GraphNode,
-  type GraphEdge,
-} from '@web3viz/core';
-
-import {
-  type PhysicsConfig,
-  type MappedNode,
-  type MappedEdge,
-  type StaticGraphData,
-  type SwarmingTheme,
-  type ThemePreset,
-  DEFAULT_PHYSICS,
-  defaultMapEvent,
-  resolveTheme,
-} from '../defaults';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { SwarmingSimulation, type PhysicsConfig } from '../core/physics';
+import type { SwarmingNode, SimNode, SimEdge, ThemeConfig, DataProvider } from '../types';
+import { dark } from '../themes/dark';
+import { light } from '../themes/light';
+import { defaultMapEvent } from '../defaults';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -34,31 +33,33 @@ import {
 export interface UseSwarmingEngineOptions {
   /** WebSocket URL for streaming data */
   source?: string;
-  /** Static graph data (alternative to source) */
-  data?: StaticGraphData;
+  /** Custom data provider */
+  provider?: DataProvider;
+  /** Static node data */
+  data?: SwarmingNode[];
   /** Map raw WebSocket messages to nodes */
-  mapEvent?: (raw: Record<string, unknown>) => MappedNode;
-  /** Physics configuration */
-  physics?: PhysicsConfig;
-  /** Theme preset or custom theme */
-  theme?: ThemePreset | SwarmingTheme;
-  /** Maximum number of nodes. Default: 5000 */
+  mapEvent?: (raw: Record<string, unknown>) => SwarmingNode;
+  /** Theme preset or custom config */
+  theme?: 'dark' | 'light' | ThemeConfig;
+  /** Physics configuration overrides */
+  physics?: Partial<PhysicsConfig>;
+  /** Maximum nodes. Default: 2000 */
   maxNodes?: number;
   /** Whether the engine is paused. Default: false */
   paused?: boolean;
 }
 
 export interface SwarmingEngineState {
-  /** All current graph nodes */
-  nodes: GraphNode[];
-  /** All current graph edges */
-  edges: GraphEdge[];
+  /** All current simulation nodes */
+  nodes: SimNode[];
+  /** All current simulation edges */
+  edges: SimEdge[];
   /** The underlying simulation instance */
-  simulation: ForceGraphSimulation;
+  simulation: SwarmingSimulation;
   /** WebSocket connection state */
   connectionState: 'disconnected' | 'connecting' | 'connected' | 'error';
   /** Add a node programmatically */
-  addNode: (node: MappedNode) => void;
+  addNode: (node: SwarmingNode) => void;
   /** Remove a node by ID */
   removeNode: (id: string) => void;
   /** Reheat the simulation */
@@ -66,69 +67,13 @@ export interface SwarmingEngineState {
 }
 
 // ---------------------------------------------------------------------------
-// Helpers: convert mapped data → TopToken/TraderEdge for the simulation
+// Theme resolution
 // ---------------------------------------------------------------------------
 
-function mappedNodesToTopTokens(nodes: MappedNode[], theme: SwarmingTheme): TopToken[] {
-  // Group nodes by their group field to create hub tokens
-  const groups = new Map<string, { count: number; totalValue: number; label: string }>();
-
-  for (const node of nodes) {
-    const group = node.group ?? 'default';
-    const existing = groups.get(group);
-    if (existing) {
-      existing.count++;
-      existing.totalValue += node.value ?? 1;
-    } else {
-      groups.set(group, { count: 1, totalValue: node.value ?? 1, label: node.label ?? group });
-    }
-  }
-
-  return Array.from(groups.entries()).map(([group, info]) => ({
-    tokenAddress: `group:${group}`,
-    symbol: info.label || group,
-    name: group,
-    chain: 'custom',
-    trades: info.count,
-    volume: info.totalValue,
-    nativeSymbol: '',
-    source: 'swarming',
-  }));
-}
-
-function mappedNodesToTraderEdges(nodes: MappedNode[]): TraderEdge[] {
-  return nodes.map((node) => ({
-    trader: node.id,
-    tokenAddress: `group:${node.group ?? 'default'}`,
-    chain: 'custom',
-    trades: 1,
-    volume: node.value ?? 1,
-    source: 'swarming',
-  }));
-}
-
-function staticEdgesToTraderEdges(edges: MappedEdge[]): TraderEdge[] {
-  return edges.map((edge) => ({
-    trader: edge.source,
-    tokenAddress: edge.target,
-    chain: 'custom',
-    trades: 1,
-    volume: 1,
-    source: 'swarming',
-  }));
-}
-
-function staticNodesToTopTokens(nodes: MappedNode[]): TopToken[] {
-  return nodes.map((node) => ({
-    tokenAddress: node.id,
-    symbol: node.label ?? node.id,
-    name: node.label ?? node.id,
-    chain: 'custom',
-    trades: 1,
-    volume: node.value ?? 1,
-    nativeSymbol: '',
-    source: 'swarming',
-  }));
+function resolveTheme(theme: UseSwarmingEngineOptions['theme']): ThemeConfig {
+  if (!theme || theme === 'dark') return dark;
+  if (theme === 'light') return light;
+  return theme;
 }
 
 // ---------------------------------------------------------------------------
@@ -138,69 +83,66 @@ function staticNodesToTopTokens(nodes: MappedNode[]): TopToken[] {
 export function useSwarmingEngine(options: UseSwarmingEngineOptions): SwarmingEngineState {
   const {
     source,
+    provider,
     data,
     mapEvent = defaultMapEvent,
+    theme: themeProp,
     physics,
     maxNodes,
     paused = false,
-    theme,
   } = options;
 
-  const resolvedTheme = resolveTheme(theme);
+  const resolvedTheme = resolveTheme(themeProp);
 
-  // Build simulation config from physics props
-  const simConfig = useMemo<ForceGraphConfig>(() => ({
-    maxAgentNodes: maxNodes ?? physics?.maxNodes ?? DEFAULT_PHYSICS.maxNodes,
-    hubBaseRadius: physics?.hubBaseRadius ?? DEFAULT_PHYSICS.hubBaseRadius,
-    hubMaxRadius: physics?.hubMaxRadius ?? DEFAULT_PHYSICS.hubMaxRadius,
-    agentRadius: physics?.agentRadius ?? DEFAULT_PHYSICS.agentRadius,
-    hubColors: resolvedTheme.hubColors,
-    agentColor: resolvedTheme.agentColor,
-    hubChargeStrength: physics?.charge ?? DEFAULT_PHYSICS.charge,
-    agentChargeStrength: Math.round((physics?.charge ?? DEFAULT_PHYSICS.charge) / 25),
-    hubLinkDistance: physics?.linkDistance ?? DEFAULT_PHYSICS.linkDistance,
-    agentLinkDistanceBase: physics?.agentLinkDistance ?? DEFAULT_PHYSICS.agentLinkDistance,
-    velocityDecay: physics?.damping ?? DEFAULT_PHYSICS.damping,
-    alphaDecay: physics?.alphaDecay ?? DEFAULT_PHYSICS.alphaDecay,
-  }), [physics, maxNodes, resolvedTheme]);
+  const simConfig: Partial<PhysicsConfig> = {
+    maxNodes: maxNodes ?? physics?.maxNodes ?? 2000,
+    ...physics,
+  };
 
   // Create simulation once
-  const simRef = useRef<ForceGraphSimulation | null>(null);
+  const simRef = useRef<SwarmingSimulation | null>(null);
   if (!simRef.current) {
-    simRef.current = new ForceGraphSimulation(simConfig);
+    simRef.current = new SwarmingSimulation(simConfig);
   }
   const sim = simRef.current;
 
-  // Accumulated mapped nodes from WebSocket
-  const nodesBuffer = useRef<MappedNode[]>([]);
+  // Accumulated nodes
+  const allNodesRef = useRef<SwarmingNode[]>(data ? [...data] : []);
   const [connectionState, setConnectionState] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected');
-
-  // Expose nodes/edges as reactive state (updated by tick in the render loop)
-  const [graphState, setGraphState] = useState<{ nodes: GraphNode[]; edges: GraphEdge[] }>({
+  const [graphState, setGraphState] = useState<{ nodes: SimNode[]; edges: SimEdge[] }>({
     nodes: [],
     edges: [],
   });
 
-  // --- Static data mode ---
+  // --- Static data ---
   useEffect(() => {
-    if (!data) return;
-    if (data.edges && data.edges.length > 0) {
-      // Direct node-to-node graph: each node is a hub, edges are explicit
-      const topTokens = staticNodesToTopTokens(data.nodes);
-      const traderEdges = staticEdgesToTraderEdges(data.edges);
-      sim.update(topTokens, traderEdges);
-    } else {
-      // Grouped mode: nodes cluster by group
-      const topTokens = mappedNodesToTopTokens(data.nodes, resolvedTheme);
-      const traderEdges = mappedNodesToTraderEdges(data.nodes);
-      sim.update(topTokens, traderEdges);
+    if (data) {
+      allNodesRef.current = [...data];
+      sim.update(data, resolvedTheme);
     }
-    sim.reheat();
   }, [data, sim, resolvedTheme]);
 
-  // --- WebSocket streaming mode ---
+  // --- Custom provider ---
   useEffect(() => {
-    if (!source || paused) return;
+    if (!provider) return;
+    const cleanup = provider.connect((newNodes) => {
+      for (const node of newNodes) {
+        const idx = allNodesRef.current.findIndex((n) => n.id === node.id);
+        if (idx >= 0) {
+          allNodesRef.current[idx] = node;
+        } else {
+          allNodesRef.current.push(node);
+        }
+      }
+      sim.update(allNodesRef.current, resolvedTheme);
+    });
+    setConnectionState('connected');
+    return cleanup ?? undefined;
+  }, [provider, sim, resolvedTheme]);
+
+  // --- WebSocket streaming ---
+  useEffect(() => {
+    if (!source || paused || provider) return;
 
     let ws: WebSocket | null = null;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -209,7 +151,7 @@ export function useSwarmingEngine(options: UseSwarmingEngineOptions): SwarmingEn
 
     function connect() {
       if (disposed) return;
-      setConnectionState(retryCount > 0 ? 'connecting' : 'connecting');
+      setConnectionState('connecting');
 
       try {
         ws = new WebSocket(source!);
@@ -228,32 +170,23 @@ export function useSwarmingEngine(options: UseSwarmingEngineOptions): SwarmingEn
         if (typeof event.data !== 'string') return;
         try {
           const raw = JSON.parse(event.data);
-          const mapped = mapEvent(raw);
-          nodesBuffer.current.push(mapped);
+          const node = mapEvent(raw);
+          allNodesRef.current.push(node);
 
-          // Trim to maxNodes
-          const limit = maxNodes ?? physics?.maxNodes ?? DEFAULT_PHYSICS.maxNodes;
-          if (nodesBuffer.current.length > limit) {
-            nodesBuffer.current = nodesBuffer.current.slice(-limit);
+          const limit = maxNodes ?? physics?.maxNodes ?? 2000;
+          if (allNodesRef.current.length > limit) {
+            allNodesRef.current = allNodesRef.current.slice(-limit);
           }
 
-          // Update simulation
-          const topTokens = mappedNodesToTopTokens(nodesBuffer.current, resolvedTheme);
-          const traderEdges = mappedNodesToTraderEdges(nodesBuffer.current);
-          sim.update(topTokens, traderEdges);
+          sim.update(allNodesRef.current, resolvedTheme);
         } catch {
           // Skip unparseable messages
         }
       };
 
-      ws.onerror = () => {
-        setConnectionState('error');
-      };
-
+      ws.onerror = () => { setConnectionState('error'); };
       ws.onclose = () => {
-        if (!disposed) {
-          scheduleReconnect();
-        }
+        if (!disposed) scheduleReconnect();
       };
     }
 
@@ -279,17 +212,17 @@ export function useSwarmingEngine(options: UseSwarmingEngineOptions): SwarmingEn
         }
       }
     };
-  }, [source, paused, mapEvent, sim, maxNodes, physics?.maxNodes, resolvedTheme]);
+  }, [source, paused, provider, mapEvent, sim, maxNodes, physics?.maxNodes, resolvedTheme]);
 
-  // Tick the simulation periodically and update state
+  // Tick simulation and update state
   useEffect(() => {
     if (paused) return;
     let raf: number;
     function tick() {
       sim.tick();
       setGraphState({
-        nodes: [...sim.getHubNodes(), ...sim.getAgentNodes()],
-        edges: sim.getEdges(),
+        nodes: [...sim.getHubNodes(), ...sim.getLeafNodes()],
+        edges: [...sim.edges] as SimEdge[],
       });
       raf = requestAnimationFrame(tick);
     }
@@ -302,18 +235,14 @@ export function useSwarmingEngine(options: UseSwarmingEngineOptions): SwarmingEn
     return () => { simRef.current?.dispose(); };
   }, []);
 
-  const addNode = useCallback((node: MappedNode) => {
-    nodesBuffer.current.push(node);
-    const topTokens = mappedNodesToTopTokens(nodesBuffer.current, resolvedTheme);
-    const traderEdges = mappedNodesToTraderEdges(nodesBuffer.current);
-    sim.update(topTokens, traderEdges);
+  const addNode = useCallback((node: SwarmingNode) => {
+    allNodesRef.current.push(node);
+    sim.update(allNodesRef.current, resolvedTheme);
   }, [sim, resolvedTheme]);
 
   const removeNode = useCallback((id: string) => {
-    nodesBuffer.current = nodesBuffer.current.filter((n) => n.id !== id);
-    const topTokens = mappedNodesToTopTokens(nodesBuffer.current, resolvedTheme);
-    const traderEdges = mappedNodesToTraderEdges(nodesBuffer.current);
-    sim.update(topTokens, traderEdges);
+    allNodesRef.current = allNodesRef.current.filter((n) => n.id !== id);
+    sim.update(allNodesRef.current, resolvedTheme);
   }, [sim, resolvedTheme]);
 
   const reheat = useCallback((alpha?: number) => {

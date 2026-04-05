@@ -13,7 +13,7 @@
 
 import React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { ForceGraphSimulation, type TopToken, type TraderEdge, type ForceGraphConfig } from '@web3viz/core';
+import { type TopToken, type TraderEdge, type ForceGraphConfig } from '@web3viz/core';
 import SwarmingRenderer from './SwarmingRenderer';
 
 // ---------------------------------------------------------------------------
@@ -78,18 +78,6 @@ export interface SwarmingInstance {
 // ---------------------------------------------------------------------------
 // Group → color palette
 // ---------------------------------------------------------------------------
-
-const GROUP_COLORS: Record<string, string> = {
-  default: '#1a1a2e',
-  users: '#0f3460',
-  tokens: '#16213e',
-  protocols: '#2c2c54',
-  agents: '#3d3d6b',
-};
-
-function colorForGroup(group: string): string {
-  return GROUP_COLORS[group] || GROUP_COLORS.default;
-}
 
 // ---------------------------------------------------------------------------
 // WebSocket data manager
@@ -395,7 +383,6 @@ function create(selector: string, options: SwarmingOptions = {}): SwarmingInstan
     },
 
     addNode(node: SwarmingNode) {
-      const color = node.color ?? colorForGroup(node.group ?? 'default');
       topTokens.push({
         tokenAddress: node.id,
         symbol: node.label,

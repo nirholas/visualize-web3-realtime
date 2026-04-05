@@ -12,3 +12,13 @@
 export { default as ForceGraph, type ForceGraphProps } from './ForceGraph';
 export { default as PostProcessing, type PostProcessingProps } from './PostProcessing';
 export type { GraphHandle } from '@web3viz/core';
+
+// Plugin system React integration
+export {
+  SwarmingProvider,
+  useSwarming,
+  useSwarmingTheme,
+  useSwarmingProviders,
+  usePluginManager,
+  type SwarmingProviderProps,
+} from './SwarmingProvider';

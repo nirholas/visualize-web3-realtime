@@ -38,6 +38,7 @@
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "^8.18.0",
     "@react-three/postprocessing": "^2.19.1",
+    "@swarming/engine": "*",
     "d3-force-3d": "^3.0.6",
     "postprocessing": "^6.39.0",
     "react": "^18.3.0",

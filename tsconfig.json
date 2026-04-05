@@ -24,7 +24,11 @@
       "@web3viz/react-graph": ["./packages/react-graph/src/index.ts"],
       "@web3viz/ui": ["./packages/ui/src/index.ts"],
       "@web3viz/ui/*": ["./packages/ui/src/*/index.ts"],
-      "@web3viz/utils": ["./packages/utils/src/index.ts"]
+      "@web3viz/utils": ["./packages/utils/src/index.ts"],
+      "@swarming/engine": ["./packages/engine/src/index.ts"],
+      "@swarming/react": ["./packages/react/src/index.ts"],
+      "@swarming/vue": ["./packages/vue/src/index.ts"],
+      "@swarming/svelte": ["./packages/svelte/src/index.ts"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

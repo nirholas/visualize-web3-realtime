@@ -39,7 +39,12 @@
     "start": "next start -p 3100",
     "lint": "next lint",
     "typecheck": "turbo run typecheck",
-    "capture-assets": "npx tsx scripts/capture-assets.ts"
+    "capture-assets": "npx tsx scripts/capture-assets.ts",
+    "bench": "cd benchmarks && npm run bench",
+    "bench:report": "cd benchmarks && npm run bench:report",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.82.0",

@@ -113,6 +113,12 @@ export interface SwarmingConfig {
   /** Static data array */
   data?: SwarmingNode[];
 
+  // -- Data mapping --
+
+  /** Map raw WebSocket JSON messages to SwarmingNode. When provided, the component
+   *  manages the WebSocket connection directly and passes mapped nodes to the simulation. */
+  mapEvent?: (raw: Record<string, unknown>) => SwarmingNode;
+
   // -- Rendering --
 
   /** Maximum number of nodes to render (default: 2000) */
@@ -126,11 +132,11 @@ export interface SwarmingConfig {
 
   // -- Physics --
 
-  /** Node repulsion strength (default: -30) */
+  /** Node repulsion strength (default: -200) */
   chargeStrength?: number;
-  /** Target edge length (default: 50) */
+  /** Target edge length (default: 25) */
   linkDistance?: number;
-  /** Center gravity strength (default: 0.1) */
+  /** Center gravity strength (default: 0.03) */
   centerPull?: number;
 
   // -- Events --
