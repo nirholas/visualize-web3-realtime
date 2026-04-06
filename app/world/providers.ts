@@ -1,6 +1,6 @@
 'use client';
 
-import { PumpFunProvider, MockProvider, AgentProvider } from '@web3viz/providers';
+import { PumpFunProvider, MockProvider, AgentProvider, CexVolumeProvider } from '@web3viz/providers';
 
 // ---------------------------------------------------------------------------
 // Data Provider Registration
@@ -28,7 +28,6 @@ export const providers = [
   new PumpFunProvider({
     rpcWsUrl: process.env.NEXT_PUBLIC_SOLANA_WS_URL || undefined,
   }),
-  // Uncomment to test multi-provider:
-  // new MockProvider(1000),
+  new CexVolumeProvider(),
   new AgentProvider(),
 ];

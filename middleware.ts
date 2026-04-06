@@ -52,6 +52,8 @@ export function middleware(request: NextRequest) {
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
       "connect-src 'self' wss: ws: https:",
+      // Three.js / R3F creates Web Workers from blob URLs
+      "worker-src 'self' blob:",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

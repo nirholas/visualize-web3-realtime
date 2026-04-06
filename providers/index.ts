@@ -1,22 +1,16 @@
 'use client';
 
 /**
- * Provider registration entry point.
- * Import this file once in the app layout/page to register all providers.
- * Each provider self-registers via registerProvider() from @web3viz/core.
+ * Provider registration entry point (legacy).
  *
- * To add a new provider:
- * 1. Create a provider module in providers/<name>/
- * 2. Import it here
- * 3. That's it — useDataProvider discovers it automatically
+ * NOTE: The active app uses app/world/providers.ts to instantiate providers
+ * and pass them to useProviders(). These side-effect imports are kept for
+ * standalone use cases that rely on the global registry.
  */
 
-// Register providers (each file calls registerProvider internally)
 import './solana-pumpfun';
-import './ethereum';          // ← Task 24
-import './base';                // ← Task 25
-// import './agents';            // ← Task 26
-import './erc8004';              // ← Task 27
-// import './cex-volume';        // ← Task 28
+import './ethereum';
+import './base';
+import './erc8004';
 
 export {};

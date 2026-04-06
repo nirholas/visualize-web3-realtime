@@ -302,7 +302,7 @@ const PostFX = memo<{
 }>(({ enabled, bloomIntensity, bloomThreshold }) => {
   if (!enabled) return null;
   return (
-    <EffectComposer multisampling={0}>
+    <EffectComposer multisampling={0} stencilBuffer={false}>
       <SMAA />
       <Bloom
         intensity={bloomIntensity}

@@ -23,7 +23,7 @@ const PostProcessing = memo<PostProcessingProps>(({
   if (!enabled) return null;
 
   return (
-    <EffectComposer multisampling={0}>
+    <EffectComposer multisampling={0} stencilBuffer={false}>
       {/* SMAA replaces hardware MSAA — better quality, compatible with post-processing */}
       <SMAA />
 
@@ -32,7 +32,6 @@ const PostProcessing = memo<PostProcessingProps>(({
         aoRadius={0.5}
         intensity={aoIntensity}
         distanceFalloff={0.5}
-        halfRes
       />
 
       {/* Selective bloom — only emissive materials with toneMapped={false} exceed threshold */}

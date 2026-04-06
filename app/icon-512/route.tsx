@@ -1,8 +1,8 @@
 import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
-export const size = { width: 512, height: 512 };
-export const contentType = 'image/png';
+
+const size = { width: 512, height: 512 };
 
 /** Deterministic pseudo-random from seed */
 function seeded(seed: number) {
@@ -10,7 +10,7 @@ function seeded(seed: number) {
   return x - Math.floor(x);
 }
 
-export default function Icon512() {
+export async function GET() {
   // Generate orbiting nodes
   const orbitNodes: { x: number; y: number; r: number; color: string }[] = [];
   const colors = ['#38bdf8', '#34d399', '#f472b6', '#fbbf24', '#818cf8', '#a78bfa', '#fb923c', '#67e8f9'];

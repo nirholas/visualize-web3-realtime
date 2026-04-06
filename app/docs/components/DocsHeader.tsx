@@ -60,6 +60,34 @@ export function DocsHeader({ onMenuToggle }: { onMenuToggle?: () => void }) {
           <span style={{ color: '#6b7280' }}>.docs</span>
         </Link>
 
+        <nav style={{ display: 'flex', gap: 8 }}>
+          {[
+            { href: '/', label: 'Home' },
+            { href: '/world', label: 'World' },
+            { href: '/agents', label: 'Agents' },
+            { href: '/demos', label: 'Demos' },
+            { href: '/tools', label: 'Tools' },
+            { href: '/blog', label: 'Blog' },
+            { href: '/showcase', label: 'Showcase' },
+            { href: '/plugins', label: 'Plugins' },
+            { href: '/playground', label: 'Playground' },
+            { href: '/benchmarks', label: 'Benchmarks' },
+          ].map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              style={{
+                fontSize: 10,
+                color: '#6b7280',
+                textDecoration: 'none',
+                transition: 'color 150ms',
+              }}
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
+
         {/* Search trigger */}
         <button
           onClick={() => setSearchOpen(true)}

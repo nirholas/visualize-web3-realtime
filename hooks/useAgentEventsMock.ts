@@ -387,8 +387,7 @@ export function useAgentEventsMock(options: UseMockAgentEventsOptions = {}): Use
   useEffect(() => {
     if (autoStart) connect();
     return () => disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [autoStart, connect, disconnect]);
 
   return {
     connected,

@@ -23,9 +23,9 @@ const PostProcessing = memo<PostProcessingProps>(
       const { EffectComposer, SMAA, N8AO, Bloom } = pp;
 
       return (
-        <EffectComposer multisampling={0}>
+        <EffectComposer multisampling={0} stencilBuffer={false}>
           <SMAA />
-          <N8AO aoRadius={0.5} intensity={0.5} distanceFalloff={0.5} halfRes />
+          <N8AO aoRadius={0.5} intensity={0.5} distanceFalloff={0.5} />
           <Bloom
             intensity={bloomIntensity}
             luminanceThreshold={bloomThreshold}

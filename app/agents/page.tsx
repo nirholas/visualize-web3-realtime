@@ -68,7 +68,7 @@ function AgentsPageInner() {
     typeof window !== 'undefined' ? window.innerWidth : 1440
   );
   const [downloading, setDownloading] = useState<boolean>(false);
-  const [demoActive, setDemoActive] = useState(false);
+  const [demoActive, setDemoActive] = useState(true);
   const [reducedMotion, setReducedMotion] = useState(false);
 
   // Detect prefers-reduced-motion
@@ -386,6 +386,30 @@ function AgentsPageInner() {
         >
           ← World
         </Link>
+        {[
+          { href: '/demos', label: 'Demos' },
+          { href: '/tools', label: 'Tools' },
+          { href: '/docs', label: 'Docs' },
+          { href: '/blog', label: 'Blog' },
+          { href: '/showcase', label: 'Showcase' },
+          { href: '/playground', label: 'Playground' },
+          { href: '/benchmarks', label: 'Benchmarks' },
+        ].map(({ href, label }) => (
+          <Link
+            key={href}
+            href={href}
+            style={{
+              fontSize: 9,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: '#6b7280',
+              textDecoration: 'none',
+              pointerEvents: 'all',
+            }}
+          >
+            {label}
+          </Link>
+        ))}
         <span style={{ fontSize: 9, color: '#c084fc', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
           ⬡ Agent World
         </span>

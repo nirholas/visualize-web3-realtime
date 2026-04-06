@@ -474,8 +474,7 @@ export function useAgentEvents(options: UseAgentEventsOptions): UseAgentEventsRe
     return () => {
       disconnect();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [autoConnect, connect, disconnect]);
 
   return {
     connected,

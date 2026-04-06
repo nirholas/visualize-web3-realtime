@@ -1,21 +1,7 @@
 'use client';
 
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import ToolPageShell from '@/features/Tools/ToolPageShell';
-
-// ---------------------------------------------------------------------------
-// Reagraph integration — requires `npm install reagraph`
-// We lazy-import so the page degrades gracefully if the package isn't installed.
-// ---------------------------------------------------------------------------
-
-let GraphCanvas: React.ComponentType<any> | null = null;
-try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const reagraph = require('reagraph');
-  GraphCanvas = reagraph.GraphCanvas;
-} catch {
-  // reagraph not installed — fallback rendered below
-}
 
 // ---------------------------------------------------------------------------
 // Demo data — small web3-themed network
@@ -112,6 +98,14 @@ function ReagraphFallback() {
 // ---------------------------------------------------------------------------
 export default function ReagraphDemo() {
   const [walletCount, setWalletCount] = useState(80);
+  const [GraphCanvas, setGraphCanvas] = useState<React.ComponentType<any> | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+
+  useEffect(() => {
+    import('reagraph')
+      .then((mod) => setGraphCanvas(() => mod.GraphCanvas))
+      .catch(() => setLoadFailed(true));
+  }, []);
 
   const nodes = useMemo(() => generateDemoNodes(walletCount), [walletCount]);
   const edges = useMemo(() => generateDemoEdges(nodes), [nodes]);
@@ -120,10 +114,20 @@ export default function ReagraphDemo() {
     setWalletCount((c) => c); // force remount by toggling key below
   }, []);
 
-  if (!GraphCanvas) {
+  if (loadFailed) {
     return (
       <ToolPageShell title="Reagraph" description="React WebGL graph" externalUrl="https://github.com/reaviz/reagraph">
         <ReagraphFallback />
+      </ToolPageShell>
+    );
+  }
+
+  if (!GraphCanvas) {
+    return (
+      <ToolPageShell title="Reagraph" description="React WebGL graph" externalUrl="https://github.com/reaviz/reagraph">
+        <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888', fontSize: 12 }}>
+          Loading reagraph…
+        </div>
       </ToolPageShell>
     );
   }
