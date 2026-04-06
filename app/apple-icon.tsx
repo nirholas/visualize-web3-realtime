@@ -19,7 +19,7 @@ export default function AppleIcon() {
           overflow: 'hidden',
         }}
       >
-        {/* Subtle grid */}
+        {/* Subtle grid overlay */}
         <div
           style={{
             position: 'absolute',
@@ -29,7 +29,20 @@ export default function AppleIcon() {
             bottom: 0,
             display: 'flex',
             backgroundImage:
-              'linear-gradient(rgba(99,102,241,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.06) 1px, transparent 1px)',
+              'linear-gradient(rgba(99,102,241,0.06) 1px, transparent 1px)',
+            backgroundSize: '20px 20px',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            display: 'flex',
+            backgroundImage:
+              'linear-gradient(90deg, rgba(99,102,241,0.06) 1px, transparent 1px)',
             backgroundSize: '20px 20px',
           }}
         />
