@@ -19,7 +19,7 @@ import type { TopToken, TraderEdge } from '@web3viz/core';
 import type { ShareColors } from './SharePanel';
 
 import { ProtocolLabel } from './ProtocolLabel';
-import { CHAIN_COLORS, COLOR_PALETTE, PROTOCOL_COLORS } from './constants';
+import { CHAIN_COLORS, COLOR_PALETTE, PROTOCOL_COLORS, GRAPH_CONFIG } from './constants';
 import YouAreHereMarker from './YouAreHereMarker';
 import { PostProcessing } from '@web3viz/react-graph';
 
