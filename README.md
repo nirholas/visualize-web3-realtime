@@ -1,4 +1,8 @@
 <p align="center">
+  <img src="docs/assets/svg/header-banner.svg" alt="swarming" width="800" />
+</p>
+
+<p align="center">
   <img src="docs/assets/hero.gif" alt="Real-time Web3 + AI Agent Visualization" width="800" />
 </p>
 
@@ -9,17 +13,15 @@
   <a href="https://github.com/nirholas/visualize-web3-realtime/stargazers"><img src="https://img.shields.io/github/stars/nirholas/visualize-web3-realtime?style=flat-square&color=f59e0b" alt="stars" /></a>
 </p>
 
-<h1 align="center">swarming</h1>
-
 <p align="center">
-  <strong>GPU-accelerated real-time 3D network visualization for Web3 and AI agents. Built with Next.js 14, React Three Fiber, and D3-force. 5,000+ nodes at 60fps.</strong>
+  <strong>GPU-accelerated real-time 3D network visualization for Web3 and AI agents.<br/>Built with Next.js 14, React Three Fiber, and D3-force. 5,000+ nodes at 60fps.</strong>
 </p>
 
 <p align="center">
   <a href="https://swarming.dev/world"><strong>Live Demo</strong></a> · <a href="docs/"><strong>Documentation</strong></a> · <a href="https://swarming.dev/demos"><strong>Demos</strong></a> · <a href="https://swarming.dev/benchmarks"><strong>Benchmarks</strong></a>
 </p>
 
----
+<img src="docs/assets/svg/gradient-divider.svg" alt="" width="100%" />
 
 ## Get Started in 30 Seconds
 
@@ -263,7 +265,9 @@ TVL and metrics for Aave, Uniswap, Compound, MakerDAO, and Lido via DeFi Llama p
 | **ERC-8004** | erc8004Mints, erc8004Transfers, erc8004Updates |
 | **CEX** | cexSpotTrades, cexLiquidations |
 
----
+<img src="docs/assets/svg/gradient-divider.svg" alt="" width="100%" />
+
+<br/>
 
 ## Desktop Shell UI
 
@@ -278,7 +282,9 @@ The `/world` page features a Windows 95-style desktop interface:
 - **Keyboard shortcuts** and connection status toasts
 - **7-step onboarding** walkthrough for first-time users
 
----
+<img src="docs/assets/svg/gradient-divider.svg" alt="" width="100%" />
+
+<br/>
 
 ## AI Integration
 
@@ -318,13 +324,17 @@ Full agent orchestration visualization at `/agents`:
 - **Timeline scrubber** with 1x/2x/4x playback speed
 - **Spawn effects**, completion celebrations, reasoning halos, error shake animations
 
----
+<img src="docs/assets/svg/gradient-divider.svg" alt="" width="100%" />
+
+<br/>
 
 ## ZK Proof Verification
 
 Built-in Giza LuminAIR integration for STARK proof verification. The `VerifyBadge` and `VerificationModal` components provide step-by-step verification directly in the UI. Gracefully degrades to demo mode if `@gizatech/luminair-web` is not installed.
 
----
+<img src="docs/assets/svg/gradient-divider.svg" alt="" width="100%" />
+
+<br/>
 
 ## Multi-Framework Support
 
@@ -369,7 +379,9 @@ import { SwarmingView } from '@swarming/react-native'
 <SwarmingView nodes={hubs} edges={connections} />
 ```
 
----
+<img src="docs/assets/svg/gradient-divider.svg" alt="" width="100%" />
+
+<br/>
 
 ## Packages
 
@@ -437,7 +449,9 @@ InstancedMesh (single draw call per node type), SpatialHash grids, and framerate
 | Post-processing | ~3ms | SMAA + N8AO + Bloom (configurable) |
 | React overhead | ~1ms | Minimal — graph updates bypass React state |
 
----
+<img src="docs/assets/svg/gradient-divider.svg" alt="" width="100%" />
+
+<br/>
 
 ## API Overview
 
@@ -472,7 +486,9 @@ ref.current.getCanvasElement()                     // Access canvas DOM element
 
 Full API reference: [docs/COMPONENTS.md](docs/COMPONENTS.md)
 
----
+<img src="docs/assets/svg/gradient-divider.svg" alt="" width="100%" />
+
+<br/>
 
 ## Build Your Own Provider
 
@@ -506,7 +522,9 @@ class MyProvider implements DataProvider {
 
 Guide: [docs/PROVIDERS.md](docs/PROVIDERS.md)
 
----
+<img src="docs/assets/svg/gradient-divider.svg" alt="" width="100%" />
+
+<br/>
 
 ## Environment Variables
 
@@ -557,7 +575,13 @@ Copy `.env.example` to `.env.local`. The app works without any env vars — Pump
 | PWA | Web app manifest, app icons (192/512px) |
 | SEO | Sitemap (48+ routes), robots.txt, dynamic OG images, JSON-LD |
 
----
+<p align="center">
+  <img src="docs/assets/svg/tech-stack.svg" alt="Tech stack" width="700" />
+</p>
+
+<img src="docs/assets/svg/gradient-divider.svg" alt="" width="100%" />
+
+<br/>
 
 ## Security
 
@@ -570,7 +594,9 @@ Copy `.env.example` to `.env.local`. The app works without any env vars — Pump
 - **X-Frame-Options** DENY on all routes except `/embed`
 - **Permissions-Policy** blocks camera, microphone, geolocation
 
----
+<img src="docs/assets/svg/gradient-divider.svg" alt="" width="100%" />
+
+<br/>
 
 ## Project Structure
 
@@ -634,7 +660,9 @@ prompts/                      # 19 AI development prompts
 tasks/                        # 41 project task files
 ```
 
----
+<img src="docs/assets/svg/gradient-divider.svg" alt="" width="100%" />
+
+<br/>
 
 ## Documentation
 
@@ -649,7 +677,9 @@ tasks/                        # 41 project task files
 | [Contributing](CONTRIBUTING.md) | Dev setup, code style, PR guidelines, branch naming |
 | [Changelog](CHANGELOG.md) | Notable changes grouped by theme |
 
----
+<img src="docs/assets/svg/gradient-divider.svg" alt="" width="100%" />
+
+<br/>
 
 ## Use Cases
 
@@ -664,7 +694,9 @@ tasks/                        # 41 project task files
 | **ZK Proofs** | Verification | STARK proof verification with Giza LuminAIR integration |
 | **IoT** | Sensor networks | Device telemetry, fleet tracking, energy grid flows |
 
----
+<img src="docs/assets/svg/gradient-divider.svg" alt="" width="100%" />
+
+<br/>
 
 ## Community
 
@@ -680,8 +712,6 @@ swarming is open to contributions.
 - Tests for core utilities and providers
 
 <a href="CONTRIBUTING.md">Contributing Guide</a> · <a href="https://swarming.dev/showcase">Showcase Gallery</a>
-
----
 
 <img src="docs/assets/svg/footer-wave.svg" alt="" width="100%" />
 

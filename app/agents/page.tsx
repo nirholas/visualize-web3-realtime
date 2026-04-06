@@ -20,7 +20,6 @@ import { agentThemeTokens } from '@/packages/ui/src/tokens/agent-colors';
 import { timestampedFilename } from '@/features/World/utils/screenshot';
 
 // Lazy-load the 3D force graph (Three.js not SSR-safe)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const AgentForceGraph = dynamicImport(() => import('@/features/Agents/AgentForceGraph'), {
   ssr: false,
   loading: () => (
@@ -153,7 +152,6 @@ function AgentsPageInner() {
   useEffect(() => {
     const allEvents = stats.rawEvents
       .filter((e) => e.type === 'agentEvent')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .map((e) => (e as any).data)
       .slice(0, 500);
 

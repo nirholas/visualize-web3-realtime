@@ -158,7 +158,7 @@ const AgentNodes = memo(({ sim }) => {
       </p>
       <p>
         We reuse a single <code>Object3D</code> (the <code>tempObj</code>) to compute each
-        instance's matrix. Creating a new <code>Matrix4</code> per instance per frame would generate
+        instance&apos;s matrix. Creating a new <code>Matrix4</code> per instance per frame would generate
         enormous GC pressure. The same goes for <code>tempColor</code> — one reusable{' '}
         <code>Color</code> object instead of thousands of allocations.
       </p>
@@ -166,14 +166,14 @@ const AgentNodes = memo(({ sim }) => {
       <h2>Running the Simulation Outside React</h2>
       <p>
         The second critical optimization is architectural: the force simulation runs entirely outside
-        React's render cycle. If you put simulation state in React state (via{' '}
+        React&apos;s render cycle. If you put simulation state in React state (via{' '}
         <code>useState</code> or <code>useReducer</code>), every tick of the simulation triggers a
         re-render of your component tree. At 60fps, that means React is diffing and reconciling 60
         times per second — for a component tree that might include hundreds of child components.
       </p>
       <p>
         Instead, we encapsulate the simulation in a plain class that holds mutable node and edge
-        arrays. React never knows the positions changed. The Three.js render loop (via R3F's{' '}
+        arrays. React never knows the positions changed. The Three.js render loop (via R3F&apos;s{' '}
         <code>useFrame</code>) reads directly from these mutable arrays every frame.
       </p>
 
@@ -225,7 +225,7 @@ class ForceGraphSimulation {
         By keeping the simulation as a plain mutable object, we get two major wins. First, zero
         React re-renders from position updates. The only time React re-renders is when the node list
         itself changes (a new token appears, or a new batch of agents arrives). Second, the
-        simulation's <code>tick()</code> method can be called from <code>useFrame</code>, which runs
+        simulation&apos;s <code>tick()</code> method can be called from <code>useFrame</code>, which runs
         synchronously inside the Three.js animation loop — no scheduling overhead, no batched
         updates.
       </p>
@@ -254,7 +254,7 @@ class ForceGraphSimulation {
 
       <h3>Collision radius</h3>
       <p>
-        The collision force uses each node's actual radius plus a <strong>0.3</strong> unit padding.
+        The collision force uses each node&apos;s actual radius plus a <strong>0.3</strong> unit padding.
         This prevents overlap while maintaining tight clusters. Without the padding, nodes at
         identical radii can occupy the exact same pixel and flicker.
       </p>
@@ -322,7 +322,7 @@ const node: ForceNode = {
         The golden angle (approximately 137.5 degrees, derived from <code>PI * (1 + sqrt(5))</code>)
         is the same angle that sunflower seeds use to pack efficiently. When applied to spherical
         coordinates, it produces a Fibonacci sphere — a near-uniform distribution of points on a
-        sphere's surface regardless of how many points there are. Each new hub added gets a position
+        sphere&apos;s surface regardless of how many points there are. Each new hub added gets a position
         that naturally avoids clustering with existing hubs.
       </p>
       <p>

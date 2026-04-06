@@ -109,8 +109,8 @@ React Three Fiber     ← useFrame() reads node positions every frame`} />
 }`} />
 
       <p>
-        Why so minimal? Because providers are the boundary between "the outside world" and
-        "our application." The outside world is messy — WebSocket protocols differ, data
+        Why so minimal? Because providers are the boundary between &ldquo;the outside world&rdquo; and
+        &ldquo;our application.&rdquo; The outside world is messy — WebSocket protocols differ, data
         formats vary, reconnection strategies depend on the source. By keeping the interface
         small, we push all that complexity <em>inside</em> the provider implementation. The
         rest of the application sees a clean, uniform stream of typed events.

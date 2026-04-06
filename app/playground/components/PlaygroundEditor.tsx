@@ -80,6 +80,7 @@ export function PlaygroundEditor({ code, onChange, error }: PlaygroundEditorProp
       state,
       parent: containerRef.current,
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only initialize once
 
   useEffect(() => {

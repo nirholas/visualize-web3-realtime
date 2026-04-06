@@ -21,7 +21,6 @@ import type { WindowId } from '@/features/World/desktop';
 import { useOnboarding, OnboardingCoachMark, OnboardingPrompt } from '@/features/World/onboarding';
 
 // Lazy-load the 3D force graph to avoid SSR issues with Three.js
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ForceGraph = dynamic(() => import('@/features/World/ForceGraph'), {
   ssr: false,
   loading: () => <div style={{ width: '100%', height: '100%', background: '#0a0a12' }} />,
