@@ -484,6 +484,8 @@ export interface ForceGraphHandle {
   getHubIds: () => string[];
   /** Find which hub an agent belongs to by wallet address */
   findAgentHub: (address: string) => { hubIndex: number; hubMint: string } | null;
+  /** Animate camera to focus on a specific hub node by index */
+  focusHub: (index: number, durationMs?: number) => void;
   /** Animate camera to focus on a specific agent node */
   focusAgent: (address: string, durationMs?: number) => void;
 }
@@ -560,6 +562,15 @@ const ForceGraph = forwardRef<ForceGraphHandle, ForceGraphProps>(
         const hubIndex = hubs.findIndex((h) => h.id === agentNode.hubTokenAddress);
         if (hubIndex === -1) return null;
         return { hubIndex, hubMint: agentNode.hubTokenAddress };
+      },
+      focusHub: (index: number) => {
+        const hubs = sim.nodes.filter((n) => n.type === 'hub');
+        const hub = hubs[index];
+        if (!hub) return;
+        const hx = hub.x ?? 0;
+        const hy = hub.y ?? 0;
+        const hz = hub.z ?? 0;
+        cameraControlsRef.current?.setLookAt(hx, hy + 15, hz + 12, hx, hy, hz, true);
       },
       focusAgent: (address: string, durationMs = 800) => {
         const lowerAddr = address.toLowerCase();
