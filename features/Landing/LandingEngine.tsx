@@ -11,7 +11,7 @@
  * - Pointer events for drag/pause interaction
  */
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import {
   prepareWithSegments,
   layoutWithLines,
@@ -105,37 +105,11 @@ type HeadlineFit = {
   lines: PositionedLine[]
 }
 
-// ── Animated counter hook ───────────────────────────────────────────────────
-
-function useAnimatedCounter(target: number, duration: number = 2000, delay: number = 0): number {
-  const [value, setValue] = useState(0)
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      const start = performance.now()
-      function tick() {
-        const elapsed = performance.now() - start
-        const t = Math.min(elapsed / duration, 1)
-        // ease-out cubic
-        const eased = 1 - Math.pow(1 - t, 3)
-        setValue(Math.round(target * eased))
-        if (t < 1) requestAnimationFrame(tick)
-      }
-      requestAnimationFrame(tick)
-    }, delay)
-    return () => clearTimeout(timeout)
-  }, [target, duration, delay])
-  return value
-}
-
 // ── Component ───────────────────────────────────────────────────────────────
 
 export default function LandingEngine() {
   const stageRef = useRef<HTMLDivElement>(null)
   const cleanupRef = useRef<(() => void) | null>(null)
-
-  // Animated stat counters
-  const nodeCount = useAnimatedCounter(5000, 2200, 300)
-  const fpsCount = useAnimatedCounter(60, 1800, 500)
 
   useEffect(() => {
     const stage = stageRef.current
@@ -337,12 +311,7 @@ export default function LandingEngine() {
         <a href="/playground">Playground</a>
         <a href="/benchmarks">Benchmarks</a>
       </nav>
-      <div className="le-stats">
-        <span className="le-stats-line"><strong>{nodeCount.toLocaleString()}</strong> Nodes</span>
-        <span className="le-stats-line"><strong>{fpsCount}</strong> Frames Per Second</span>
-        <span className="le-stats-line"><strong>Zero</strong> Latency</span>
-        <span className="le-stats-line">Not a Dashboard. A Living Network.</span>
-      </div>
+
       <div className="le-hint">Drag the orbs &middot; Click to pause &middot; Zero DOM reads</div>
       <button className="le-breathe-btn" id="le-breathe-btn">See the Network Breathe</button>
       <a className="le-cta" href="/world">Enter World &rarr;</a>

@@ -57,9 +57,9 @@ interface ForceEdge extends SimulationLinkDatum<ForceNode> {
 // ---------------------------------------------------------------------------
 
 const MAX_AGENT_NODES = 5000;
-const HUB_BASE_RADIUS = 0.8;
-const HUB_MAX_RADIUS = 3.0;
-const AGENT_RADIUS = 0.35;
+const HUB_BASE_RADIUS = 1.5;
+const HUB_MAX_RADIUS = 5.0;
+const AGENT_RADIUS = 0.06;
 
 // Edge highlight bloom color (overbright blue triggers selective bloom)
 const EDGE_HIGHLIGHT_R = 0.48;
@@ -87,9 +87,9 @@ class ForceGraphSimulation {
     // numDimensions=3 enables full volumetric (spherical) layout
     this.simulation = forceSimulation<ForceNode>([], 3)
       .numDimensions(3)
-      .force('charge', forceManyBody<ForceNode>().strength((d) => (d.type === 'hub' ? -200 : -8)))
-      .force('center', forceCenter<ForceNode>(0, 0, 0).strength(0.03))
-      .force('collide', forceCollide<ForceNode>().radius((d) => d.radius + 0.3).strength(0.7))
+      .force('charge', forceManyBody<ForceNode>().strength((d) => (d.type === 'hub' ? -120 : -0.3)))
+      .force('center', forceCenter<ForceNode>(0, 0, 0).strength(0.12))
+      .force('collide', forceCollide<ForceNode>().radius((d) => d.type === 'hub' ? d.radius + 1 : d.radius + 0.05).strength(0.4))
       .force(
         'link',
         forceLink<ForceNode, ForceEdge>([])
@@ -97,18 +97,18 @@ class ForceGraphSimulation {
           .distance((d) => {
             const src = d.source as ForceNode;
             const tgt = d.target as ForceNode;
-            if (src.type === 'hub' && tgt.type === 'hub') return 25;
-            return 5 + Math.random() * 3;
+            if (src.type === 'hub' && tgt.type === 'hub') return 18;
+            return 1.5 + Math.random() * 2;
           })
           .strength((d) => {
             const src = d.source as ForceNode;
             const tgt = d.target as ForceNode;
-            if (src.type === 'hub' && tgt.type === 'hub') return 0.1;
-            return 0.3;
+            if (src.type === 'hub' && tgt.type === 'hub') return 0.15;
+            return 0.6;
           }),
       )
-      .alphaDecay(0.01)
-      .velocityDecay(0.4);
+      .alphaDecay(0.008)
+      .velocityDecay(0.5);
   }
 
   update(topTokens: TopToken[], traderEdges: TraderEdge[]) {
@@ -132,7 +132,7 @@ class ForceGraphSimulation {
         // Distribute hubs on a sphere using spherical coordinates
         const phi = Math.acos(1 - 2 * (i + 0.5) / Math.max(topTokens.length, 1));
         const theta = Math.PI * (1 + Math.sqrt(5)) * i; // golden angle
-        const dist = 15 + Math.random() * 5;
+        const dist = 10 + Math.random() * 4;
         const node: ForceNode = {
           id: t.tokenAddress,
           type: 'hub',
@@ -167,7 +167,7 @@ class ForceGraphSimulation {
       // Distribute agents spherically around their hub
       const aPhi = Math.acos(1 - 2 * Math.random());
       const aTheta = Math.random() * Math.PI * 2;
-      const dist = 2 + Math.random() * 4;
+      const dist = 0.5 + Math.random() * 2.5;
       const node: ForceNode = {
         id: agentId,
         type: 'agent',
@@ -687,7 +687,7 @@ const Edges = memo<{
   return (
     <lineSegments ref={lineRef}>
       <bufferGeometry />
-      <lineBasicMaterial vertexColors transparent opacity={0.85} toneMapped={false} />
+      <lineBasicMaterial vertexColors transparent opacity={0.08} toneMapped={false} />
     </lineSegments>
   );
 });
@@ -697,7 +697,7 @@ Edges.displayName = 'Edges';
 // Animated edge particles — glowing dots flowing along edges (agent → hub)
 // ---------------------------------------------------------------------------
 
-const PARTICLE_COUNT = 300;
+const PARTICLE_COUNT = 150;
 const PARTICLE_SPEED = 2.5;
 
 const EdgeParticles = memo<{ sim: ForceGraphSimulation; isDark?: boolean }>(({ sim, isDark = true }) => {
@@ -784,7 +784,7 @@ const EdgeParticles = memo<{ sim: ForceGraphSimulation; isDark?: boolean }>(({ s
       px /= pLen; py /= pLen; pz /= pLen;
 
       tempObj.position.set(x + px * arc, y + py * arc, z + pz * arc);
-      tempObj.scale.setScalar(0.08);
+      tempObj.scale.setScalar(0.04);
       tempObj.updateMatrix();
       mesh.setMatrixAt(i, tempObj.matrix);
 
@@ -1045,7 +1045,7 @@ const CameraSetup = memo<{ apiRef: React.MutableRefObject<CameraApi | null> }>((
     if (!controls) return;
 
     // Angled orbital view — ~25° from horizontal for clearer depth
-    controls.setLookAt(0, 25, 65, 0, 0, 0, false);
+    controls.setLookAt(0, 80, 180, 0, 0, 0, false);
 
     // Smooth damping for premium feel
     controls.smoothTime = 0.35;
@@ -1053,7 +1053,7 @@ const CameraSetup = memo<{ apiRef: React.MutableRefObject<CameraApi | null> }>((
 
     // Distance constraints
     controls.minDistance = 10;
-    controls.maxDistance = 200;
+    controls.maxDistance = 500;
 
     // Unrestricted polar angle — full 360° vertical rotation (no floor clamp)
     controls.minPolarAngle = 0;
@@ -1338,7 +1338,7 @@ const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function F
   return (
     <div ref={containerRef} style={{ width: '100%', height, position: 'relative' }}>
       <Canvas
-        camera={{ fov: 45, near: 0.1, far: 500, position: [0, 30, 50] }}
+        camera={{ fov: 45, near: 0.1, far: 1000, position: [0, 80, 180] }}
         style={{ background: shareColors?.background ?? '#0a0a12' }}
         gl={{ antialias: false, alpha: false, stencil: false }}
         dpr={[1, 1.5]}

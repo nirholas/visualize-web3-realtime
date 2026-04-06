@@ -158,7 +158,7 @@ function CustomGraph() {
         return colors[node.category] || '#555566';
       }}
       // Camera
-      cameraPosition={[0, 0, 50]}
+      cameraPosition={[0, 0, 150]}
       enableOrbitalControls
       // Physics
       physics={{

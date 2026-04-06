@@ -179,7 +179,7 @@ export default App;`}
   }}
 
   // Camera
-  cameraPosition={[0, 0, 120]}
+  cameraPosition={[0, 0, 350]}
   enableOrbitalControls
 />`}
         language="tsx"

@@ -118,7 +118,7 @@ const SwarmingCanvas = forwardRef<SwarmingHandle, SwarmingCanvasProps>(function 
   return (
     <div ref={containerRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
       <Canvas
-        camera={{ fov, near: 0.1, far: 500, position: cameraPosition }}
+        camera={{ fov, near: 0.1, far: 1000, position: cameraPosition }}
         style={{ background: theme.background }}
         gl={{ antialias: false, alpha: false, stencil: false }}
         dpr={[1, 1.5]}

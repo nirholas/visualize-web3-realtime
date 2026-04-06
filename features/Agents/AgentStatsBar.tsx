@@ -1,56 +1,8 @@
 'use client';
 
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo } from 'react';
 import { agentThemeTokens } from '@/packages/ui/src/tokens/agent-colors';
-
-// ---------------------------------------------------------------------------
-// Animated Value Hook
-// ---------------------------------------------------------------------------
-
-function useAnimatedValue(target: number, duration = 400): number {
-  const [display, setDisplay] = useState(target);
-  const prevRef = useRef(target);
-  const rafRef = useRef<number>();
-
-  useEffect(() => {
-    const from = prevRef.current;
-    const to = target;
-    prevRef.current = to;
-
-    if (from === to) return;
-
-    const start = performance.now();
-    const diff = to - from;
-
-    function tick(now: number) {
-      const elapsed = now - start;
-      const t = Math.min(elapsed / duration, 1);
-      // ease-out cubic
-      const eased = 1 - Math.pow(1 - t, 3);
-      setDisplay(Math.round(from + diff * eased));
-      if (t < 1) {
-        rafRef.current = requestAnimationFrame(tick);
-      }
-    }
-
-    rafRef.current = requestAnimationFrame(tick);
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, [target, duration]);
-
-  return display;
-}
-
-// ---------------------------------------------------------------------------
-// Number Formatting
-// ---------------------------------------------------------------------------
-
-function formatNumber(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString();
-}
+import { useAnimatedValue, formatNumber } from './utils/shared';
 
 // ---------------------------------------------------------------------------
 // Stat Pill

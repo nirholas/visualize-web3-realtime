@@ -354,7 +354,7 @@ interface CameraApi {
 const CameraSetup = memo<{
   apiRef: React.MutableRefObject<CameraApi | null>;
   initialPosition?: [number, number, number];
-}>(({ apiRef, initialPosition = [0, 55, 12] }) => {
+}>(({ apiRef, initialPosition = [0, 160, 40] }) => {
   const { camera } = useThree();
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const animRef = useRef<CameraAnimation | null>(null);
@@ -459,7 +459,7 @@ const ForceGraph = forwardRef<GraphHandle, ForceGraphProps>(function ForceGraph(
     showGround = false,
     showShadows = false,
     fov = 45,
-    cameraPosition = [0, 55, 12],
+    cameraPosition = [0, 160, 40],
     labelStyle,
     postProcessing,
     renderer = 'auto',
@@ -532,7 +532,7 @@ const ForceGraph = forwardRef<GraphHandle, ForceGraphProps>(function ForceGraph(
   return (
     <div ref={containerRef} style={{ width: '100%', height, position: 'relative' }}>
       <Canvas
-        camera={{ fov, near: 0.1, far: 500, position: cameraPosition }}
+        camera={{ fov, near: 0.1, far: 1000, position: cameraPosition }}
         style={{ background }}
         gl={{ antialias: false, alpha: false, stencil: false }}
         dpr={[1, 1.5]}

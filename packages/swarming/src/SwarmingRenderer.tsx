@@ -334,7 +334,7 @@ const CameraSetup = memo<{ initialPosition: [number, number, number] }>(
         enableDamping
         dampingFactor={0.15}
         minDistance={10}
-        maxDistance={150}
+        maxDistance={500}
         enablePan
       />
     );
@@ -371,7 +371,7 @@ function SwarmingRenderer({
   simulationConfig,
   showLabels = true,
   fov = 45,
-  cameraPosition = [0, 55, 12],
+  cameraPosition = [0, 160, 40],
   postProcessing,
   onReady,
 }: SwarmingRendererProps) {
@@ -400,7 +400,7 @@ function SwarmingRenderer({
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <Canvas
-        camera={{ fov, near: 0.1, far: 500, position: cameraPosition }}
+        camera={{ fov, near: 0.1, far: 1000, position: cameraPosition }}
         style={{ background }}
         gl={{ antialias: false, alpha: false, stencil: false }}
         dpr={[1, 1.5]}

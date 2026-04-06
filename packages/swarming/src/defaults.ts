@@ -19,7 +19,7 @@ export interface CameraConfig {
 }
 
 export const DEFAULT_CAMERA: Required<CameraConfig> = {
-  position: [0, 55, 12],
+  position: [0, 160, 40],
   fov: 45,
 };
 

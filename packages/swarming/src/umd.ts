@@ -322,7 +322,7 @@ function create(selector: string, options: SwarmingOptions = {}): SwarmingInstan
         },
         showLabels: options.showLabels !== false,
         fov: options.fov ?? 45,
-        cameraPosition: options.cameraPosition ?? [0, 55, 12],
+        cameraPosition: options.cameraPosition ?? [0, 160, 40],
         postProcessing,
         onReady: () => emit('ready'),
       }),

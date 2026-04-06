@@ -902,7 +902,7 @@ const CameraSetup = memo<{ apiRef: React.MutableRefObject<CameraApi | null> }>((
   const animRef = useRef<CameraAnimation | null>(null);
 
   useEffect(() => {
-    camera.position.set(0, 40, 20);
+    camera.position.set(0, 120, 60);
     camera.lookAt(0, 0, 0);
   }, [camera]);
 
@@ -964,7 +964,7 @@ const CameraSetup = memo<{ apiRef: React.MutableRefObject<CameraApi | null> }>((
       enableDamping
       dampingFactor={0.15}
       minDistance={10}
-      maxDistance={150}
+      maxDistance={500}
       screenSpacePanning
     />
   );
@@ -1349,7 +1349,7 @@ const AgentForceGraphInner = forwardRef<AgentForceGraphHandle, AgentForceGraphPr
     return (
       <div ref={containerRef} style={{ width: '100%', height, position: 'relative' }}>
         <Canvas
-          camera={{ fov: 45, near: 0.1, far: 500, position: [0, 40, 20] }}
+          camera={{ fov: 45, near: 0.1, far: 1000, position: [0, 120, 60] }}
           style={{ background: shareColors?.background ?? backgroundColor }}
           gl={{ antialias: true, alpha: false }}
           dpr={[1, 1.5]}

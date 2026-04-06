@@ -1,35 +1,53 @@
 'use client'
 
 import { useRef } from 'react'
-import {
-  motion,
-  useInView,
-  type Variant,
-} from 'framer-motion'
+import { motion, useInView, type Variants } from 'framer-motion'
 
 interface PopOutElementProps {
   children: React.ReactNode
-  /** Delay in seconds before this element animates in */
   delay?: number
-  /** Starting scale (default 0.8) */
   fromScale?: number
-  /** className for the wrapper */
   className?: string
-  /** Override the spring config */
   spring?: { stiffness?: number; damping?: number; mass?: number }
-  /** Direction the element slides from */
   from?: 'bottom' | 'left' | 'right' | 'top'
-  /** Distance in px for the slide */
   distance?: number
-  /** Whether animation is driven externally (skip inView trigger) */
   show?: boolean
 }
 
-const directionOffsets: Record<string, (d: number) => { x: number; y: number }> = {
-  bottom: (d) => ({ x: 0, y: d }),
-  top: (d) => ({ x: 0, y: -d }),
-  left: (d) => ({ x: -d, y: 0 }),
-  right: (d) => ({ x: d, y: 0 }),
+function getVariants(
+  from: string,
+  distance: number,
+  fromScale: number,
+  delay: number,
+  spring: { stiffness?: number; damping?: number; mass?: number },
+): Variants {
+  const offsets: Record<string, { x: number; y: number }> = {
+    bottom: { x: 0, y: distance },
+    top: { x: 0, y: -distance },
+    left: { x: -distance, y: 0 },
+    right: { x: distance, y: 0 },
+  }
+  const offset = offsets[from] ?? offsets.bottom
+
+  return {
+    hidden: {
+      opacity: 0,
+      scale: fromScale,
+      x: offset.x,
+      y: offset.y,
+    },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      x: 0,
+      y: 0,
+      transition: {
+        type: 'spring' as const,
+        ...spring,
+        delay,
+      },
+    },
+  }
 }
 
 export function PopOutElement({
@@ -46,34 +64,15 @@ export function PopOutElement({
   const isInView = useInView(ref, { once: true, margin: '-10% 0px' })
 
   const visible = show !== undefined ? show : isInView
-
-  const offset = directionOffsets[from](distance)
-
-  const hidden: Variant = {
-    opacity: 0,
-    scale: fromScale,
-    x: offset.x,
-    y: offset.y,
-  }
-
-  const visibleVariant: Variant = {
-    opacity: 1,
-    scale: 1,
-    x: 0,
-    y: 0,
-  }
+  const v = getVariants(from, distance, fromScale, delay, spring)
 
   return (
     <motion.div
       ref={ref}
       className={className}
-      initial={hidden}
-      animate={visible ? visibleVariant : hidden}
-      transition={{
-        type: 'spring',
-        ...spring,
-        delay,
-      }}
+      variants={v}
+      initial="hidden"
+      animate={visible ? 'visible' : 'hidden'}
     >
       {children}
     </motion.div>

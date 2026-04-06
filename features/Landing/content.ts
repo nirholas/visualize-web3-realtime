@@ -18,10 +18,7 @@ Search for any entity and watch the graph reorganize around it. Toggle data sour
 
 Every node. Every edge. Every second. The network is live.`
 
-export const PULLQUOTE_TEXTS = [
-  '5,000 NODES. 60 FRAMES PER SECOND. ZERO LATENCY.',
-  'NOT A DASHBOARD. A LIVING NETWORK.',
-]
+export const PULLQUOTE_TEXTS: string[] = []
 
 export type PullquotePlacement = {
   colIdx: number
@@ -30,7 +27,4 @@ export type PullquotePlacement = {
   side: 'left' | 'right'
 }
 
-export const PULLQUOTE_PLACEMENTS: PullquotePlacement[] = [
-  { colIdx: 2, yFrac: 0.05, wFrac: 0.65, side: 'right' },
-  { colIdx: 2, yFrac: 0.18, wFrac: 0.65, side: 'right' },
-]
+export const PULLQUOTE_PLACEMENTS: PullquotePlacement[] = []
