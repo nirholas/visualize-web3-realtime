@@ -1,21 +1,11 @@
 'use client';
 
+import { AnimatePresence, m } from 'framer-motion';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import type { AgentEvent, AgentIdentity } from '@web3viz/core';
 import { agentThemeTokens } from '@/packages/ui/src/tokens/agent-colors';
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function timeAgo(ts: number, now: number): string {
-  const diff = now - ts;
-  const secs = Math.floor(diff / 1000);
-  if (secs < 5) return 'just now';
-  if (secs < 60) return `${secs}s ago`;
-  const mins = Math.floor(secs / 60);
-  return `${mins}m ago`;
-}
+import { timeAgo } from './utils/shared';
+import { FOCUS_RING } from './utils/accessibility';
 
 function getEventIcon(type: string): string {
   if (type.startsWith('tool:')) return '⚡';
@@ -77,7 +67,12 @@ const EventRow = memo<{
   const { title, sub } = getEventLabel(event, agentName);
 
   return (
-    <button
+    <m.button
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, transition: { duration: 0.15 } }}
+      initial={{ opacity: isNew ? 0 : 1, x: isNew ? 12 : 0 }}
+      layout
+      transition={{ duration: 0.25, ease: 'easeOut' }}
       onClick={onClick}
       style={{
         display: 'flex',
@@ -90,7 +85,13 @@ const EventRow = memo<{
         background: isNew ? 'rgba(192,132,252,0.05)' : 'transparent',
         cursor: 'pointer',
         fontFamily: "'IBM Plex Mono', monospace",
-        transition: 'background 0.3s',
+      }}
+      onFocus={(e) => {
+        Object.assign(e.currentTarget.style, FOCUS_RING);
+      }}
+      onBlur={(e) => {
+        e.currentTarget.style.outline = 'none';
+        e.currentTarget.style.outlineOffset = '';
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
@@ -112,7 +113,7 @@ const EventRow = memo<{
       >
         {sub}
       </div>
-    </button>
+    </m.button>
   );
 });
 EventRow.displayName = 'EventRow';
@@ -242,11 +243,12 @@ const AgentLiveFeed = memo<AgentLiveFeedProps>(({ events, agents, onSelectAgent,
               outline: 'none',
             }}
             onFocus={(e) => {
-              e.currentTarget.style.outline = `2px solid ${tokens.agentHubActive}`;
+              Object.assign(e.currentTarget.style, FOCUS_RING);
             }}
             onBlur={(e) => {
               e.currentTarget.style.outline = 'none';
-            }}
+              e.currentTarget.style.outlineOffset = '';
+            }}}
           >
             ↑ LIVE
           </button>
@@ -281,19 +283,21 @@ const AgentLiveFeed = memo<AgentLiveFeedProps>(({ events, agents, onSelectAgent,
             Waiting for agent activity...
           </div>
         ) : (
-          visible.map((evt) => {
-            const agent = agents.get(evt.agentId);
-            return (
-              <EventRow
-                key={evt.eventId}
-                event={evt}
-                agentName={agent?.name ?? evt.agentId.slice(0, 8)}
-                isNew={newIds.has(evt.eventId)}
-                now={now}
-                onClick={() => onSelectAgent?.(evt.agentId)}
-              />
-            );
-          })
+          <AnimatePresence initial={false} mode="popLayout">
+            {visible.map((evt) => {
+              const agent = agents.get(evt.agentId);
+              return (
+                <EventRow
+                  key={evt.eventId}
+                  event={evt}
+                  agentName={agent?.name ?? evt.agentId.slice(0, 8)}
+                  isNew={newIds.has(evt.eventId)}
+                  now={now}
+                  onClick={() => onSelectAgent?.(evt.agentId)}
+                />
+              );
+            })}
+          </AnimatePresence>
         )}
       </div>
 

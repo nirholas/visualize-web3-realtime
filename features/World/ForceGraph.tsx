@@ -431,13 +431,12 @@ function HubNodeMesh({
           />
         </mesh>
       )}
-      {isHovered && (
-        <ProtocolLabel
-          name={`🤖 ${sim.nodeMap.get(nodeId)?.label ?? 'UNKNOWN'}`}
-          position={[0, radiusRef.current + 1, 0]}
-          visible
-        />
-      )}
+      {/* Always show hub label — hubs are the anchor points of the point cloud */}
+      <ProtocolLabel
+        name={sim.nodeMap.get(nodeId)?.label ?? 'UNKNOWN'}
+        position={[0, radiusRef.current + 2, 0]}
+        visible
+      />
     </group>
   );
 }
@@ -1052,7 +1051,7 @@ const CameraSetup = memo<{ apiRef: React.MutableRefObject<CameraApi | null> }>((
     controls.draggingSmoothTime = 0.15;
 
     // Distance constraints
-    controls.minDistance = 10;
+    controls.minDistance = 30;
     controls.maxDistance = 500;
 
     // Unrestricted polar angle — full 360° vertical rotation (no floor clamp)

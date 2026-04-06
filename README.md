@@ -1,23 +1,23 @@
 <p align="center">
-  <img src="docs/assets/hero.gif" alt="swarming — real-time network visualization" width="800" />
+  <img src="docs/assets/hero.gif" alt="Real-time Web3 + AI Agent Visualization" width="800" />
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@swarming/core"><img src="https://img.shields.io/npm/v/@swarming/core?style=flat-square&color=6366f1" alt="npm version" /></a>
-  <a href="https://bundlephobia.com/package/@swarming/react"><img src="https://img.shields.io/bundlephobia/minzip/@swarming/react?style=flat-square&color=22c55e&label=bundle" alt="bundle size" /></a>
+  <a href="https://www.npmjs.com/package/@web3viz/core"><img src="https://img.shields.io/npm/v/@web3viz/core?style=flat-square&color=6366f1" alt="npm version" /></a>
+  <a href="https://bundlephobia.com/package/@web3viz/react-graph"><img src="https://img.shields.io/bundlephobia/minzip/@web3viz/react-graph?style=flat-square&color=22c55e&label=bundle" alt="bundle size" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="license" /></a>
-  <a href="https://discord.gg/swarming"><img src="https://img.shields.io/discord/0000000000?style=flat-square&logo=discord&logoColor=white&color=5865F2&label=discord" alt="discord" /></a>
-  <a href="https://github.com/nirholas/swarming.world/stargazers"><img src="https://img.shields.io/github/stars/nirholas/swarming.world?style=flat-square&color=f59e0b" alt="stars" /></a>
+  <a href="https://discord.gg/your-discord"><img src="https://img.shields.io/discord/0000000000?style=flat-square&logo=discord&logoColor=white&color=5865F2&label=discord" alt="discord" /></a>
+  <a href="https://github.com/nirholas/visualize-web3-realtime/stargazers"><img src="https://img.shields.io/github/stars/nirholas/visualize-web3-realtime?style=flat-square&color=f59e0b" alt="stars" /></a>
 </p>
 
-<h1 align="center">swarming</h1>
+<h1 align="center">Real-time Web3 + AI Agent Visualization</h1>
 
 <p align="center">
-  <strong>GPU-accelerated real-time network visualization. 5,000+ nodes at 60fps. Any data stream.</strong>
+  <strong>A GPU-accelerated, real-time network visualization engine for Web3 and AI agents, built with Next.js 14, React Three Fiber, and D3-force. Capable of rendering over 5,000 nodes at 60fps.</strong>
 </p>
 
 <p align="center">
-  <a href="https://swarming.dev/world"><strong>Live Demo</strong></a> · <a href="docs/"><strong>Documentation</strong></a> · <a href="https://discord.gg/swarming"><strong>Discord</strong></a>
+  <a href="https://www.web3viz.dev/world"><strong>Live Demo</strong></a> · <a href="docs/"><strong>Documentation</strong></a> · <a href="https://discord.gg/your-discord"><strong>Discord</strong></a>
 </p>
 
 ---
@@ -25,28 +25,30 @@
 ## Get Started in 30 Seconds
 
 ```bash
-npm install @swarming/core @swarming/react
+npm install @web3viz/core @web3viz/react-graph
 ```
 
 ```tsx
-import { ForceGraph } from '@swarming/react'
+import { ForceGraph } from '@web3viz/react-graph'
 
 function App() {
-  return <ForceGraph nodes={hubs} edges={connections} />
+  const nodes = //... your nodes
+  const edges = //... your edges
+  return <ForceGraph nodes={nodes} edges={edges} />
 }
 ```
 
 GPU-accelerated force-directed graph with instanced rendering, mouse repulsion, proximity webs, and spring physics — out of the box.
 
-Or scaffold a full app:
+Or scaffold the full application:
 
 ```bash
-git clone https://github.com/nirholas/swarming.world.git
-cd swarming.world
+git clone https://github.com/nirholas/visualize-web3-realtime.git
+cd visualize-web3-realtime
 npm install && npm run dev
 ```
 
-Open **http://localhost:3100** — live visualization starts immediately. No API keys needed.
+Open **http://localhost:3100** — the live visualization will start immediately. No API keys needed for the default providers.
 
 ---
 
@@ -61,8 +63,8 @@ Open **http://localhost:3100** — live visualization starts immediately. No API
 </td>
 <td width="33%" align="center">
 <img src="docs/assets/feature-websocket.gif" alt="Any data source" width="240" /><br />
-<strong>Any data source</strong><br />
-<sub>Built-in provider system — plug in WebSockets, REST, or custom streams</sub>
+<strong>Real-time Data Providers</strong><br />
+<sub>Built-in provider system for WebSockets, REST, or any custom data stream.</sub>
 </td>
 <td width="33%" align="center">
 <img src="docs/assets/feature-physics.gif" alt="Force-directed physics" width="240" /><br />
@@ -78,7 +80,7 @@ Open **http://localhost:3100** — live visualization starts immediately. No API
 </td>
 <td width="33%" align="center">
 <img src="docs/assets/feature-themes.gif" alt="Themes" width="240" /><br />
-<strong>Theming & design system</strong><br />
+<strong>Theming & Design System</strong><br />
 <sub>Full component library with dark/light presets and CSS custom properties</sub>
 </td>
 <td width="33%" align="center">
@@ -91,13 +93,50 @@ Open **http://localhost:3100** — live visualization starts immediately. No API
 
 ---
 
+## Project Structure
+
+This project is a monorepo managed with npm workspaces and Turborepo.
+
+*   **`app`**: The main Next.js 14 application.
+*   **`packages`**: Shared, reusable packages.
+    *   `@web3viz/core`: Core types, interfaces, and constants.
+    *   `@web3viz/providers`: Data providers for real-time data.
+    *   `@web3viz/react-graph`: Reusable React components for the force-directed graph.
+    *   `@web3viz/ui`: Shared UI component library.
+*   **`features`**: Feature-specific React components used in the `app`.
+
+---
+
+## Core Technologies
+
+*   **Next.js 14**
+*   **React 18**
+*   **React Three Fiber & Drei**
+*   **Three.js**
+*   **D3-force**
+*   **Tailwind CSS**
+*   **TypeScript**
+*   **Vitest**
+
+---
+
+## Build and Development
+
+*   `npm run dev`: Starts the development server.
+*   `npm run build`: Creates a production build.
+*   `npm run test`: Runs tests.
+*   `npm run lint`: Lints the codebase.
+*   `npm run typecheck`: Checks for TypeScript errors.
+
+---
+
 ## Use Cases
 
 | | Application | Description |
 |---|---|---|
-| **Infrastructure** | Service meshes | Kubernetes pods, API traffic, CI/CD pipelines, log clustering |
-| **AI Agents** | Orchestration graphs | Multi-agent task execution, tool calls, swarm coordination |
-| **IoT** | Sensor networks | Device telemetry, fleet tracking, energy grid flows |
+| **Web3** | DeFi, NFTs, DAOs | Real-time visualization of on-chain activity, tokenomics, and governance. |
+| **AI Agents** | Orchestration graphs | Multi-agent task execution, tool calls, swarm coordination. |
+| **Infrastructure** | Service meshes | Kubernetes pods, API traffic, CI/CD pipelines, log clustering. |
 | **Social** | Interaction networks | Chat flows, follow graphs, content virality cascades |
 | **Finance** | Trading activity | Order flow, liquidity movements, market microstructure |
 | **Blockchain** | Transaction flows | DEX swaps, token launches, bridge messages in real-time |
