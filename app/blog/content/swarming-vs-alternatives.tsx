@@ -419,7 +419,7 @@ const cy = cytoscape({
       <p>
         Try Swarming at{" "}
         <a href="https://swarming.world">swarming.world</a>, or check out the{" "}
-        <a href="https://github.com/nicholasgriffintn/swarming">
+        <a href="https://github.com/nirholas/swarming">
           source on GitHub
         </a>
         .

@@ -21,7 +21,7 @@
   "homepage": "https://swarming.dev",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nicholasgriffintn/visualize-web3-realtime"
+    "url": "https://github.com/nirholas/visualize-web3-realtime"
   },
   "license": "MIT",
   "private": true,

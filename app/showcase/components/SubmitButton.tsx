@@ -7,7 +7,7 @@ function SubmitButton() {
 
   return (
     <a
-      href="https://github.com/nicholasgriffintn/visualize-web3-realtime/discussions/new?category=show-and-tell"
+      href="https://github.com/nirholas/visualize-web3-realtime/discussions/new?category=show-and-tell"
       target="_blank"
       rel="noopener noreferrer"
       onMouseEnter={() => setHovered(true)}

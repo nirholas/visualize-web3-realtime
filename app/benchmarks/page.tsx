@@ -439,7 +439,7 @@ const METHODOLOGY = [
 const TESTED_LIBS = [
   {
     name: 'swarming',
-    url: 'https://github.com/nicholasgriffintn/visualize-web3-realtime',
+    url: 'https://github.com/nirholas/visualize-web3-realtime',
     desc: 'Three.js + d3-force-3d (this project)',
   },
   {

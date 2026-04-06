@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     '3d graph javascript',
     'graph visualization library',
   ],
-  authors: [{ name: 'Swarming Contributors', url: 'https://github.com/nicholasgriffintn/visualize-web3-realtime' }],
+  authors: [{ name: 'Swarming Contributors', url: 'https://github.com/nirholas/visualize-web3-realtime' }],
   creator: 'Swarming',
   publisher: 'Swarming',
   alternates: {

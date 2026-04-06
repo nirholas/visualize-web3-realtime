@@ -16,7 +16,7 @@ export default function WebSocketTo3D() {
         currently in development. The API shown here represents the target
         developer experience. You can use the full library today by cloning
         the{" "}
-        <a href="https://github.com/nicholasgriffintn/visualize-web3-realtime">
+        <a href="https://github.com/nirholas/visualize-web3-realtime">
           repository
         </a>
         .
@@ -293,7 +293,7 @@ function InteractiveGraph() {
         </li>
         <li>
           Read the{" "}
-          <a href="https://github.com/nicholasgriffintn/visualize-web3-realtime">
+          <a href="https://github.com/nirholas/visualize-web3-realtime">
             source code
           </a>{" "}
           for the full implementation

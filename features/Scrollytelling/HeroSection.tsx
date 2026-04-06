@@ -29,7 +29,7 @@ export function HeroSection() {
       <PopOutElement delay={0.55} from="bottom" distance={20}>
         <div className="relative z-10 mt-10 flex items-center gap-4">
           <a
-            href="https://github.com/nicholasgriffintn/visualize-web3-realtime"
+            href="https://github.com/nirholas/visualize-web3-realtime"
             target="_blank"
             rel="noopener noreferrer"
             className="rounded-lg bg-white px-6 py-3 text-sm font-medium text-black transition-transform hover:scale-105"

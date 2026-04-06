@@ -356,7 +356,7 @@ const agentPos = {
         <code>&lt;SwarmGraph source=&quot;wss://...&quot; /&gt;</code> &mdash;
         connect any WebSocket to a 3D force graph with one line of code. The
         entire codebase is open source at{" "}
-        <a href="https://github.com/nicholasgriffintn/visualize-web3-realtime">
+        <a href="https://github.com/nirholas/visualize-web3-realtime">
           GitHub
         </a>
         .

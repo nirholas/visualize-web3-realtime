@@ -177,7 +177,7 @@ export default function ShowcasePage() {
         <p style={{ fontSize: 11, color: '#555', margin: 0 }}>
           {entries.length} visualizations built with Swarming —{' '}
           <a
-            href="https://github.com/nicholasgriffintn/visualize-web3-realtime/discussions/new?category=show-and-tell"
+            href="https://github.com/nirholas/visualize-web3-realtime/discussions/new?category=show-and-tell"
             target="_blank"
             rel="noopener noreferrer"
             style={{ color: '#a78bfa', textDecoration: 'none' }}

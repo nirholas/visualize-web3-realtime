@@ -19,15 +19,19 @@ import type { TopToken, TraderEdge } from '@web3viz/core';
 import type { ShareColors } from './SharePanel';
 
 import { ProtocolLabel } from './ProtocolLabel';
-import { CHAIN_COLORS, COLOR_PALETTE, PROTOCOL_COLORS, GRAPH_CONFIG } from './constants';
+import { CHAIN_COLORS, COLOR_PALETTE, GRAPH_CONFIG } from './constants';
 import YouAreHereMarker from './YouAreHereMarker';
 import { PostProcessing } from '@web3viz/react-graph';
+import { HubNodeMesh } from './components/HubNodeMesh';
+import { AgentNodes } from './components/AgentNodes';
+import { Edges } from './components/Edges';
+import { EdgeParticles } from './components/EdgeParticles';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-interface ForceNode extends SimulationNodeDatum3D {
+export interface ForceNode extends SimulationNodeDatum3D {
   id: string;
   type: 'hub' | 'agent';
   label: string;
@@ -60,25 +64,18 @@ const {
   MAX_AGENTS,
   HUB_BASE_RADIUS,
   HUB_MAX_RADIUS,
-  AGENT_RADIUS,
-  EDGE_HIGHLIGHT_R,
-  EDGE_HIGHLIGHT_G,
-  EDGE_HIGHLIGHT_B,
   IDLE_NODE_COUNT,
   IDLE_SPEED,
   IDLE_RADIUS_MIN,
   IDLE_RADIUS_MAX,
   IDLE_SPREAD,
-  PARTICLE_COUNT,
-  PARTICLE_SPEED,
-  MAX_EDGES,
 } = GRAPH_CONFIG;
 
 // ---------------------------------------------------------------------------
 // Force simulation manager (runs outside React render cycle)
 // ---------------------------------------------------------------------------
 
-class ForceGraphSimulation {
+export class ForceGraphSimulation {
   nodes: ForceNode[] = [];
   edges: ForceEdge[] = [];
   private simulation: ReturnType<typeof forceSimulation<ForceNode>>;
@@ -90,7 +87,12 @@ class ForceGraphSimulation {
       .numDimensions(3)
       .force('charge', forceManyBody<ForceNode>().strength((d) => (d.type === 'hub' ? -120 : -0.3)))
       .force('center', forceCenter<ForceNode>(0, 0, 0).strength(0.12))
-      .force('collide', forceCollide<ForceNode>().radius((d) => d.type === 'hub' ? d.radius + 1 : d.radius + 0.05).strength(0.4))
+      .force(
+        'collide',
+        forceCollide<ForceNode>()
+          .radius((d) => (d.type === 'hub' ? d.radius + 1 : d.radius + 0.05))
+          .strength(0.4),
+      )
       .force(
         'link',
         forceLink<ForceNode, ForceEdge>([])
@@ -122,7 +124,7 @@ class ForceGraphSimulation {
       hubAddresses.add(t.tokenAddress);
       const existing = this.nodeMap.get(t.tokenAddress);
       const maxVol = topTokens[0]?.volume || 1;
-      const scaledRadius = HUB_BASE_RADIUS + ((t.volume / maxVol) * (HUB_MAX_RADIUS - HUB_BASE_RADIUS));
+      const scaledRadius = HUB_BASE_RADIUS + (t.volume / maxVol) * (HUB_MAX_RADIUS - HUB_BASE_RADIUS);
       if (existing) {
         existing.radius = scaledRadius;
         existing.label = t.symbol || t.name;
@@ -131,7 +133,7 @@ class ForceGraphSimulation {
         existing.graduated = t.graduated;
       } else {
         // Distribute hubs on a sphere using spherical coordinates
-        const phi = Math.acos(1 - 2 * (i + 0.5) / Math.max(topTokens.length, 1));
+        const phi = Math.acos(1 - (2 * (i + 0.5)) / Math.max(topTokens.length, 1));
         const theta = Math.PI * (1 + Math.sqrt(5)) * i; // golden angle
         const dist = 10 + Math.random() * 4;
         const node: ForceNode = {
@@ -173,7 +175,7 @@ class ForceGraphSimulation {
         id: agentId,
         type: 'agent',
         label: edge.trader.slice(0, 6),
-        radius: AGENT_RADIUS,
+        radius: GRAPH_CONFIG.AGENT_RADIUS,
         color: '#555566',
         hubTokenAddress: edge.tokenAddress,
         source: edge.source,
@@ -222,8 +224,7 @@ class ForceGraphSimulation {
 
       this.simulation.nodes(this.nodes);
       this.simulation.numDimensions(3);
-      (this.simulation.force('link') as ReturnType<typeof forceLink<ForceNode, ForceEdge>>)
-        .links(this.edges);
+      (this.simulation.force('link') as ReturnType<typeof forceLink<ForceNode, ForceEdge>>).links(this.edges);
       this.simulation.alpha(0.3).restart();
     }
   }
@@ -241,570 +242,9 @@ class ForceGraphSimulation {
 // Helpers
 // ---------------------------------------------------------------------------
 
-
 // ---------------------------------------------------------------------------
 // Three.js sub-components
 // ---------------------------------------------------------------------------
-
-/** Individual hub node mesh — hover detection + source-colored transitions */
-function HubNodeMesh({
-  sim,
-  nodeId,
-  paletteIndex,
-  isActive,
-  isDimmed,
-  isHighlighted,
-  isHovered,
-  onPointerOver,
-  onPointerOut,
-  onClick,
-  colorOverride,
-  isDark = true,
-}: {
-  sim: ForceGraphSimulation;
-  nodeId: string;
-  paletteIndex: number;
-  isActive: boolean;
-  isDimmed: boolean;
-  isHighlighted: boolean;
-  isHovered: boolean;
-  onPointerOver: () => void;
-  onPointerOut: () => void;
-  onClick: () => void;
-  colorOverride?: string;
-  isDark?: boolean;
-}) {
-  const groupRef = useRef<THREE.Group>(null!);
-  const meshRef = useRef<THREE.Mesh>(null!);
-  const materialRef = useRef<THREE.MeshStandardMaterial>(null!);
-  const ringRef = useRef<THREE.Mesh>(null!);
-  const ringMaterialRef = useRef<THREE.MeshStandardMaterial>(null!);
-  const glowRef = useRef<THREE.MeshStandardMaterial>(null!);
-  const targetColor = useRef(new THREE.Color(PROTOCOL_COLORS.default));
-  const targetOpacity = useRef(1);
-  const targetRingOpacity = useRef(0);
-  const targetGlowOpacity = useRef(0);
-  const radiusRef = useRef(HUB_BASE_RADIUS);
-
-  const node = useMemo(() => sim.nodeMap.get(nodeId), [sim, nodeId]);
-  const isAgentHub = node?.source === 'agents';
-  const AGENT_COLOR_PALETTE = ['#c084fc', '#60a5fa', '#f472b6', '#34d399', '#fbbf24', '#fb923c', '#a78bfa', '#22d3ee'];
-
-  // Theme-aware default colors: bright on dark bg, darker on light bg
-  const defaultHubColor = isDark ? PROTOCOL_COLORS.default : '#2a5a9e';
-  const defaultEmissiveIntensity = isDark ? 2.5 : 0.8;
-
-  useEffect(() => {
-    if (isHighlighted) {
-      targetColor.current.set('#818cf8');
-      targetOpacity.current = 1;
-      targetRingOpacity.current = isAgentHub ? 0.8 : 0;
-    } else if (isActive) {
-      // Each hub gets its unique palette color when selected
-      const color = colorOverride || (isAgentHub
-        ? AGENT_COLOR_PALETTE[paletteIndex % AGENT_COLOR_PALETTE.length]
-        : COLOR_PALETTE[paletteIndex % COLOR_PALETTE.length]);
-      targetColor.current.set(color);
-      targetOpacity.current = 1;
-      targetRingOpacity.current = isAgentHub ? 0.5 : 0;
-    } else if (isDimmed) {
-      targetColor.current.set(defaultHubColor);
-      targetOpacity.current = 0.15;
-      targetRingOpacity.current = 0;
-    } else {
-      // Default: solid sphere, with subtle ring for agent hubs
-      if (isAgentHub) {
-        targetColor.current.set(AGENT_COLOR_PALETTE[paletteIndex % AGENT_COLOR_PALETTE.length]);
-        targetRingOpacity.current = 0.3;
-      } else {
-        targetColor.current.set(defaultHubColor);
-        targetRingOpacity.current = 0;
-      }
-      targetOpacity.current = 1;
-    }
-  }, [isActive, isDimmed, isHighlighted, paletteIndex, colorOverride, isAgentHub, isDark, defaultHubColor]);
-
-  useFrame((state, delta) => {
-    const nodeData = sim.nodeMap.get(nodeId);
-    if (!nodeData || !groupRef.current || !meshRef.current || !materialRef.current) return;
-    groupRef.current.position.set(nodeData.x ?? 0, nodeData.y ?? 0, nodeData.z ?? 0);
-
-    const baseScale = nodeData.radius;
-    // Gentle breathe animation — each hub out of phase via paletteIndex
-    const breathe = 1 + Math.sin(state.clock.getElapsedTime() * 1.5 + paletteIndex * 1.3) * 0.08;
-    if (isHighlighted) {
-      const pulse = 1 + Math.sin(state.clock.getElapsedTime() * Math.PI) * 0.05;
-      meshRef.current.scale.setScalar(baseScale * 2 * pulse);
-    } else {
-      meshRef.current.scale.setScalar(baseScale * breathe);
-    }
-    // Pulse emissive intensity in sync with breathe
-    // Bonding curve progress amplifies glow (0% → base, 100% → 2× base)
-    if (materialRef.current) {
-      const curveBoost = (nodeData.bondingCurveProgress ?? 0) * defaultEmissiveIntensity;
-      // Graduated tokens get a fast pulse to signal they've graduated
-      const gradPulse = nodeData.graduated
-        ? Math.abs(Math.sin(state.clock.getElapsedTime() * 4)) * 1.5
-        : 0;
-      materialRef.current.emissiveIntensity = defaultEmissiveIntensity + curveBoost + gradPulse
-        + Math.sin(state.clock.getElapsedTime() * 1.5 + paletteIndex * 1.3) * 0.8;
-    }
-    radiusRef.current = nodeData.radius;
-
-    const lerpFactor = 1 - Math.exp(-10 * delta);
-    materialRef.current.color.lerp(targetColor.current, lerpFactor);
-    materialRef.current.emissive.lerp(targetColor.current, lerpFactor);
-    materialRef.current.opacity += (targetOpacity.current - materialRef.current.opacity) * lerpFactor;
-
-    // Animate ring opacity for agent hubs
-    if (ringMaterialRef.current) {
-      ringMaterialRef.current.opacity += (targetRingOpacity.current - ringMaterialRef.current.opacity) * lerpFactor;
-    }
-    // Animate hover glow
-    targetGlowOpacity.current = isHovered ? 0.35 : 0;
-    if (glowRef.current) {
-      glowRef.current.opacity += (targetGlowOpacity.current - glowRef.current.opacity) * lerpFactor;
-      glowRef.current.emissive.lerp(targetColor.current, lerpFactor);
-    }
-  });
-
-  return (
-    <group ref={groupRef}>
-      <mesh
-        ref={meshRef}
-        onPointerOver={(e) => {
-          e.stopPropagation();
-          onPointerOver();
-        }}
-        onPointerOut={onPointerOut}
-        onClick={(e) => {
-          e.stopPropagation();
-          onClick();
-        }}
-      >
-        <sphereGeometry args={[1, 32, 32]} />
-        <meshStandardMaterial
-          ref={materialRef}
-          color={defaultHubColor}
-          transparent
-          opacity={1}
-          roughness={0.3}
-          metalness={0.1}
-          emissive={defaultHubColor}
-          emissiveIntensity={defaultEmissiveIntensity}
-          envMapIntensity={1.2}
-          toneMapped={false}
-        />
-      </mesh>
-      {/* Hover glow halo — triggers bloom when hovered */}
-      <mesh scale={1.35}>
-        <sphereGeometry args={[1, 16, 16]} />
-        <meshStandardMaterial
-          ref={glowRef}
-          color={defaultHubColor}
-          transparent
-          opacity={0}
-          roughness={1}
-          metalness={0}
-          emissive={defaultHubColor}
-          emissiveIntensity={4.0}
-          toneMapped={false}
-          depthWrite={false}
-        />
-      </mesh>
-      {isAgentHub && (
-        <mesh
-          ref={ringRef}
-          rotation={[Math.PI * 0.15, 0, Math.PI * 0.3]}
-          scale={1.4}
-        >
-          <torusGeometry args={[1, 0.12, 8, 32]} />
-          <meshStandardMaterial
-            ref={ringMaterialRef}
-            color={AGENT_COLOR_PALETTE[paletteIndex % AGENT_COLOR_PALETTE.length]}
-            transparent
-            opacity={0}
-            roughness={0.3}
-            metalness={0.1}
-            emissive={AGENT_COLOR_PALETTE[paletteIndex % AGENT_COLOR_PALETTE.length]}
-            emissiveIntensity={2.5}
-            toneMapped={false}
-          />
-        </mesh>
-      )}
-      {/* Always show hub label — hubs are the anchor points of the point cloud */}
-      <ProtocolLabel
-        name={sim.nodeMap.get(nodeId)?.label ?? 'UNKNOWN'}
-        position={[0, radiusRef.current + 2, 0]}
-        visible
-      />
-    </group>
-  );
-}
-
-/** InstancedMesh for agent nodes with active-protocol tinting + dimming */
-const AgentNodes = memo<{
-  sim: ForceGraphSimulation;
-  activeProtocol: string | null;
-  highlightedHubId?: string | null;
-  /** Address of the specifically searched agent — gets its own highlighted treatment */
-  highlightedAddress?: string | null;
-  colorOverride?: string;
-  isDark?: boolean;
-}>(({ sim, activeProtocol, highlightedHubId, highlightedAddress, colorOverride, isDark = true }) => {
-  const meshRef = useRef<THREE.InstancedMesh>(null);
-  const tempObj = useMemo(() => new THREE.Object3D(), []);
-  const tempColor = useMemo(() => new THREE.Color(), []);
-  const dimColor = useMemo(() => new THREE.Color(isDark ? '#334155' : '#94a3b8'), [isDark]);
-  const geometry = useMemo(() => new THREE.SphereGeometry(1, 8, 8), []);
-  const material = useMemo(
-    () => new THREE.MeshStandardMaterial({
-      roughness: 0.4,
-      metalness: 0.0,
-      emissive: new THREE.Color(isDark ? '#ffffff' : '#333333'),
-      emissiveIntensity: isDark ? 2.5 : 0.6,
-      transparent: true,
-      opacity: 1.0,
-      toneMapped: false,
-    }),
-    [isDark],
-  );
-
-  // Cache the active hub's palette color by hub index
-  const activeColorRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!activeProtocol) {
-      activeColorRef.current = null;
-      return;
-    }
-    const hubs = sim.nodes.filter((n) => n.type === 'hub');
-    const idx = hubs.findIndex((h) => h.id === activeProtocol);
-    activeColorRef.current = idx >= 0 ? COLOR_PALETTE[idx % COLOR_PALETTE.length] : null;
-  }, [activeProtocol, sim]);
-
-  useFrame((state) => {
-    const mesh = meshRef.current;
-    if (!mesh) return;
-
-    const agents = sim.nodes.filter((n) => n.type === 'agent');
-    const count = Math.min(agents.length, MAX_AGENTS);
-    mesh.count = count;
-
-    const ac = activeColorRef.current;
-    const hasFilter = activeProtocol !== null;
-    const searchLower = highlightedAddress?.toLowerCase() ?? null;
-
-    for (let i = 0; i < count; i++) {
-      const node = agents[i];
-
-      // Check if this is the specifically searched agent
-      let isSearchedAgent = false;
-      if (searchLower) {
-        const parts = node.id.split(':');
-        isSearchedAgent = parts.length >= 2 && parts[1].toLowerCase() === searchLower;
-      }
-
-      // Subtle shimmer — small position jitter to feel alive without chaos
-      const shimmerPhase = state.clock.getElapsedTime() * 0.3 + i * 2.17;
-      const shimmer = 0.12;
-      const sx = Math.sin(shimmerPhase) * shimmer;
-      const sy = Math.sin(shimmerPhase * 0.5 + i * 1.37) * shimmer;
-      const sz = Math.cos(shimmerPhase * 0.7 + i) * shimmer;
-
-      if (isSearchedAgent) {
-        // Searched agent: 3x size with gentle pulse, bright blue
-        const pulse = 1 + Math.sin(state.clock.getElapsedTime() * Math.PI) * 0.05;
-        tempObj.position.set((node.x ?? 0) + sx, (node.y ?? 0) + sy, (node.z ?? 0) + sz);
-        tempObj.scale.setScalar(node.radius * 3 * pulse);
-        tempObj.updateMatrix();
-        mesh.setMatrixAt(i, tempObj.matrix);
-        tempColor.set('#818cf8');
-      } else {
-        // Whales are 1.8× size, snipers are 1.4× size
-        const sizeMultiplier = node.isWhale ? 1.8 : node.isSniper ? 1.4 : 1;
-        tempObj.position.set((node.x ?? 0) + sx, (node.y ?? 0) + sy, (node.z ?? 0) + sz);
-        tempObj.scale.setScalar(node.radius * sizeMultiplier);
-        tempObj.updateMatrix();
-        mesh.setMatrixAt(i, tempObj.matrix);
-
-        if (highlightedHubId && node.hubTokenAddress === highlightedHubId) {
-          tempColor.set('#818cf8').multiplyScalar(0.8);
-        } else if (hasFilter) {
-          if (ac && node.hubTokenAddress === activeProtocol) {
-            tempColor.set(ac).multiplyScalar(0.7);
-          } else {
-            tempColor.copy(dimColor).multiplyScalar(0.35);
-          }
-        } else {
-          // Color agents by their hub's chain color (desaturated)
-          // Whales get bright teal, snipers get orange
-          if (node.isWhale) {
-            tempColor.set('#38bdf8');
-          } else if (node.isSniper) {
-            tempColor.set('#f97316');
-          } else {
-            const hub = node.hubTokenAddress ? sim.nodeMap.get(node.hubTokenAddress) : null;
-            if (hub?.color) {
-              tempColor.set(hub.color).multiplyScalar(isDark ? 0.6 : 0.4);
-            } else {
-              tempColor.set(isDark ? PROTOCOL_COLORS.agentDefault : '#2a6090');
-            }
-          }
-        }
-      }
-      mesh.setColorAt(i, tempColor);
-    }
-    mesh.instanceMatrix.needsUpdate = true;
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  });
-
-  return (
-    <instancedMesh
-      ref={meshRef}
-      args={[geometry, material, MAX_AGENTS]}
-      frustumCulled={false}
-    />
-  );
-});
-AgentNodes.displayName = 'AgentNodes';
-
-/** Batch-rendered edges via LineSegments */
-const Edges = memo<{
-  sim: ForceGraphSimulation;
-  activeProtocol?: string | null;
-  highlightedHubId?: string | null;
-  /** When set, only the edge from this agent address is highlighted (not all hub edges) */
-  highlightedAddress?: string | null;
-  isDark?: boolean;
-}>(({ sim, activeProtocol, highlightedHubId, highlightedAddress, isDark = true }) => {
-  const lineRef = useRef<THREE.LineSegments>(null);
-  const posAttr = useRef<THREE.Float32BufferAttribute | null>(null);
-  const colorAttr = useRef<THREE.Float32BufferAttribute | null>(null);
-  const maxEdges = MAX_EDGES;
-  const edgeColor = useMemo(() => new THREE.Color(), []);
-
-  useEffect(() => {
-    const geo = new THREE.BufferGeometry();
-    const positions = new Float32Array(maxEdges * 6);
-    const colors = new Float32Array(maxEdges * 6);
-    const pAttr = new THREE.Float32BufferAttribute(positions, 3);
-    const cAttr = new THREE.Float32BufferAttribute(colors, 3);
-    pAttr.setUsage(THREE.DynamicDrawUsage);
-    cAttr.setUsage(THREE.DynamicDrawUsage);
-    geo.setAttribute('position', pAttr);
-    geo.setAttribute('color', cAttr);
-    geo.setDrawRange(0, 0);
-    posAttr.current = pAttr;
-    colorAttr.current = cAttr;
-
-    if (lineRef.current) {
-      lineRef.current.geometry.dispose();
-      lineRef.current.geometry = geo;
-    }
-  }, []);
-
-  useFrame(() => {
-    const pA = posAttr.current;
-    const cA = colorAttr.current;
-    if (!pA || !cA || !lineRef.current) return;
-
-    const edges = sim.edges;
-    const count = Math.min(edges.length, maxEdges);
-
-    for (let i = 0; i < count; i++) {
-      const edge = edges[i];
-      const src = edge.source as ForceNode;
-      const tgt = edge.target as ForceNode;
-      const idx = i * 6;
-
-      pA.array[idx] = src.x ?? 0;
-      pA.array[idx + 1] = src.y ?? 0;
-      pA.array[idx + 2] = src.z ?? 0;
-      pA.array[idx + 3] = tgt.x ?? 0;
-      pA.array[idx + 4] = tgt.y ?? 0;
-      pA.array[idx + 5] = tgt.z ?? 0;
-
-      const isHubEdge = src.type === 'hub' && tgt.type === 'hub';
-
-      // When a specific address is searched, only highlight that agent's edge
-      let isHighlightEdge: boolean;
-      if (highlightedAddress) {
-        const searchLower = highlightedAddress.toLowerCase();
-        const srcParts = src.id.split(':');
-        const tgtParts = tgt.id.split(':');
-        isHighlightEdge =
-          (srcParts.length >= 2 && srcParts[1].toLowerCase() === searchLower) ||
-          (tgtParts.length >= 2 && tgtParts[1].toLowerCase() === searchLower);
-      } else {
-        isHighlightEdge = !!(highlightedHubId && (
-          src.id === highlightedHubId || tgt.id === highlightedHubId ||
-          src.hubTokenAddress === highlightedHubId || tgt.hubTokenAddress === highlightedHubId
-        ));
-      }
-
-      if (isHighlightEdge) {
-        // Bright values > 1.0 trigger selective bloom via toneMapped={false}
-        cA.array[idx] = EDGE_HIGHLIGHT_R; cA.array[idx + 1] = EDGE_HIGHLIGHT_G; cA.array[idx + 2] = EDGE_HIGHLIGHT_B;
-        cA.array[idx + 3] = EDGE_HIGHLIGHT_R; cA.array[idx + 4] = EDGE_HIGHLIGHT_G; cA.array[idx + 5] = EDGE_HIGHLIGHT_B;
-      } else if (!isHubEdge && (src.isWhale || tgt.isWhale)) {
-        // Whale trader edges: bright teal
-        cA.array[idx] = 0.22; cA.array[idx + 1] = 0.74; cA.array[idx + 2] = 0.97;
-        cA.array[idx + 3] = 0.22; cA.array[idx + 4] = 0.74; cA.array[idx + 5] = 0.97;
-      } else if (!isHubEdge && (src.isSniper || tgt.isSniper)) {
-        // Sniper bot edges: bright orange
-        cA.array[idx] = 0.98; cA.array[idx + 1] = 0.45; cA.array[idx + 2] = 0.09;
-        cA.array[idx + 3] = 0.98; cA.array[idx + 4] = 0.45; cA.array[idx + 5] = 0.09;
-      } else {
-        // Derive color from the hub node's chain color
-        const hubNode = src.type === 'hub' ? src : tgt.type === 'hub' ? tgt : null;
-        let attenuation: number;
-
-        if (activeProtocol) {
-          const srcRelated = src.id === activeProtocol || src.hubTokenAddress === activeProtocol;
-          const tgtRelated = tgt.id === activeProtocol || tgt.hubTokenAddress === activeProtocol;
-          attenuation = (srcRelated || tgtRelated) ? (isHubEdge ? 0.7 : 0.08) : 0.02;
-        } else {
-          // Hub-to-hub edges stay visible; agent edges nearly invisible
-          attenuation = isDark ? (isHubEdge ? 0.8 : 0.06) : (isHubEdge ? 0.5 : 0.04);
-        }
-
-        if (hubNode && hubNode.color) {
-          edgeColor.set(hubNode.color);
-          cA.array[idx] = edgeColor.r * attenuation; cA.array[idx + 1] = edgeColor.g * attenuation; cA.array[idx + 2] = edgeColor.b * attenuation;
-          cA.array[idx + 3] = edgeColor.r * attenuation; cA.array[idx + 4] = edgeColor.g * attenuation; cA.array[idx + 5] = edgeColor.b * attenuation;
-        } else {
-          const gray = attenuation;
-          cA.array[idx] = gray; cA.array[idx + 1] = gray; cA.array[idx + 2] = gray;
-          cA.array[idx + 3] = gray; cA.array[idx + 4] = gray; cA.array[idx + 5] = gray;
-        }
-      }
-    }
-
-    pA.needsUpdate = true;
-    cA.needsUpdate = true;
-    lineRef.current.geometry.setDrawRange(0, count * 2);
-  });
-
-  return (
-    <lineSegments ref={lineRef}>
-      <bufferGeometry />
-      <lineBasicMaterial vertexColors transparent opacity={0.08} toneMapped={false} />
-    </lineSegments>
-  );
-});
-Edges.displayName = 'Edges';
-
-// ---------------------------------------------------------------------------
-// Animated edge particles — glowing dots flowing along edges (agent → hub)
-// ---------------------------------------------------------------------------
-
-const EdgeParticles = memo<{ sim: ForceGraphSimulation; isDark?: boolean }>(({ sim, isDark = true }) => {
-  const meshRef = useRef<THREE.InstancedMesh>(null);
-  const tempObj = useMemo(() => new THREE.Object3D(), []);
-  const tempColor = useMemo(() => new THREE.Color(), []);
-  const geometry = useMemo(() => new THREE.SphereGeometry(1, 6, 6), []);
-  const material = useMemo(
-    () => new THREE.MeshStandardMaterial({
-      roughness: 0.2,
-      metalness: 0.0,
-      emissive: new THREE.Color('#ffffff'),
-      emissiveIntensity: isDark ? 3.0 : 1.0,
-      transparent: true,
-      opacity: 0.9,
-      toneMapped: false,
-    }),
-    [isDark],
-  );
-
-  // Per-particle state: edge index + phase (0..1 along edge)
-  const particleState = useRef<{ edgeIdx: number; phase: number; speed: number }[]>([]);
-
-  // Initialize particle assignments
-  useEffect(() => {
-    const state: { edgeIdx: number; phase: number; speed: number }[] = [];
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      state.push({
-        edgeIdx: Math.floor(Math.random() * Math.max(1, sim.edges.length)),
-        phase: Math.random(),
-        speed: 0.6 + Math.random() * 0.8,
-      });
-    }
-    particleState.current = state;
-  }, [sim]);
-
-  useFrame((_, delta) => {
-    const mesh = meshRef.current;
-    if (!mesh || sim.edges.length === 0) { if (mesh) mesh.count = 0; return; }
-
-    const edges = sim.edges;
-    const particles = particleState.current;
-    const count = Math.min(particles.length, PARTICLE_COUNT);
-    mesh.count = count;
-
-    for (let i = 0; i < count; i++) {
-      const p = particles[i];
-      // Advance phase
-      p.phase += delta * PARTICLE_SPEED * p.speed / 20;
-      if (p.phase >= 1) {
-        p.phase -= 1;
-        // Reassign to a random edge for variety
-        p.edgeIdx = Math.floor(Math.random() * edges.length);
-      }
-      // Ensure edge index is valid
-      if (p.edgeIdx >= edges.length) p.edgeIdx = p.edgeIdx % edges.length;
-
-      const edge = edges[p.edgeIdx];
-      const src = edge.source as ForceNode;
-      const tgt = edge.target as ForceNode;
-
-      // Interpolate position along the edge in full 3D with a slight arc offset
-      const t = p.phase;
-      const sx = src.x ?? 0, sy = src.y ?? 0, sz = src.z ?? 0;
-      const tx = tgt.x ?? 0, ty = tgt.y ?? 0, tz = tgt.z ?? 0;
-      const x = sx + (tx - sx) * t;
-      const y = sy + (ty - sy) * t;
-      const z = sz + (tz - sz) * t;
-      // Arc perpendicular to the edge direction for visual separation
-      const arc = Math.sin(t * Math.PI) * 0.8;
-      // Compute a perpendicular offset using cross product with a reference axis
-      const dx = tx - sx, dy = ty - sy, dz = tz - sz;
-      const len = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
-      const ndx = dx / len, ndy = dy / len, ndz = dz / len;
-      // Choose reference axis least aligned with edge to avoid degenerate cross product
-      const absX = Math.abs(ndx), absY = Math.abs(ndy), absZ = Math.abs(ndz);
-      let rx = 0, ry = 1, rz = 0;
-      if (absY > absX && absY > absZ) { rx = 1; ry = 0; rz = 0; }
-      // Cross product: edge × ref
-      let px = ndy * rz - ndz * ry;
-      let py = ndz * rx - ndx * rz;
-      let pz = ndx * ry - ndy * rx;
-      const pLen = Math.sqrt(px * px + py * py + pz * pz) || 1;
-      px /= pLen; py /= pLen; pz /= pLen;
-
-      tempObj.position.set(x + px * arc, y + py * arc, z + pz * arc);
-      tempObj.scale.setScalar(0.04);
-      tempObj.updateMatrix();
-      mesh.setMatrixAt(i, tempObj.matrix);
-
-      // Color from the hub node's chain color
-      const hubNode = src.type === 'hub' ? src : tgt.type === 'hub' ? tgt : null;
-      if (hubNode?.color) {
-        tempColor.set(hubNode.color);
-      } else {
-        tempColor.set(isDark ? '#7dd3fc' : '#3b82f6');
-      }
-      mesh.setColorAt(i, tempColor);
-    }
-
-    mesh.instanceMatrix.needsUpdate = true;
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  });
-
-  return (
-    <instancedMesh ref={meshRef} args={[geometry, material, PARTICLE_COUNT]} frustumCulled={false} />
-  );
-});
-EdgeParticles.displayName = 'EdgeParticles';
 
 /** Scene background color controller */
 const SceneBackground = memo<{ color: string }>(({ color }) => {
@@ -815,8 +255,6 @@ const SceneBackground = memo<{ color: string }>(({ color }) => {
   return null;
 });
 SceneBackground.displayName = 'SceneBackground';
-
-
 
 // ---------------------------------------------------------------------------
 // Idle ambient scene — gentle drifting orbs when no data is active
@@ -855,15 +293,16 @@ const IdleAmbientScene = memo(() => {
   const tempColor = useMemo(() => new THREE.Color(), []);
   const geometry = useMemo(() => new THREE.SphereGeometry(1, 16, 16), []);
   const material = useMemo(
-    () => new THREE.MeshStandardMaterial({
-      roughness: 0.4,
-      metalness: 0.0,
-      emissive: new THREE.Color('#60a5fa'),
-      emissiveIntensity: 1.2,
-      transparent: true,
-      opacity: 0.7,
-      toneMapped: false,
-    }),
+    () =>
+      new THREE.MeshStandardMaterial({
+        roughness: 0.4,
+        metalness: 0.0,
+        emissive: new THREE.Color('#60a5fa'),
+        emissiveIntensity: 1.2,
+        transparent: true,
+        opacity: 0.7,
+        toneMapped: false,
+      }),
     [],
   );
 
@@ -928,445 +367,233 @@ const NetworkScene = memo<{
   onDismissHighlight?: () => void;
   shareColors?: ShareColors;
   isDark?: boolean;
-}>(({ sim, topTokens, activeProtocol, highlightedHubIndex, highlightedAddress, onSelectProtocol, onDismissHighlight, shareColors, isDark = true }) => {
-  const [hoveredHub, setHoveredHub] = useState<string | null>(null);
+}>(
+  ({
+    sim,
+    topTokens,
+    activeProtocol,
+    highlightedHubIndex,
+    highlightedAddress,
+    onSelectProtocol,
+    onDismissHighlight,
+    shareColors,
+    isDark = true,
+  }) => {
+    const [hoveredHub, setHoveredHub] = useState<string | null>(null);
 
-  const hubIds = useMemo(
-    () => topTokens.map((t) => ({ id: t.tokenAddress, label: t.symbol || t.name })),
-    [topTokens],
-  );
+    const hubIds = useMemo(() => topTokens.map((t) => ({ id: t.tokenAddress, label: t.symbol || t.name })), [topTokens]);
 
-  // Hub-level highlight only used when there's no address search active
-  const highlightedHubId = (!highlightedAddress && highlightedHubIndex != null)
-    ? hubIds[highlightedHubIndex]?.id ?? null
-    : null;
+    // Hub-level highlight only used when there's no address search active
+    const highlightedHubId =
+      !highlightedAddress && highlightedHubIndex != null ? hubIds[highlightedHubIndex]?.id ?? null : null;
 
-  // Track the highlighted agent's 3D position for the YouAreHereMarker
-  const agentPositionRef = useRef<THREE.Vector3 | null>(null);
+    // Track the highlighted agent's 3D position for the YouAreHereMarker
+    const agentPositionRef = useRef<THREE.Vector3 | null>(null);
 
-  // Tick simulation and update tracked positions each frame
-  useFrame(() => {
-    sim.tick();
+    // Tick simulation and update tracked positions each frame
+    useFrame(() => {
+      sim.tick();
 
-    // Track highlighted agent position
-    if (highlightedAddress) {
-      const searchLower = highlightedAddress.toLowerCase();
-      let found = false;
-      for (const node of sim.nodes) {
-        if (node.type !== 'agent') continue;
-        const parts = node.id.split(':');
-        if (parts.length >= 2 && parts[1].toLowerCase() === searchLower) {
-          if (!agentPositionRef.current) agentPositionRef.current = new THREE.Vector3();
-          agentPositionRef.current.set(node.x ?? 0, node.y ?? 0, node.z ?? 0);
-          found = true;
-          break;
-        }
-      }
-      if (!found) agentPositionRef.current = null;
-    } else {
-      agentPositionRef.current = null;
-    }
-  });
-
-  return (
-    <>
-      {shareColors && <SceneBackground color={shareColors.background} />}
-
-      <Environment preset="studio" environmentIntensity={0.6} background={false} />
-      <directionalLight position={[20, 40, 20]} intensity={0.4} />
-      <directionalLight position={[-20, 30, -30]} intensity={0.15} color="#a78bfa" />
-
-      <Edges
-        sim={sim}
-        activeProtocol={activeProtocol}
-        highlightedHubId={highlightedHubId}
-        highlightedAddress={highlightedAddress}
-        isDark={isDark}
-      />
-      <EdgeParticles sim={sim} isDark={isDark} />
-      {hubIds.map((hub, i) => (
-        <HubNodeMesh
-          key={hub.id}
-          sim={sim}
-          nodeId={hub.id}
-          paletteIndex={i}
-          isActive={activeProtocol === hub.id}
-          isDimmed={activeProtocol !== null && activeProtocol !== hub.id}
-          isHighlighted={highlightedHubId === hub.id}
-          isHovered={hoveredHub === hub.id}
-          onPointerOver={() => setHoveredHub(hub.id)}
-          onPointerOut={() => setHoveredHub(null)}
-          onClick={() =>
-            onSelectProtocol(activeProtocol === hub.id ? null : hub.id)
+      // Track highlighted agent position
+      if (highlightedAddress) {
+        const searchLower = highlightedAddress.toLowerCase();
+        let found = false;
+        for (const node of sim.nodes) {
+          if (node.type !== 'agent') continue;
+          const parts = node.id.split(':');
+          if (parts.length >= 2 && parts[1].toLowerCase() === searchLower) {
+            if (!agentPositionRef.current) agentPositionRef.current = new THREE.Vector3();
+            agentPositionRef.current.set(node.x ?? 0, node.y ?? 0, node.z ?? 0);
+            found = true;
+            break;
           }
-          colorOverride={shareColors?.protocol}
+        }
+        if (!found) agentPositionRef.current = null;
+      } else {
+        agentPositionRef.current = null;
+      }
+    });
+
+    return (
+      <>
+        {shareColors && <SceneBackground color={shareColors.background} />}
+
+        <Environment preset="studio" environmentIntensity={0.6} background={false} />
+        <directionalLight position={[20, 40, 20]} intensity={0.4} />
+        <directionalLight position={[-20, 30, -30]} intensity={0.15} color="#a78bfa" />
+
+        <Edges
+          sim={sim}
+          activeProtocol={activeProtocol}
+          highlightedHubId={highlightedHubId}
+          highlightedAddress={highlightedAddress}
           isDark={isDark}
         />
-      ))}
-      <AgentNodes
-        sim={sim}
-        activeProtocol={activeProtocol}
-        highlightedHubId={highlightedHubId}
-        highlightedAddress={highlightedAddress}
-        colorOverride={shareColors?.user}
-        isDark={isDark}
-      />
-      {/* Show YouAreHereMarker above the searched agent node */}
-      {highlightedAddress && onDismissHighlight && (
-        <YouAreHereMarker
-          positionRef={agentPositionRef}
-          onDismiss={onDismissHighlight}
+        <EdgeParticles sim={sim} isDark={isDark} />
+        {hubIds.map((hub, i) => (
+          <HubNodeMesh
+            key={hub.id}
+            sim={sim}
+            nodeId={hub.id}
+            paletteIndex={i}
+            isActive={activeProtocol === hub.id}
+            isDimmed={activeProtocol !== null && activeProtocol !== hub.id}
+            isHighlighted={highlightedHubId === hub.id}
+            isHovered={hoveredHub === hub.id}
+            onPointerOver={() => setHoveredHub(hub.id)}
+            onPointerOut={() => setHoveredHub(null)}
+            onClick={() => {
+              onSelectProtocol(activeProtocol === hub.id ? null : hub.id);
+              onDismissHighlight?.();
+            }}
+            colorOverride={shareColors?.palette?.[i]}
+            isDark={isDark}
+          />
+        ))}
+        <AgentNodes
+          sim={sim}
+          activeProtocol={activeProtocol}
+          highlightedHubId={highlightedHubId}
+          highlightedAddress={highlightedAddress}
+          colorOverride={shareColors?.palette?.[hubIds.findIndex((h) => h.id === activeProtocol)]}
+          isDark={isDark}
         />
-      )}
-    </>
-  );
-});
+
+        {agentPositionRef.current && <YouAreHereMarker position={agentPositionRef.current} />}
+      </>
+    );
+  },
+);
 NetworkScene.displayName = 'NetworkScene';
 
 // ---------------------------------------------------------------------------
-// Camera animation state
+// Main component
 // ---------------------------------------------------------------------------
 
-interface CameraApi {
-  animateTo: (pos: [number, number, number], lookAt: [number, number, number], durationMs: number) => Promise<void>;
-  setOrbitEnabled: (enabled: boolean) => void;
+export interface ForceGraphHandle {
+  /** Capture a high-resolution snapshot of the canvas as a data URL */
+  capture: (width: number, height: number) => Promise<string>;
+  /** Set camera to a specific position and target */
+  setCamera: (
+    position: [number, number, number],
+    target: [number, number, number],
+    animate?: boolean,
+  ) => void;
+  /** Get the current camera position and target */
+  getCamera: () => { position: [number, number, number]; target: [number, number, number] };
+  /** Get an array of the current hub IDs (token addresses) in order */
+  getHubIds: () => string[];
 }
-
-/** Camera controller: unrestricted 360° spherical rotation with smooth damping */
-const CameraSetup = memo<{ apiRef: React.MutableRefObject<CameraApi | null> }>(({ apiRef }) => {
-  const controlsRef = useRef<CameraControlsImpl>(null);
-  const lastInteraction = useRef(Date.now());
-  const autoRotateSpeed = useRef(0);
-
-  useEffect(() => {
-    const controls = controlsRef.current;
-    if (!controls) return;
-
-    // Angled orbital view — ~25° from horizontal for clearer depth
-    controls.setLookAt(0, 80, 180, 0, 0, 0, false);
-
-    // Smooth damping for premium feel
-    controls.smoothTime = 0.35;
-    controls.draggingSmoothTime = 0.15;
-
-    // Distance constraints
-    controls.minDistance = 30;
-    controls.maxDistance = 500;
-
-    // Unrestricted polar angle — full 360° vertical rotation (no floor clamp)
-    controls.minPolarAngle = 0;
-    controls.maxPolarAngle = Math.PI;
-
-    // Unrestricted azimuth — full horizontal rotation
-    controls.minAzimuthAngle = -Infinity;
-    controls.maxAzimuthAngle = Infinity;
-
-    // Interaction tuning
-    controls.dollySpeed = 0.5;
-    controls.truckSpeed = 1.0;
-
-    // Reset idle timer on any user interaction
-    const onControl = () => { lastInteraction.current = Date.now(); autoRotateSpeed.current = 0; };
-    controls.addEventListener('control', onControl);
-    return () => { controls.removeEventListener('control', onControl); };
-  }, []);
-
-  // Auto-rotate after 8s of inactivity
-  useFrame((_, delta) => {
-    const controls = controlsRef.current;
-    if (!controls) return;
-    const idleTime = Date.now() - lastInteraction.current;
-    if (idleTime > 8000) {
-      // Ramp up rotation speed smoothly over 2s
-      const ramp = Math.min(1, (idleTime - 8000) / 2000);
-      autoRotateSpeed.current = ramp * 0.12;
-      controls.azimuthAngle += autoRotateSpeed.current * delta;
-    }
-  });
-
-  useEffect(() => {
-    apiRef.current = {
-      animateTo: (pos, lookAt, durationMs) =>
-        new Promise<void>((resolve) => {
-          const controls = controlsRef.current;
-          if (!controls) { resolve(); return; }
-
-          // Use camera-controls built-in smooth transition
-          controls.setLookAt(
-            pos[0], pos[1], pos[2],
-            lookAt[0], lookAt[1], lookAt[2],
-            true, // enable transition
-          ).then(() => resolve());
-
-          // Override transition duration
-          controls.smoothTime = durationMs / 1000;
-
-          // Restore default smooth time after animation
-          setTimeout(() => {
-            if (controlsRef.current) {
-              controlsRef.current.smoothTime = 0.35;
-            }
-          }, durationMs + 50);
-        }),
-      setOrbitEnabled: (enabled) => {
-        if (controlsRef.current) {
-          controlsRef.current.enabled = enabled;
-        }
-      },
-    };
-    return () => {
-      apiRef.current = null;
-    };
-  }, [apiRef]);
-
-  return (
-    <CameraControls
-      ref={controlsRef}
-      makeDefault
-    />
-  );
-});
-CameraSetup.displayName = 'CameraSetup';
-
-// ---------------------------------------------------------------------------
-// Main ForceGraph component
-// ---------------------------------------------------------------------------
 
 export interface ForceGraphProps {
   topTokens: TopToken[];
   traderEdges: TraderEdge[];
-  activeProtocol?: string | null;
-  highlightedHubIndex?: number | null;
-  /** Address of the specifically searched agent — agent gets its own marker + highlight */
+  activeProtocol: string | null;
+  highlightedHubIndex: number | null;
+  /** If set, highlights this specific agent address */
   highlightedAddress?: string | null;
-  onSelectProtocol?: (mint: string | null) => void;
+  onSelectProtocol: (mint: string | null) => void;
   onDismissHighlight?: () => void;
-  height?: string | number;
+  /** For snapshot sharing — overrides default colors */
   shareColors?: ShareColors;
-  /** Whether the scene is in dark mode — affects node/particle brightness */
+  /** Dark or light mode */
   isDark?: boolean;
-  /** When true, show gentle ambient drifting nodes instead of real data */
-  idle?: boolean;
 }
 
-export interface ForceGraphHandle {
-  animateCameraTo: (request: { position: [number, number, number]; lookAt?: [number, number, number]; durationMs?: number }) => Promise<void>;
-  focusHub: (index: number, durationMs?: number) => Promise<void>;
-  /** Zoom camera to a specific agent node by trader address */
-  focusAgent: (address: string, durationMs?: number) => Promise<void>;
-  getCanvasElement: () => HTMLCanvasElement | null;
-  getHubCount: () => number;
-  getHubPosition: (index: number) => [number, number, number] | null;
-  findAgentHub: (address: string) => { hubIndex: number; hubTokenAddress: string } | null;
-  setOrbitEnabled: (enabled: boolean) => void;
-  /** Capture the current 3D view as a PNG data URL via synchronous WebGL render */
-  takeSnapshot: () => string | null;
-}
-
-/**
- * Invisible R3F child that captures the Three.js context for snapshot capture.
- * Must live inside <Canvas> to access useThree().
- */
-const SnapshotHelper = memo<{ snapshotRef: React.MutableRefObject<(() => string | null) | null> }>(
-  ({ snapshotRef }) => {
+const ForceGraph = forwardRef<ForceGraphHandle, ForceGraphProps>(
+  (
+    {
+      topTokens,
+      traderEdges,
+      activeProtocol,
+      highlightedHubIndex,
+      highlightedAddress,
+      onSelectProtocol,
+      onDismissHighlight,
+      shareColors,
+      isDark,
+    },
+    ref,
+  ) => {
+    const sim = useMemo(() => new ForceGraphSimulation(), []);
+    const cameraControlsRef = useRef<CameraControlsImpl>(null!);
     const { gl, scene, camera } = useThree();
 
+    // Update simulation on data change
     useEffect(() => {
-      snapshotRef.current = () => {
+      sim.update(topTokens, traderEdges);
+    }, [sim, topTokens, traderEdges]);
+
+    // Expose capture handle
+    useImperativeHandle(ref, () => ({
+      capture: async (width: number, height: number) => {
+        const currentSize = new THREE.Vector2();
+        gl.getSize(currentSize);
+        gl.setSize(width, height, false);
         gl.render(scene, camera);
-        return gl.domElement.toDataURL('image/png', 1.0);
-      };
-      return () => { snapshotRef.current = null; };
-    }, [gl, scene, camera, snapshotRef]);
+        const dataUrl = gl.domElement.toDataURL('image/png');
+        gl.setSize(currentSize.x, currentSize.y, false);
+        return dataUrl;
+      },
+      setCamera: (position, target, animate = false) => {
+        cameraControlsRef.current?.setLookAt(...position, ...target, animate);
+      },
+      getCamera: () => {
+        const pos = cameraControlsRef.current?.getPosition(new THREE.Vector3());
+        const tgt = cameraControlsRef.current?.getTarget(new THREE.Vector3());
+        return {
+          position: (pos?.toArray() as [number, number, number]) || [0, 0, 50],
+          target: (tgt?.toArray() as [number, number, number]) || [0, 0, 0],
+        };
+      },
+      getHubIds: () => sim.nodes.filter((n) => n.type === 'hub').map((n) => n.id),
+    }));
 
-    return null;
-  },
-);
-SnapshotHelper.displayName = 'SnapshotHelper';
+    const showNetwork = topTokens.length > 0;
 
-const ForceGraphInner = forwardRef<ForceGraphHandle, ForceGraphProps>(function ForceGraph(
-  { topTokens, traderEdges, activeProtocol = null, highlightedHubIndex = null, highlightedAddress = null, onSelectProtocol, onDismissHighlight, height = '100%', shareColors, isDark = true, idle = false },
-  ref,
-) {
-  const simRef = useRef<ForceGraphSimulation | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const cameraApiRef = useRef<CameraApi | null>(null);
-  const snapshotRef = useRef<(() => string | null) | null>(null);
-
-  if (!simRef.current) {
-    simRef.current = new ForceGraphSimulation();
-  }
-  const sim = simRef.current;
-
-  useImperativeHandle(ref, () => ({
-    getCanvasElement: () => containerRef.current?.querySelector('canvas') ?? null,
-    getHubCount: () => sim.nodes.filter((n) => n.type === 'hub').length,
-    getHubPosition: (index: number) => {
-      const hubs = sim.nodes.filter((n) => n.type === 'hub');
-      const hub = hubs[index];
-      return hub ? [hub.x ?? 0, hub.y ?? 0, hub.z ?? 0] as [number, number, number] : null;
-    },
-    findAgentHub: (address: string) => {
-      const lower = address.toLowerCase();
-      for (const node of sim.nodes) {
-        if (node.type !== 'agent') continue;
-        const parts = node.id.split(':');
-        if (parts.length >= 2 && parts[1].toLowerCase() === lower) {
-          const hubTokenAddress = node.hubTokenAddress;
-          if (!hubTokenAddress) continue;
-          const hubs = sim.nodes.filter((n) => n.type === 'hub');
-          const hubIndex = hubs.findIndex((h) => h.id === hubTokenAddress);
-          if (hubIndex >= 0) return { hubIndex, hubTokenAddress };
-        }
-      }
-      return null;
-    },
-    animateCameraTo: async (request) => {
-      const api = cameraApiRef.current;
-      if (!api) return;
-      await api.animateTo(
-        request.position,
-        request.lookAt ?? [0, 0, 0],
-        request.durationMs ?? 1200,
-      );
-    },
-    focusHub: async (index, durationMs = 1200) => {
-      const api = cameraApiRef.current;
-      if (!api) return;
-      const hubs = sim.nodes.filter((n) => n.type === 'hub');
-      const hub = hubs[index];
-      if (!hub) return;
-      const hx = hub.x ?? 0;
-      const hy = hub.y ?? 0;
-      const hz = hub.z ?? 0;
-      await api.animateTo([hx, hy + 15, hz + 12], [hx, hy, hz], durationMs);
-    },
-    focusAgent: async (address, durationMs = 800) => {
-      const api = cameraApiRef.current;
-      if (!api) return;
-      const lower = address.toLowerCase();
-      let agentNode: ForceNode | undefined;
-      for (const node of sim.nodes) {
-        if (node.type !== 'agent') continue;
-        const parts = node.id.split(':');
-        if (parts.length >= 2 && parts[1].toLowerCase() === lower) {
-          agentNode = node;
-          break;
-        }
-      }
-      if (!agentNode) return;
-      const ax = agentNode.x ?? 0;
-      const ay = agentNode.y ?? 0;
-      const az = agentNode.z ?? 0;
-      // Zoom in closer than hub view to show the agent in its local cluster
-      await api.animateTo([ax, ay + 12, az + 10], [ax, ay, az], durationMs);
-    },
-    setOrbitEnabled: (enabled) => {
-      cameraApiRef.current?.setOrbitEnabled(enabled);
-    },
-    takeSnapshot: () => {
-      return snapshotRef.current?.() ?? null;
-    },
-  }));
-
-  const tokenKey = topTokens.map((t) => `${t.tokenAddress}:${t.trades}:${t.volume}`).join(',');
-  const edgeKey = traderEdges.length + ':' + traderEdges.slice(0, 20).map((e) => e.trader.slice(0, 6)).join(',');
-  useEffect(() => {
-    sim.update(topTokens, traderEdges);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tokenKey, edgeKey]);
-
-  useEffect(() => {
-    return () => {
-      simRef.current?.dispose();
-    };
-  }, []);
-
-  const [webglSupported, setWebglSupported] = useState(true);
-  useEffect(() => {
-    try {
-      const c = document.createElement('canvas');
-      const supported = !!(c.getContext('webgl2') || c.getContext('webgl'));
-      setWebglSupported(supported);
-    } catch {
-      setWebglSupported(false);
-    }
-  }, []);
-
-  if (!webglSupported) {
     return (
-      <div
-        ref={containerRef}
-        style={{
-          width: '100%',
-          height,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: '#0a0a12',
-          flexDirection: 'column',
-          gap: 12,
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: 14,
-            fontWeight: 400,
-            color: '#888',
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-          }}
-        >
-          WebGL Not Supported
-        </span>
-        <span
-          style={{
-            fontFamily: "'IBM Plex Mono', monospace",
-            fontSize: 12,
-            color: '#666',
-          }}
-        >
-          Your browser or device does not support WebGL, which is required for this visualization.
-        </span>
-      </div>
-    );
-  }
-
-  return (
-    <div ref={containerRef} style={{ width: '100%', height, position: 'relative' }}>
-      <Canvas
-        camera={{ fov: 45, near: 0.1, far: 1000, position: [0, 80, 180] }}
-        style={{ background: shareColors?.background ?? '#0a0a12' }}
-        gl={{ antialias: false, alpha: false, stencil: false }}
-        dpr={[1, 1.5]}
-        onCreated={({ gl }) => {
-          gl.toneMapping = THREE.ACESFilmicToneMapping;
-          gl.toneMappingExposure = 1.0;
-          gl.outputColorSpace = THREE.SRGBColorSpace;
-        }}
-      >
-        <CameraSetup apiRef={cameraApiRef} />
-        <SnapshotHelper snapshotRef={snapshotRef} />
-        {idle ? (
-          <IdleAmbientScene />
-        ) : (
+      <>
+        {showNetwork ? (
           <NetworkScene
             sim={sim}
             topTokens={topTokens}
-            activeProtocol={activeProtocol ?? null}
+            activeProtocol={activeProtocol}
             highlightedHubIndex={highlightedHubIndex}
             highlightedAddress={highlightedAddress}
-            onSelectProtocol={onSelectProtocol ?? (() => {})}
+            onSelectProtocol={onSelectProtocol}
             onDismissHighlight={onDismissHighlight}
             shareColors={shareColors}
             isDark={isDark}
           />
+        ) : (
+          <IdleAmbientScene />
         )}
-        <PostProcessing />
-      </Canvas>
-    </div>
+        <CameraControls
+          ref={cameraControlsRef}
+          minDistance={5}
+          maxDistance={120}
+          truckSpeed={0}
+          mouseButtons={{ left: 1, middle: 0, right: 2, wheel: 8 }}
+          touches={{ one: 32, two: 1024, three: 0 }}
+        />
+        <PostProcessing isDark={isDark} />
+      </>
+    );
+  },
+);
+ForceGraph.displayName = 'ForceGraph';
+
+const ForceGraphCanvas = forwardRef<ForceGraphHandle, ForceGraphProps>((props, ref) => {
+  return (
+    <Canvas
+      camera={{ position: [0, 0, 50], fov: 45, near: 0.1, far: 1000 }}
+      gl={{ preserveDrawingBuffer: true, antialias: true }}
+      frameloop="demand"
+    >
+      <ForceGraph {...props} ref={ref} />
+    </Canvas>
   );
 });
+ForceGraphCanvas.displayName = 'ForceGraphCanvas';
 
-export default memo(ForceGraphInner);
+export default ForceGraphCanvas;
