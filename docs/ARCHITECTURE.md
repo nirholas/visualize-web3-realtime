@@ -215,6 +215,48 @@ The UI automatically generates filter controls from the category list. Users can
 
 ---
 
+## Feature Modules
+
+The `features/` directory contains the application's major feature modules:
+
+### World (`features/World/`)
+
+The core 3D blockchain visualization, composed of:
+
+- **ForceGraph.tsx** — Main 3D force-directed graph (~1,400 lines). React Three Fiber + d3-force-3d, instanced meshes, bloom effects, whale/sniper detection, bonding curve visualization.
+- **Desktop Shell** (`desktop/`) — Windows 95-style UI: draggable windows, taskbar, start menu, z-order management, localStorage persistence. 8 window apps: Filters, Live Feed, Stats, AI Chat, Share, Embed, Data Sources, Timeline.
+- **AI Chat** (`ai/`) — Claude Sonnet integration with 5 scene-manipulation tools (sceneColorUpdate, cameraFocus, dataFilter, agentSummary, tradeVisualization). Component registry uses Zod schemas for tool definitions.
+- **Verification** (`verification/`) — Giza LuminAIR STARK proof verification modal. Gracefully degrades to demo mode.
+- **Onboarding** (`onboarding/`) — 7-step guided walkthrough with localStorage persistence.
+- **StatsBar, TimelineBar, LiveFeed, ProviderPanel, ProtocolFilterSidebar, SharePanel, EmbedConfigurator** — Supporting UI components.
+
+### Agents (`features/Agents/`)
+
+AI agent orchestration visualization:
+
+- **AgentForceGraph.tsx** (~1,200 lines) — 3D graph of agents, tasks, and tool nodes. Tool particle trails across 6 categories (filesystem, search, terminal, network, code, reasoning). Reasoning halos, spawn effects, completion celebrations, error shake animations.
+- **TaskInspector** — Full task detail with tool call output, sub-agent tracking, reasoning text.
+- **ExecutorBanner** — Backend health monitoring (healthy/degraded/offline/reconnecting).
+- Max 200 task nodes, 200 tool particles. Camera animation duration: 1200ms.
+
+### Scrollytelling (`features/Scrollytelling/`)
+
+Scroll-driven home page with Framer Motion `useScroll`. Three dashboard mockup states triggered at scroll thresholds (0%, 30%, 62%). Floating particle background via React Three Fiber.
+
+### Landing (`features/Landing/`)
+
+Marketing page with editorial engine (Pretext library for zero-DOM text measurement), animated orbs as text obstacles, 3D Giza scene with custom GLSL shaders (120 agents per protocol, instanced geometry).
+
+### Demos (`features/Demos/`)
+
+6 domain-agnostic demo datasets with staggered hub reveal (700ms intervals) and particle generation (400ms intervals). Max 200 particles with FIFO eviction.
+
+### Tools (`features/Tools/`)
+
+7 visualization showcases with `ToolPageShell` wrapper. AI Office uses procedural 3D agents with wander behavior.
+
+---
+
 ## Monorepo Tooling
 
 ### Turborepo

@@ -38,7 +38,7 @@ npm run build
 npm start
 ```
 
-The app serves on port 3000 by default (override with `PORT` env var).
+The app serves on port 3100 by default (override with `PORT` env var).
 
 ### Build all packages independently
 
@@ -68,7 +68,12 @@ cp .env.example .env.local
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `PORT` | No | `3000` | Server port (production) |
+| `PORT` | No | `3100` | Server port (production) |
+| `ANTHROPIC_API_KEY` | No | — | Claude API key for `/world` AI chat and `/api/world-chat` endpoint |
+| `API_SECRET` | No | — | API key for protected routes (/api/executor, /api/world-chat). Clients send via `x-api-key` header. |
+| `NEXT_PUBLIC_SOLANA_WS_URL` | No | — | Solana RPC WebSocket (e.g. Helius, Alchemy) |
+| `NEXT_PUBLIC_ETH_WS_URL` | No | `wss://ethereum-rpc.publicnode.com` | Ethereum RPC WebSocket |
+| `NEXT_PUBLIC_BASE_WS_URL` | No | `wss://base-rpc.publicnode.com` | Base chain RPC WebSocket |
 | `NEXT_PUBLIC_SPERAXOS_WS_URL` | No | `wss://api.speraxos.io/agents/v1/stream` | Agent event WebSocket endpoint |
 | `NEXT_PUBLIC_SPERAXOS_API_KEY` | No | — | SperaxOS API key for real agent data |
 | `NEXT_PUBLIC_AGENT_MOCK` | No | `true` | Use mock agent data when no API key |
@@ -79,6 +84,7 @@ Only needed if running the agent executor server (`npm run dev:executor`):
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
+| `EXECUTOR_URL` | No | `http://localhost:8765` | Executor backend URL (used by `/api/executor` proxy) |
 | `EXECUTOR_PORT` | No | `8765` | Executor WebSocket server port |
 | `EXECUTOR_MAX_AGENTS` | No | `5` | Max concurrent agents |
 | `SPERAXOS_URL` | No | `https://api.speraxos.io` | SperaxOS API base URL |
@@ -90,8 +96,9 @@ Only needed if running the agent executor server (`npm run dev:executor`):
 The `/world` route works fully out of the box — it connects to:
 - **PumpPortal WebSocket** (unauthenticated) for token launches and trades
 - **Solana Mainnet RPC** (public endpoint) for claim events
+- **Binance public WebSocket** (unauthenticated) for CEX volume data
 
-No API keys needed for the core visualization experience.
+No API keys needed for the core visualization experience. The AI chat requires `ANTHROPIC_API_KEY`.
 
 ---
 

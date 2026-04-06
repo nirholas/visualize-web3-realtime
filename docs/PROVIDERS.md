@@ -12,9 +12,60 @@ The core of the system is the **`@web3viz/providers`** package, which contains t
 
 ---
 
-## Using Existing Providers
+## Built-in Providers
 
-The easiest way to get started is to use the built-in providers. The `useProviders` hook allows you to easily instantiate and manage multiple providers in your React components.
+### PumpFunProvider (Solana)
+
+Real-time Solana token launches and trades via PumpPortal WebSocket.
+
+- **WebSocket:** `wss://pumpportal.fun/api/data` (no authentication required)
+- **Categories:** launches, agentLaunches, trades, bondingCurve, whales, snipers, claimsWallet, claimsGithub, claimsFirst
+- **Agent detection keywords:** agent, ai, gpt, bot, llm, claude, openai, chatgpt, neural, sentient, autonomous
+- **Whale detection:** Large volume threshold
+- **Sniper detection:** Fast buys post-launch
+- **Caches:** Token cache (10K), token accumulator (10K), trader accumulator (50K), seen wallets (50K)
+- **Max events:** 300 default, max top tokens: 8 default
+
+### EthereumProvider (Ethereum Mainnet)
+
+Real-time Uniswap V2/V3 swaps, ERC-20 transfers, and token mints.
+
+- **WebSocket:** Configurable RPC URL (Alchemy, Infura, or public node)
+- **Categories:** ethSwaps, ethTransfers, ethMints
+- **Topics monitored:** Swap, Mint, Transfer event signatures
+- **Uniswap routers:** V2 (`0xd9e1ce17...`) and V3 (`0x68b34658...`)
+- **Caches:** Token accumulator (10K), trader accumulator (50K)
+- **Max events:** 300 default
+
+### CexVolumeProvider (Binance)
+
+Centralized exchange spot trades and futures liquidations.
+
+- **WebSocket:** Binance public WebSocket (no API key required)
+- **Monitored pairs:** btcusdt, ethusdt, solusdt, bnbusdt, xrpusdt, dogeusdt, adausdt, avaxusdt, dotusdt, linkusdt
+- **Categories:** cexSpotTrades (minimum $50K USD filter), cexLiquidations
+- **Caches:** Symbol accumulator (5K)
+
+### AgentProvider (Multi-chain Meta-provider)
+
+Detects AI agent activity across all other providers + cookie.fun API polling.
+
+- **Detection:** 15+ framework keywords (Virtuals, ELIZA, AI16Z, DegeneAI, Olas, Fetch.ai, Singularity, Ocean Protocol, etc.)
+- **Categories:** agentDeploys, agentInteractions, agentSpawn, agentTask, toolCall, subagentSpawn, reasoning, taskComplete, taskFailed
+- **Data sources:** Listens to PumpFun, Ethereum, Base, CEX providers. Polls cookie.fun API for top agent rankings.
+- **Caches:** Known agents (5K), edge map (50K)
+
+### MockProvider (Synthetic)
+
+Generates random events for development and testing. Configurable event rate. Supports all category types.
+
+### CustomStreamProvider (User-defined)
+
+User-defined data streams via callback interface. Supports HTTP webhook, WebSocket, Server-Sent Events (SSE), and custom fetch.
+
+## Using Providers
+
+The `useProviders` hook manages provider lifecycle and aggregates data:
 
 ```tsx
 import { useProviders } from '@web3viz/providers';
@@ -28,7 +79,7 @@ function MyComponent() {
 }
 ```
 
-The `useProviders` hook will automatically manage the lifecycle of the providers (connecting, disconnecting, etc.) and provide you with a stream of events and aggregated stats.
+The hook automatically connects, disconnects, buffers events (100ms windows), merges stats, and filters by category.
 
 ---
 
