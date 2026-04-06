@@ -175,19 +175,42 @@ Complete reference for every page, API route, and special file in the Next.js Ap
 
 ---
 
-## API Routes (2 routes)
+## API Routes (4 routes)
 
 ### `POST /api/world-chat` — Claude Chat
 
 - **File:** `app/api/world-chat/route.ts`
-- **Description:** Chat endpoint powered by Claude Sonnet via the Anthropic SDK. Per-IP rate limiting (20 requests per 60 seconds). Uses tool definitions from `componentRegistry`.
+- **Description:** Chat endpoint powered by Claude Sonnet (`claude-sonnet-4-6`) via the Anthropic SDK. Per-IP rate limiting (20 requests per 60 seconds, max 10,000 IPs tracked).
 - **Env:** Requires `ANTHROPIC_API_KEY`
+- **Validation:** Max 50 messages, max 4,000 chars per message, non-empty strings, context value sanitization
+- **Tools:** `sceneColorUpdate`, `cameraFocus`, `dataFilter`, `agentSummary`, `tradeVisualization`
+- **Request body:** `{ messages: [{ role, content }], context: { stats, hubCount, agentMetrics? } }`
+- **Response:** `{ message: string, actions: [{ type, params }] }`
 
 ### `GET|POST /api/executor` — Executor Proxy
 
 - **File:** `app/api/executor/route.ts`
-- **Description:** Proxy to the executor backend. Forwards the `?path=` query parameter to the executor service with timeout handling.
-- **Env:** `EXECUTOR_URL` (default: `localhost:8765`)
+- **Description:** Proxy to the executor backend. Rate-limited: 30 requests per 60 seconds per IP.
+- **Env:** `EXECUTOR_URL` (default: `http://localhost:8765`)
+- **Allowed paths (whitelist):** `/api/status`, `/api/tasks`, `/api/agents`
+- **Security:** Path validation (no protocol schemes, double slashes, or directory traversal). 5-10 second timeouts.
+
+### `GET /api/agents/cookie` — Cookie.fun Agent Proxy
+
+- **File:** `app/api/agents/cookie/route.ts`
+- **Description:** Proxy to the cookie.fun agents API for AI agent rankings.
+- **Upstream:** `https://api.cookie.fun/v2/agents/agentsPaged`
+- **Allowed query params:** `interval`, `page`, `pageSize`
+- **Caching:** Next.js ISR revalidate=60, Cache-Control: public, s-maxage=60, stale-while-revalidate=120
+- **Timeout:** 10 seconds
+
+### `GET /api/thumbnail` — OG Image Generation
+
+- **File:** `app/api/thumbnail/route.tsx`
+- **Runtime:** Edge (no Node.js dependencies)
+- **Description:** Generates 400x300px OG images for demo pages with seeded random node positions and radial glow effects.
+- **Query param:** `?demo=` (github|kubernetes|social|api-traffic|ai-agents|iot)
+- **Demo colors:** GitHub (#818cf8), Kubernetes (#38bdf8), Social (#f472b6), API Traffic (#fbbf24), AI Agents (#a78bfa), IoT (#34d399)
 
 ---
 
@@ -277,6 +300,8 @@ Complete reference for every page, API route, and special file in the Next.js Ap
 /demos/ai-agents            → AI agent swarm
 /demos/social               → Social network graph
 /demos/iot                  → IoT sensor network
-/api/world-chat             → Claude chat API
-/api/executor               → Executor proxy API
+/api/world-chat             → Claude chat API (POST)
+/api/executor               → Executor proxy API (GET/POST)
+/api/agents/cookie          → Cookie.fun agent rankings (GET)
+/api/thumbnail              → OG image generation (GET, Edge)
 ```
