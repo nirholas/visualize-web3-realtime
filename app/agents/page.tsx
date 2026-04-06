@@ -650,7 +650,7 @@ function AgentsPageInner() {
                 outline: 'none',
               }}
               onFocus={(e) => { Object.assign(e.currentTarget.style, FOCUS_RING); }}
-              onBlur={(e) => { e.currentTarget.style.outline = 'none'; e.currentTarget.style.outlineOffset = ''; }}}
+              onBlur={(e) => { e.currentTarget.style.outline = 'none'; e.currentTarget.style.outlineOffset = ''; }}
             >
               <span style={{ fontSize: 14 }}>⬡</span>
               <span>{agent.name.slice(0, 8)}</span>

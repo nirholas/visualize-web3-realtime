@@ -50,7 +50,7 @@ class GenericParser {
     // --- Pass-through: full AgentEvent with `eventId` and `type` ---
     if (data.eventId && data.type && data.agentId) {
       if (!data.timestamp) data.timestamp = Date.now();
-      this.broadcast(data as import('../types.js').AgentEvent);
+      this.broadcast(data as unknown as import('../types.js').AgentEvent);
       return;
     }
 

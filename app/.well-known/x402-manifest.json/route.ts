@@ -1,4 +1,5 @@
 import { X402_RESOURCES } from '@/lib/x402/config';
+import type { X402Resource } from '@web3viz/core';
 
 export async function GET() {
   const manifest = {
@@ -9,7 +10,7 @@ export async function GET() {
       description: 'Real-time visualization of Web3 network activity',
       url: process.env.NEXT_PUBLIC_APP_URL || 'https://visualize-web3.app',
     },
-    accepts: X402_RESOURCES.map((r) => ({
+    accepts: X402_RESOURCES.map((r: X402Resource) => ({
       scheme: r.scheme,
       network: r.network,
       asset: r.asset,

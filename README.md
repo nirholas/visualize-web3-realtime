@@ -1,28 +1,63 @@
 <p align="center">
-  <img src="docs/assets/hero.gif" alt="Real-time Web3 + AI Agent Visualization" width="800" />
+  <img src="docs/assets/diagrams/architecture.svg" alt="swarming — data pipeline architecture" width="800" />
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@web3viz/core"><img src="https://img.shields.io/npm/v/@web3viz/core?style=flat-square&color=6366f1" alt="npm version" /></a>
-  <a href="https://bundlephobia.com/package/@web3viz/react-graph"><img src="https://img.shields.io/bundlephobia/minzip/@web3viz/react-graph?style=flat-square&color=22c55e&label=bundle" alt="bundle size" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="license" /></a>
-  <a href="https://discord.gg/your-discord"><img src="https://img.shields.io/discord/0000000000?style=flat-square&logo=discord&logoColor=white&color=5865F2&label=discord" alt="discord" /></a>
-  <a href="https://github.com/nirholas/visualize-web3-realtime/stargazers"><img src="https://img.shields.io/github/stars/nirholas/visualize-web3-realtime?style=flat-square&color=f59e0b" alt="stars" /></a>
+  <img src="https://img.shields.io/badge/3D-Force%20Graph-blueviolet?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/React-Three%20Fiber-61dafb?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/TypeScript-Strict-3178c6?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/60fps-5%2C000%2B%20nodes-22c55e?style=for-the-badge" />
 </p>
 
-<h1 align="center">Real-time Web3 + AI Agent Visualization</h1>
+<h1 align="center">swarming</h1>
 
 <p align="center">
-  <strong>A GPU-accelerated, real-time network visualization engine for Web3 and AI agents, built with Next.js 14, React Three Fiber, and D3-force. Capable of rendering over 5,000 nodes at 60fps.</strong>
+  <strong>GPU-accelerated real-time 3D network visualization for any streaming data source.<br/>React + Three.js + D3-force. 5,000+ nodes at 60fps.</strong>
 </p>
 
 <p align="center">
-  <a href="https://www.web3viz.dev/world"><strong>Live Demo</strong></a> · <a href="docs/"><strong>Documentation</strong></a> · <a href="https://discord.gg/your-discord"><strong>Discord</strong></a>
+  <a href="#quick-start">Quick Start</a> &bull;
+  <a href="#features">Features</a> &bull;
+  <a href="#architecture">Architecture</a> &bull;
+  <a href="#packages">Packages</a> &bull;
+  <a href="#pages--routes">Routes</a> &bull;
+  <a href="#api-reference">API</a> &bull;
+  <a href="#documentation">Docs</a>
 </p>
 
 ---
 
-## Get Started in 30 Seconds
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Project Structure](#project-structure)
+- [Packages](#packages)
+- [Pages & Routes](#pages--routes)
+- [Data Providers](#data-providers)
+- [Build Your Own Provider](#build-your-own-provider)
+- [AI Integration](#ai-integration)
+- [ZK Proof Verification](#zk-proof-verification)
+- [Demo Scenarios](#demo-scenarios)
+- [Desktop Shell UI](#desktop-shell-ui)
+- [Visual Graph Editor](#visual-graph-editor)
+- [WASM Physics Engine](#wasm-physics-engine)
+- [Multi-Framework Support](#multi-framework-support)
+- [Performance](#performance)
+- [API Reference](#api-reference)
+- [Tech Stack](#tech-stack)
+- [Build & Development](#build--development)
+- [Testing](#testing)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
+
+## Quick Start
+
+### Use as a library
 
 ```bash
 npm install @web3viz/core @web3viz/react-graph
@@ -32,315 +67,257 @@ npm install @web3viz/core @web3viz/react-graph
 import { ForceGraph } from '@web3viz/react-graph'
 
 function App() {
-  const nodes = //... your nodes
-  const edges = //... your edges
-  return <ForceGraph nodes={nodes} edges={edges} />
+  return <ForceGraph topTokens={hubs} traderEdges={edges} />
 }
 ```
 
 GPU-accelerated force-directed graph with instanced rendering, mouse repulsion, proximity webs, and spring physics — out of the box.
 
-Or scaffold the full application:
+### Run the full application
 
 ```bash
 git clone https://github.com/nirholas/visualize-web3-realtime.git
 cd visualize-web3-realtime
-npm install && npm run dev
+npm install
+npm run dev
 ```
 
-Open **http://localhost:3100** — the live visualization will start immediately. No API keys needed for the default providers.
+Open **http://localhost:3100** — a live 3D visualization starts immediately. No API keys needed for the default providers.
 
 ---
 
 ## Features
 
-<table>
-<tr>
-<td width="33%" align="center">
-<img src="docs/assets/feature-performance.gif" alt="60fps performance" width="240" /><br />
-<strong>60fps @ 5,000 nodes</strong><br />
-<sub>InstancedMesh rendering with spatial hashing for O(1) lookups</sub>
-</td>
-<td width="33%" align="center">
-<img src="docs/assets/feature-websocket.gif" alt="Any data source" width="240" /><br />
-<strong>Real-time Data Providers</strong><br />
-<sub>Built-in provider system for WebSockets, REST, or any custom data stream</sub>
-</td>
-<td width="33%" align="center">
-<img src="docs/assets/feature-physics.gif" alt="Force-directed physics" width="240" /><br />
-<strong>Force-directed 3D physics</strong><br />
-<sub>d3-force-3d with framerate-independent damping and configurable springs</sub>
-</td>
-</tr>
-<tr>
-<td width="33%" align="center">
-<img src="docs/assets/feature-interaction.gif" alt="Mouse interaction" width="240" /><br />
-<strong>Rich interaction</strong><br />
-<sub>Hover, click, drag, orbit, zoom. Mouse-repulsion physics. Camera fly-to.</sub>
-</td>
-<td width="33%" align="center">
-<img src="docs/assets/feature-themes.gif" alt="Themes" width="240" /><br />
-<strong>Theming & Design System</strong><br />
-<sub>Full component library with dark/light presets and CSS custom properties</sub>
-</td>
-<td width="33%" align="center">
-<img src="docs/assets/feature-export.gif" alt="Export & share" width="240" /><br />
-<strong>Export & share</strong><br />
-<sub>Screenshot with metadata overlay, share URLs, and embeddable widget</sub>
-</td>
-</tr>
-<tr>
-<td width="33%" align="center">
-<img src="docs/assets/feature-collab.gif" alt="Multiplayer collaboration" width="240" /><br />
-<strong>Multiplayer collaboration</strong><br />
-<sub>Room-based cursors, camera sync, shared annotations, presenter mode</sub>
-</td>
-<td width="33%" align="center">
-<img src="docs/assets/feature-editor.gif" alt="Visual graph editor" width="240" /><br />
-<strong>Visual graph editor</strong><br />
-<sub>Create and edit nodes/edges, undo/redo, import/export JSON, Mermaid, CSV, SVG</sub>
-</td>
-<td width="33%" align="center">
-<img src="docs/assets/feature-ai.gif" alt="AI chat assistant" width="240" /><br />
-<strong>AI chat assistant</strong><br />
-<sub>Natural language graph control via Claude Sonnet with tool-use integration</sub>
-</td>
-</tr>
-<tr>
-<td width="33%" align="center">
-<img src="docs/assets/feature-agents.gif" alt="Agent monitoring" width="240" /><br />
-<strong>Agent monitoring</strong><br />
-<sub>3D visualization of AI agent orchestration, tasks, and tool calls</sub>
-</td>
-<td width="33%" align="center">
-<img src="docs/assets/feature-wasm.gif" alt="WASM physics" width="240" /><br />
-<strong>WASM physics engine</strong><br />
-<sub>Rust Barnes-Hut simulation compiled to WebAssembly — 3-5× faster than JS</sub>
-</td>
-<td width="33%" align="center">
-<img src="docs/assets/feature-multiframework.gif" alt="Multi-framework" width="240" /><br />
-<strong>Multi-framework</strong><br />
-<sub>React, Vue, Svelte, React Native, vanilla JS, and CDN embed</sub>
-</td>
-</tr>
-</table>
+### 3D Visualization Engine
+- **InstancedMesh rendering** — single draw call per node type for GPU efficiency
+- **Spatial hashing** — O(1) neighbor lookups for interaction and physics
+- **d3-force-3d physics** — framerate-independent damping, configurable springs, charge forces
+- **Post-processing** — SMAA anti-aliasing, N8AO ambient occlusion, selective bloom
+- **Camera system** — orbit controls, fly-to animations, auto-rotate, focus-on-node
+
+### Real-time Streaming
+- **Provider system** — plug in any data source (WebSocket, REST, custom)
+- **Built-in providers** — Solana PumpFun, Ethereum/Base DEX, CEX volume, mock data
+- **BoundedMap/BoundedSet** — LRU-evicting collections prevent unbounded memory growth
+- **WebSocketManager** — automatic reconnection with exponential backoff
+
+### Rich Interaction
+- Hover, click, drag, orbit, zoom
+- Mouse-repulsion physics
+- Node labels with protocol icons
+- Live trade feed with animated cards
+- Timeline scrubber and stats bar
+
+### AI-Powered
+- **World Chat** — Claude Sonnet with tool-use for natural language graph control
+- **Agent monitoring** — 3D visualization of AI agent orchestration at `/agents`
+- **MCP Server** — Model Context Protocol server exposing live data to AI agents
+
+### Desktop Shell UI
+- Windows-style windowed interface with draggable, resizable panels
+- Taskbar, start menu, system tray
+- Connection status toasts and keyboard shortcuts
+- Onboarding coach marks for first-time users
+
+### More
+- **ZK proof verification** — Giza LuminAIR STARK proof verification in the UI
+- **Visual graph editor** — create/edit nodes and edges, undo/redo, import/export
+- **WASM physics** — Rust Barnes-Hut simulation compiled to WebAssembly (3-5x faster than JS)
+- **Multi-framework** — React, Vue, Svelte, React Native, vanilla JS wrappers
+- **Multiplayer** — room-based collaboration server with cursors and presenter mode
 
 ---
 
-## Multi-Framework Support
+## Architecture
 
-swarming runs everywhere — pick your stack:
-
-**React**
-```tsx
-import { ForceGraph } from '@swarming/react'
-
-function App() {
-  return <ForceGraph nodes={hubs} edges={connections} />
-}
+```
+                    ┌─────────────────────────────────────┐
+                    │          Next.js App Router          │
+                    │  (pages, API routes, middleware)     │
+                    └──────────────┬──────────────────────┘
+                                   │
+               ┌───────────────────┼───────────────────┐
+               │                   │                   │
+        ┌──────▼──────┐    ┌──────▼──────┐    ┌──────▼──────┐
+        │   /world    │    │   /agents   │    │   /demos    │
+        │  ForceGraph │    │ AgentForce  │    │  6 scenarios│
+        │  3D scene   │    │   Graph     │    │  mock data  │
+        └──────┬──────┘    └──────┬──────┘    └─────────────┘
+               │                  │
+        ┌──────▼──────────────────▼──────┐
+        │     @web3viz/react-graph       │
+        │  React Three Fiber + d3-force  │
+        └──────────────┬─────────────────┘
+                       │
+        ┌──────────────▼─────────────────┐
+        │         @web3viz/core          │
+        │  Types, physics, categories,   │
+        │  provider interface, themes    │
+        └──────────────┬─────────────────┘
+                       │
+        ┌──────────────▼─────────────────┐
+        │       @web3viz/providers       │
+        │  PumpFun, Ethereum, Base,      │
+        │  CEX, ERC-8004, Mock           │
+        └────────────────────────────────┘
 ```
 
-**Vue 3**
-```vue
-<script setup>
-import { SwarmingGraph } from '@swarming/vue'
-</script>
-<template>
-  <SwarmingGraph :nodes="hubs" :edges="connections" />
-</template>
-```
+The system uses a **provider → core → renderer** pipeline. Data providers emit standardized events, the core engine manages physics simulation and graph state, and the React Three Fiber renderer handles GPU-accelerated 3D output.
 
-**Svelte**
-```svelte
-<script>
-import { SwarmingGraph } from '@swarming/svelte'
-</script>
-<SwarmingGraph {nodes} {edges} />
-```
-
-**Vanilla JS / CDN**
-```html
-<script src="https://unpkg.com/swarming"></script>
-<div id="viz"></div>
-<script>
-  Swarming.create('#viz', { source: 'wss://your-stream.com' })
-</script>
-```
-
-**React Native (Expo)**
-```tsx
-import { SwarmingView } from '@swarming/react-native'
-
-export default () => <SwarmingView nodes={hubs} edges={connections} />
-```
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full system design and data flow.
 
 ---
 
-## Multiplayer Collaboration
+## Project Structure
 
-Real-time multi-user graph editing powered by `swarming-collab-server`:
-
-- **Room-based sessions** — create or join a room, see other users' cursors live in 3D
-- **Camera sync** — follow a peer's viewpoint or broadcast yours in presenter mode
-- **Shared annotations** — collaboratively annotate nodes and edges
-- **Reconnection** — automatic re-join with state recovery
-
-Start the relay server:
-```bash
-npx swarming-collab-server   # WebSocket relay on port 4444
+```
+app/                    # Next.js App Router (pages, API routes)
+  api/executor/         # Proxy to executor backend
+  api/world-chat/       # Claude Sonnet chat endpoint
+  api/.well-known/      # x402 protocol manifest
+features/
+  World/                # 3D visualization — ForceGraph, StatsBar, Timeline
+    desktop/            # Desktop shell UI (taskbar, windows, start menu)
+    utils/              # shared.ts (hex, formatting), accessibility.ts
+    verification/       # Giza LuminAIR ZK verification components
+    onboarding/         # Coach marks and onboarding prompts
+    components/         # Reusable UI (sidebar, protocol filters)
+  Agents/               # Agent visualization — AgentForceGraph, sidebar, feed
+  Landing/              # Landing page with custom 3D scenes and shaders
+  Demos/                # 6 demo scenarios with mock data generators
+  Tools/                # Third-party tool integration pages
+  Scrollytelling/       # Scroll-driven narrative landing page
+packages/
+  core/                 # Core types, physics, provider interface (zero React deps)
+  providers/            # Data provider implementations
+  react-graph/          # React Three Fiber <ForceGraph /> component
+  ui/                   # Design system — buttons, panels, feeds, theming
+  utils/                # Screenshots, share URLs, formatting helpers
+  mcp/                  # MCP server (DeFi Llama, cookie.fun, proof registry)
+  agent-bridge/         # AI agent connection layer (Claude Code, stdin adapter)
+  swarming-physics/     # Rust → WASM Barnes-Hut force simulation
+  swarming-collab-server/ # WebSocket relay for multiplayer collaboration
+  engine/               # Framework-agnostic engine with vanilla JS API
+  vue/                  # Vue 3 wrapper
+  svelte/               # Svelte wrapper
+  react-native/         # React Native + Expo wrapper
+  create-swarming-app/  # CLI scaffolder (npx create-swarming-app)
+  create-swarming-plugin/ # Plugin scaffolder
+  tsconfig/             # Shared TypeScript configs
+  tailwind-config/      # Shared Tailwind config
+  executor/             # ⚠️ BROKEN — missing ws dep
+apps/
+  playground/           # Standalone Next.js playground (port 3200)
+  mobile-demo/          # Expo React Native demo app
 ```
 
 ---
 
-## AI Integration
+## Packages
 
-### World Chat
+### Core
 
-An AI assistant embedded in the visualization that can control the graph through natural language. Powered by Claude Sonnet with tool-use — ask it to focus on a node, filter categories, change colors, or explain what's happening.
-
-### MCP Server
-
-Model Context Protocol server (`@web3viz/mcp`) exposes live data to AI agents:
-
-| Resource | Description |
+| Package | Description |
 |---|---|
-| `protocol_stats` | DeFi Llama TVL and protocol metrics |
-| `recent_trades` | Real-time trade feed |
-| `agent_activity` | cookie.fun agent rankings |
-| `proof_status` | LuminAIR STARK proof verification status |
+| [`@web3viz/core`](packages/core/) | Types, physics engine, provider interface, category system. Zero React deps. |
+| [`@swarming/engine`](packages/engine/) | Framework-agnostic engine — vanilla JS API with `createSwarming()` |
+| [`swarming-physics`](packages/swarming-physics/) | Rust Barnes-Hut simulation compiled to WASM — 3-5x faster than JS d3-force |
+| [`@web3viz/providers`](packages/providers/) | Data providers (PumpFun, Ethereum, Base, CEX, Mock, + build your own) |
+| [`@web3viz/ui`](packages/ui/) | Design system — buttons, panels, feeds, filters, theming with CSS custom properties |
+| [`@web3viz/utils`](packages/utils/) | Screenshots, share URLs, formatting helpers |
 
-### Agent Monitoring
+### React & Framework Wrappers
 
-Full agent orchestration dashboard at `/agents` — 3D force graph of agents, tasks, tool calls, and tokens. Includes sidebar, stats bar, timeline, live feed, and task inspector.
+| Package | Description |
+|---|---|
+| [`@web3viz/react-graph`](packages/react-graph/) | `<ForceGraph>` component (Three.js + React Three Fiber) |
+| [`@swarming/react`](packages/react/) | Thin React wrapper around `@swarming/engine` |
+| [`@swarming/vue`](packages/vue/) | Vue 3 wrapper |
+| [`@swarming/svelte`](packages/svelte/) | Svelte wrapper |
+| [`@swarming/react-native`](packages/react-native/) | React Native + Expo with GL renderer, haptics, gestures, battery awareness |
+
+### Collaboration & Tooling
+
+| Package | Description |
+|---|---|
+| [`swarming-collab-server`](packages/swarming-collab-server/) | WebSocket relay for multiplayer (rooms, cursors, presenter mode) |
+| [`@web3viz/mcp`](packages/mcp/) | MCP server — DeFi Llama, cookie.fun, proof registry for AI agents |
+| [`@web3viz/agent-bridge`](packages/agent-bridge/) | Agent connection layer for Claude Code, OpenClaw, Hermes, stdin adapter |
+| [`create-swarming-app`](packages/create-swarming-app/) | CLI scaffolder — `npx create-swarming-app` (5 templates) |
+| [`create-swarming-plugin`](packages/create-swarming-plugin/) | Plugin project scaffolder |
+
+### Dependency Graph
+
+```
+@web3viz/core              ← zero dependencies, pure TypeScript
+    ↑
+@web3viz/providers         ← implements DataProvider interface
+@web3viz/react-graph       ← React Three Fiber + d3-force-3d
+@web3viz/ui                ← React + Tailwind + CSS custom properties
+@web3viz/utils             ← tiny helpers
+@swarming/engine           ← framework-agnostic rendering + physics
+    ↑
+@swarming/react            ← thin React wrapper
+@swarming/vue              ← thin Vue wrapper
+@swarming/svelte           ← thin Svelte wrapper
+@swarming/react-native     ← Expo GL + gesture handler
+```
 
 ---
 
-## ZK Proof Verification
+## Pages & Routes
 
-Built-in Giza LuminAIR integration for zero-knowledge proof verification. The `VerifyBadge` and `VerificationModal` components provide step-by-step STARK proof verification directly in the UI. Gracefully degrades to demo mode if `@gizatech/luminair-web` is not installed.
+| Route | Description |
+|---|---|
+| `/` | Scrollytelling landing page with 3D scenes |
+| `/world` | Main 3D visualization with live data providers |
+| `/agents` | AI agent monitoring dashboard (force graph, sidebar, feed, timeline) |
+| `/demos` | Demo hub |
+| `/demos/ai-agents` | Multi-agent orchestration visualization |
+| `/demos/api-traffic` | Service mesh and API call monitoring |
+| `/demos/github` | Repository activity and contributor networks |
+| `/demos/iot` | Sensor networks and device telemetry |
+| `/demos/kubernetes` | Pod topology, traffic, and scaling events |
+| `/demos/social` | Interaction graphs and content cascades |
+| `/tools/*` | Tool comparison pages (Cosmograph, Graphistry, ReaGraph, and more) |
+| `/showcase` | Community showcase gallery |
+| `/plugins` | Plugin directory |
+| `/benchmarks` | Interactive benchmark results viewer |
+| `/blog` | Blog with markdown content |
+| `/docs` | Documentation viewer |
+| `/embed` | Embeddable widget with URL param customization |
+| `/playground` | Interactive playground |
+
+### API Routes
+
+| Endpoint | Description |
+|---|---|
+| `/api/world-chat` | Claude Sonnet chat with tool-use for graph control |
+| `/api/executor` | Proxy to agent executor backend |
+| `/api/agents/cookie` | cookie.fun agent data |
+| `/api/.well-known/x402-manifest` | x402 payment protocol manifest |
 
 ---
 
-## Visual Graph Editor
-
-Full-featured graph editing mode:
-
-- Create, delete, and drag nodes and edges
-- Inline label editing and context menus
-- Undo/redo with full history (`Ctrl+Z` / `Ctrl+Shift+Z`)
-- Marquee selection and copy/paste
-- Auto-layout algorithms
-- Import/export: JSON, Mermaid, CSV, SVG
-
----
-
-## Built-in Data Providers
+## Data Providers
 
 | Provider | Chain / Source | Data |
 |---|---|---|
+| **Solana PumpFun** | Solana | Token launches, trades, and claims via `wss://pumpportal.fun/api/data` |
 | **Ethereum** | Ethereum | Uniswap / DEX swaps and liquidity events |
 | **Base** | Base | Real-time on-chain activity |
-| **Solana PumpFun** | Solana | Token launches, trades, and claims tracking |
 | **ERC-8004** | Multi-chain | ERC-8004 token events |
 | **CEX Volume** | Binance | Liquidations and trade data |
 | **Mock** | — | Synthetic events for development and testing |
 
-Build your own: [docs/PROVIDERS.md](docs/PROVIDERS.md)
-
----
-
-## Demo Scenarios
-
-6 pre-built demos at [`/demos`](https://swarming.dev/demos) with mock and live data:
-
-| Demo | Description |
-|---|---|
-| AI Agents | Multi-agent orchestration visualization |
-| API Traffic | Service mesh and API call monitoring |
-| GitHub | Repository activity and contributor networks |
-| IoT | Sensor networks and device telemetry |
-| Kubernetes | Pod topology, traffic, and scaling events |
-| Social Networks | Interaction graphs and content cascades |
-
----
-
-## Desktop Shell UI
-
-A windowed desktop-style interface for power users:
-
-- Draggable and resizable panels
-- Taskbar with app icons, start menu, and system tray
-- Connection status toasts
-- Keyboard shortcuts
-- Onboarding coach marks for first-time users
-
----
-
-## Use Cases
-
-| | Application | Description |
-|---|---|---|
-| **Web3** | DeFi, NFTs, DAOs | Real-time visualization of on-chain activity, tokenomics, and governance |
-| **AI Agents** | Orchestration graphs | Multi-agent task execution, tool calls, swarm coordination |
-| **Infrastructure** | Service meshes | Kubernetes pods, API traffic, CI/CD pipelines, log clustering |
-| **Social** | Interaction networks | Chat flows, follow graphs, content virality cascades |
-| **Finance** | Trading activity | Order flow, liquidity movements, market microstructure |
-| **Blockchain** | Transaction flows | DEX swaps on Ethereum/Base/Solana, token launches, bridge messages |
-| **ZK Proofs** | Verification | STARK proof verification with Giza LuminAIR integration |
-| **IoT** | Sensor networks | Device telemetry, fleet tracking, energy grid flows |
-
----
-
-## Performance
-
-swarming uses InstancedMesh (single draw call per node type), SpatialHash grids, and framerate-independent physics.
-
-| | swarming | d3-force (SVG) | sigma.js | cytoscape |
-|---|---|---|---|---|
-| **1,000 nodes** | 60 fps | 45 fps | 55 fps | 40 fps |
-| **5,000 nodes** | 60 fps | 12 fps | 30 fps | 8 fps |
-| **10,000 nodes** | 45 fps | 3 fps | 15 fps | crash |
-| **Rendering** | WebGL 3D | SVG / Canvas | WebGL 2D | Canvas 2D |
-| **Streaming data** | Built-in | DIY | DIY | DIY |
-| **React native** | Yes (R3F) | Wrapper | Wrapper | Wrapper |
-
----
-
-## API Overview
-
-### `<ForceGraph>` Props
-
-| Prop | Type | Description |
-|---|---|---|
-| `nodes` | `HubNode[]` | Hub nodes (up to 8) |
-| `edges` | `Edge[]` | Connections between nodes (up to 5,000) |
-| `simulationConfig` | `SimulationConfig` | Physics parameters (charge, damping, springs) |
-| `background` | `string` | Scene background color |
-| `showLabels` | `boolean` | Toggle hub labels |
-| `showGround` | `boolean` | Toggle ground plane |
-| `fov` | `number` | Camera field of view |
-| `cameraPosition` | `[x, y, z]` | Initial camera position |
-
-### Imperative Handle
-
-```tsx
-const ref = useRef<GraphHandle>(null)
-
-ref.current.focusHub(0)                            // Fly to hub
-ref.current.animateCameraTo([10, 20, 30], origin)  // Custom fly-to
-ref.current.setOrbitEnabled(true)                   // Auto-rotate
-```
-
-Full API reference: [docs/COMPONENTS.md](docs/COMPONENTS.md)
+All providers emit standardized events through the `DataProvider` interface. Data is validated with `packages/providers/src/shared/validate.ts` helpers. WebSocket connections are managed by `WebSocketManager` with automatic reconnection and exponential backoff.
 
 ---
 
 ## Build Your Own Provider
 
-Any streaming data source becomes a visualization:
-
 ```typescript
-import type { DataProvider } from '@swarming/core'
+import type { DataProvider } from '@web3viz/core'
 
 class MyProvider implements DataProvider {
   readonly id = 'my-source'
@@ -367,41 +344,198 @@ class MyProvider implements DataProvider {
 }
 ```
 
-Guide: [docs/PROVIDERS.md](docs/PROVIDERS.md)
+See the full guide: [docs/PROVIDERS.md](docs/PROVIDERS.md)
 
 ---
 
-## Packages
+## AI Integration
 
-### Core
+### World Chat
 
-| Package | Description |
+An AI assistant embedded in the `/world` visualization that controls the graph through natural language. Powered by **Claude Sonnet with tool-use** — ask it to focus on a node, filter categories, change colors, or explain what's happening in the network.
+
+### Agent Monitoring
+
+Full agent orchestration dashboard at `/agents`:
+
+- **AgentForceGraph** — 3D force graph of agents, tasks, tool calls, and tokens
+- **AgentSidebar** — agent configuration and status
+- **AgentLiveFeed** — real-time event stream
+- **AgentTimeline** — temporal event visualization
+- **TaskInspector** — task analysis and debugging
+- **AgentStatsBar** — aggregate metrics
+
+### MCP Server
+
+Model Context Protocol server (`@web3viz/mcp`) exposes live data to AI agents:
+
+| Resource | Description |
 |---|---|
-| [`@swarming/core`](packages/core/) | Types, physics engine, provider interface. Zero React deps. |
-| [`@swarming/engine`](packages/engine/) | Framework-agnostic engine — vanilla JS API with `createSwarming()` |
-| [`swarming-physics`](packages/swarming-physics/) | WASM Barnes-Hut force simulation (Rust → WebAssembly, 3-5× faster) |
-| [`@swarming/providers`](packages/providers/) | Data providers (Mock, WebSocket, + build your own) |
-| [`@swarming/ui`](packages/ui/) | Design system — buttons, panels, feeds, filters, theming |
-| [`@swarming/utils`](packages/utils/) | Screenshots, share URLs, formatting helpers |
+| `protocol_stats` | DeFi Llama TVL and protocol metrics |
+| `recent_trades` | Real-time trade feed |
+| `agent_activity` | cookie.fun agent rankings |
+| `proof_status` | LuminAIR STARK proof verification status |
 
-### Framework Wrappers
+### Agent Bridge
 
-| Package | Description |
+The `@web3viz/agent-bridge` package provides connection adapters for AI agents:
+- **Claude Code** integration
+- **stdin adapter** for CLI-based agents
+- **OpenClaw** and **Hermes** agent protocols
+
+---
+
+## ZK Proof Verification
+
+Built-in **Giza LuminAIR** integration for zero-knowledge proof verification. The `VerifyBadge` and `VerificationModal` components provide step-by-step STARK proof verification directly in the UI.
+
+- Uses inline styles (no Tailwind dependency) for isolation
+- Gracefully degrades to **demo mode** if `@gizatech/luminair-web` is not installed
+- Located in `features/World/verification/`
+
+---
+
+## Demo Scenarios
+
+6 pre-built demo scenarios with mock data generators at `/demos`:
+
+| Demo | Description |
 |---|---|
-| [`@swarming/react`](packages/react-graph/) | `<ForceGraph>` component (Three.js + React Three Fiber) |
-| [`@swarming/vue`](packages/vue/) | Vue 3 wrapper for the swarming engine |
-| [`@swarming/svelte`](packages/svelte/) | Svelte wrapper for the swarming engine |
-| [`@swarming/react-native`](packages/react-native/) | React Native + Expo with GL renderer, haptics, and gestures |
-| [`swarming`](packages/swarming/) | CDN/UMD bundle — zero-build embed via `<script>` tag |
+| **AI Agents** | Multi-agent orchestration — tasks, tool calls, token flows |
+| **API Traffic** | Service mesh monitoring — request routing, latency, errors |
+| **GitHub** | Repository activity — commits, PRs, contributor networks |
+| **IoT** | Sensor networks — device telemetry, fleet tracking |
+| **Kubernetes** | Pod topology — scaling events, traffic, resource usage |
+| **Social Networks** | Interaction graphs — follow networks, content cascades |
 
-### Collaboration & Tooling
+Each demo uses `useDemoSimulation.ts` for shared simulation logic with configurable parameters.
 
-| Package | Description |
-|---|---|
-| [`swarming-collab-server`](packages/swarming-collab-server/) | WebSocket relay for multiplayer (rooms, cursors, presenter mode) |
-| [`@web3viz/mcp`](packages/mcp/) | MCP server — DeFi Llama, cookie.fun, proof registry for AI agents |
-| [`create-swarming-app`](packages/create-swarming-app/) | CLI scaffolder — `npx create-swarming-app` |
-| [`create-swarming-plugin`](packages/create-swarming-plugin/) | Plugin project scaffolder |
+---
+
+## Desktop Shell UI
+
+A windowed desktop-style interface located in `features/World/desktop/`:
+
+- **DesktopShell** — full desktop environment container
+- **Taskbar** — app icons, connection status, system tray
+- **StartMenu** — navigation and settings
+- **Window manager** — draggable, resizable panels with `useWindowManager` hook
+- Keyboard shortcuts and connection status toasts
+- Onboarding coach marks for first-time users
+
+---
+
+## Visual Graph Editor
+
+Full-featured graph editing mode included in the `swarming` package:
+
+- Create, delete, and drag nodes and edges
+- Inline label editing and context menus
+- Undo/redo with full history (`Ctrl+Z` / `Ctrl+Shift+Z`)
+- Marquee selection and copy/paste
+- Auto-layout algorithms
+- Import/export: JSON, Mermaid, CSV, SVG
+
+---
+
+## WASM Physics Engine
+
+The `swarming-physics` package provides a **Rust Barnes-Hut simulation** compiled to WebAssembly:
+
+- **3-5x faster** than JavaScript d3-force-3d
+- Off-thread computation via Web Workers
+- Progressive fallback to JS if WASM is unavailable
+- Barnes-Hut tree approximation for O(n log n) force calculations
+
+---
+
+## Multi-Framework Support
+
+### React (primary)
+```tsx
+import { ForceGraph } from '@web3viz/react-graph'
+
+<ForceGraph topTokens={hubs} traderEdges={edges} />
+```
+
+### Vue 3
+```vue
+<script setup>
+import { SwarmingGraph } from '@swarming/vue'
+</script>
+<template>
+  <SwarmingGraph :nodes="hubs" :edges="connections" />
+</template>
+```
+
+### Svelte
+```svelte
+<script>
+import { SwarmingGraph } from '@swarming/svelte'
+</script>
+<SwarmingGraph {nodes} {edges} />
+```
+
+### React Native (Expo)
+```tsx
+import { SwarmingView } from '@swarming/react-native'
+
+export default () => <SwarmingView nodes={hubs} edges={connections} />
+```
+
+### Vanilla JS / CDN
+```html
+<script src="https://unpkg.com/swarming"></script>
+<div id="viz"></div>
+<script>
+  Swarming.create('#viz', { source: 'wss://your-stream.com' })
+</script>
+```
+
+---
+
+## Performance
+
+Uses **InstancedMesh** (single draw call per node type), **SpatialHash** grids for O(1) lookups, and framerate-independent physics.
+
+| | swarming | d3-force (SVG) | sigma.js | cytoscape |
+|---|---|---|---|---|
+| **1,000 nodes** | 60 fps | 45 fps | 55 fps | 40 fps |
+| **5,000 nodes** | 60 fps | 12 fps | 30 fps | 8 fps |
+| **10,000 nodes** | 45 fps | 3 fps | 15 fps | crash |
+| **Rendering** | WebGL 3D | SVG / Canvas | WebGL 2D | Canvas 2D |
+| **Streaming data** | Built-in | DIY | DIY | DIY |
+| **React Native** | Yes (R3F) | Wrapper | Wrapper | Wrapper |
+| **WASM option** | Yes (Rust) | No | No | No |
+
+---
+
+## API Reference
+
+### `<ForceGraph>` Props
+
+| Prop | Type | Description |
+|---|---|---|
+| `nodes` | `HubNode[]` | Hub nodes |
+| `edges` | `Edge[]` | Connections between nodes |
+| `simulationConfig` | `SimulationConfig` | Physics parameters (charge, damping, springs) |
+| `background` | `string` | Scene background color |
+| `showLabels` | `boolean` | Toggle hub labels |
+| `showGround` | `boolean` | Toggle ground plane |
+| `fov` | `number` | Camera field of view |
+| `cameraPosition` | `[x, y, z]` | Initial camera position |
+
+### Imperative Handle
+
+```tsx
+const ref = useRef<GraphHandle>(null)
+
+ref.current.focusHub(0)                            // Fly camera to hub
+ref.current.animateCameraTo([10, 20, 30], origin)  // Custom fly-to
+ref.current.setOrbitEnabled(true)                   // Toggle auto-rotate
+```
+
+Full API reference: [docs/COMPONENTS.md](docs/COMPONENTS.md)
 
 ---
 
@@ -409,39 +543,74 @@ Guide: [docs/PROVIDERS.md](docs/PROVIDERS.md)
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js 14 (App Router) |
-| 3D Engine | Three.js + React Three Fiber |
-| Physics | d3-force-3d + WASM Barnes-Hut (Rust) |
-| Animation | Framer Motion |
-| Post-processing | SMAA, N8AO ambient occlusion, selective bloom |
-| Styling | Tailwind CSS + CSS custom properties |
-| AI | Claude Sonnet (tool-use), Model Context Protocol |
-| ZK Proofs | Giza LuminAIR (STARK verification) |
-| Collaboration | WebSocket relay with room-based sync |
-| Language | TypeScript (strict mode) |
-| Monorepo | npm workspaces + Turborepo |
+| **Framework** | Next.js 14 (App Router) |
+| **3D Engine** | Three.js + React Three Fiber + drei |
+| **Physics** | d3-force-3d + WASM Barnes-Hut (Rust) |
+| **Animation** | Framer Motion |
+| **Post-processing** | SMAA, N8AO ambient occlusion, selective bloom |
+| **Styling** | Tailwind CSS + CSS custom properties |
+| **AI** | Claude Sonnet (tool-use), Model Context Protocol |
+| **ZK Proofs** | Giza LuminAIR (STARK verification) |
+| **Collaboration** | WebSocket relay with room-based sync |
+| **Code Editor** | CodeMirror 6 |
+| **Validation** | Zod |
+| **Language** | TypeScript (strict mode) |
+| **Monorepo** | npm workspaces + Turborepo |
+| **Testing** | Vitest + Testing Library |
 
 ---
 
-## Pages & Routes
+## Build & Development
 
-| Route | Description |
-|---|---|
-| `/world` | Main 3D visualization with live data providers |
-| `/agents` | Agent monitoring dashboard |
-| `/demos/*` | 6 demo scenarios (AI agents, API traffic, GitHub, IoT, K8s, social) |
-| `/embed` | Embeddable widget with URL param customization |
-| `/tools/*` | Tool comparison pages (Cosmograph, Graphistry, and more) |
-| `/showcase` | Community showcase gallery with filtering and search |
-| `/plugins` | Plugin directory |
-| `/benchmarks` | Interactive benchmark results viewer |
-| `/blog` | Blog with markdown content |
+```bash
+npm run dev          # Dev server on port 3100
+npm run build        # Build the Next.js app (must pass)
+npm run typecheck    # TypeScript check (must pass)
+npm run lint         # ESLint
+npm test             # Run all tests (vitest)
+npm test -- --run packages/core   # Tests for a specific package
+```
+
+> **Note:** Do NOT use `turbo run build` — `packages/executor` (missing `ws` dep) and `apps/playground` (broken import) will fail. Use `npm run build` which only builds the main Next.js app.
+
+### Type-check a specific package
+
+```bash
+npx tsc --noEmit -p packages/providers/tsconfig.json
+```
+
+### Path Aliases
+
+- `@/*` maps to the project root
+- `@web3viz/<pkg>` maps to `packages/<pkg>/src`
+
+### Key Conventions
+
+- `BoundedMap`/`BoundedSet` for all caches (LRU-evicting, never unbounded)
+- Verification components use inline styles (no Tailwind)
+- All external data validated with `packages/providers/src/shared/validate.ts`
+- No default exports for non-page components
+
+---
+
+## Testing
+
+Tests use **Vitest** with **jsdom**. Config in `vitest.config.ts`. Tests live in `__tests__/` directories adjacent to source.
+
+```bash
+npm test                        # Run all tests
+npm test -- --watch             # Watch mode
+npm test -- --coverage          # With coverage
+npm test -- --run packages/core # Specific package
+```
+
+Coverage targets: `packages/core/src`, `packages/providers/src`, `packages/utils/src`, `features/World/utils`
 
 ---
 
 ## Documentation
 
-| | |
+| Doc | Description |
 |---|---|
 | [Architecture](docs/ARCHITECTURE.md) | System design, data flow, performance internals |
 | [Providers](docs/PROVIDERS.md) | Build custom data providers |
@@ -451,37 +620,37 @@ Guide: [docs/PROVIDERS.md](docs/PROVIDERS.md)
 | [Contributing](CONTRIBUTING.md) | Dev setup, code style, PR guidelines |
 | [Changelog](CHANGELOG.md) | Notable changes |
 
+### Diagrams
+
+SVG architecture and component diagrams are available in [`public/diagrams/`](public/diagrams/):
+
+`architecture` · `data-flow` · `dependency-graph` · `world-page-layout` · `agent-page-layout` · `agent-sidebar` · `agent-timeline` · `agent-live-feed` · `agent-stats-bar` · `agent-label` · `task-inspector` · `executor-architecture` · `executor-status` · `provider-architecture` · `provider-config-panel`
+
 ---
 
-## Community
+## Contributing
 
-swarming is MIT-licensed and open to contributions.
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup, code style, and PR guidelines.
 
 **High-impact areas:**
 - New data providers (network traffic, IoT, social, blockchain)
 - Performance (WebGPU, compute shaders)
-- Framework wrappers (Vue, Svelte, React Native improvements)
+- Framework wrappers (Vue, Svelte improvements)
 - Collaboration features and multiplayer UX
 - Mobile/touch interaction
 - Accessibility
 - Documentation and examples
 
-If swarming is useful to you, consider [starring the repo](https://github.com/nirholas/swarming.world) — it helps others discover the project and motivates continued development.
-
-<a href="https://discord.gg/swarming">Join the Discord</a> · <a href="CONTRIBUTING.md">Contributing Guide</a> · <a href="https://swarming.dev">Showcase Gallery</a>
-
 ---
 
-## Sponsors
+## License
 
-<p align="center">
-  <sub>Interested in sponsoring? See <a href=".github/FUNDING.yml">FUNDING.yml</a> or reach out on Discord.</sub>
-</p>
+All Rights Reserved. Copyright (c) 2026.
 
 ---
 
 <p align="center">
-  MIT License · Built by <a href="https://github.com/nirholas">@nirholas</a>
+  Built by <a href="https://github.com/nirholas">@nirholas</a>
 </p>
 
 <p align="center">

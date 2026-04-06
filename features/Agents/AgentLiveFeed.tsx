@@ -248,7 +248,7 @@ const AgentLiveFeed = memo<AgentLiveFeedProps>(({ events, agents, onSelectAgent,
             onBlur={(e) => {
               e.currentTarget.style.outline = 'none';
               e.currentTarget.style.outlineOffset = '';
-            }}}
+            }}
           >
             ↑ LIVE
           </button>
