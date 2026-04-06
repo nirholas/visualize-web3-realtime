@@ -65,7 +65,16 @@ export const X402_RESOURCES: X402Resource[] = [
     scheme: 'exact',
     network: 'base-sepolia',
     asset: 'USDC',
-    amount: '100000',
+    amount: '100000',    // $0.10 — Basic tier
+    payTo: X402_PAY_TO,
+  },
+  {
+    resource: '/api/premium/stats',
+    description: 'Aggregated cross-provider statistics',
+    scheme: 'exact',
+    network: 'base-sepolia',
+    asset: 'USDC',
+    amount: '100000',    // $0.10 — Basic tier
     payTo: X402_PAY_TO,
   },
   {
@@ -74,7 +83,7 @@ export const X402_RESOURCES: X402Resource[] = [
     scheme: 'exact',
     network: 'base-sepolia',
     asset: 'USDC',
-    amount: '1000000',
+    amount: '1000000',   // $1.00 — Premium tier
     payTo: X402_PAY_TO,
   },
 ];

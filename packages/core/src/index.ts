@@ -27,6 +27,22 @@ export type {
   AgentGraphNode,
 } from './types/agent';
 
+// X402 Payment Protocol types
+export type {
+  X402Network,
+  X402Asset,
+  X402NetworkConfig,
+  X402Scheme,
+  X402Resource,
+  X402PaymentProof,
+  X402VerificationStatus,
+  X402VerificationResult,
+  X402Tier,
+  X402TierConfig,
+  X402Session,
+  X402Challenge,
+} from './types/x402';
+
 // Types
 export type {
   BuiltInSource,

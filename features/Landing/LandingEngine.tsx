@@ -225,21 +225,6 @@ export default function LandingEngine() {
           display: none;
         }
         .le-hint.le-visible { display: block; }
-        .le-stats {
-          position: fixed; top: 48px; right: 24px; z-index: 100;
-          display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
-          pointer-events: none;
-        }
-        .le-stats-line {
-          font: 500 10px ${FONT_FAMILY};
-          letter-spacing: 0.14em; text-transform: uppercase;
-          color: ${MUTED_COLOR};
-          white-space: nowrap;
-        }
-        .le-stats-line strong {
-          color: ${HEADLINE_COLOR};
-          font-weight: 500;
-        }
         .le-cta {
           position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
           z-index: 100; text-decoration: none;
@@ -286,7 +271,6 @@ export default function LandingEngine() {
         .le-breathe-btn.le-hidden { display: none; }
         @media (max-width: 760px) {
           .le-hint { display: none !important; }
-          .le-stats { display: none; }
         }
         @media (prefers-reduced-motion: reduce) {
           .le-orb { transition: none !important; }

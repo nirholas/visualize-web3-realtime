@@ -56,22 +56,23 @@ interface ForceEdge extends SimulationLinkDatum<ForceNode> {
 // Constants
 // ---------------------------------------------------------------------------
 
-const MAX_AGENT_NODES = 5000;
-const HUB_BASE_RADIUS = 1.5;
-const HUB_MAX_RADIUS = 5.0;
-const AGENT_RADIUS = 0.06;
-
-// Edge highlight bloom color (overbright blue triggers selective bloom)
-const EDGE_HIGHLIGHT_R = 0.48;
-const EDGE_HIGHLIGHT_G = 0.78;
-const EDGE_HIGHLIGHT_B = 2.0;
-
-// Idle ambient constants
-const IDLE_NODE_COUNT = 40;
-const IDLE_SPEED = 0.08;
-const IDLE_RADIUS_MIN = 0.15;
-const IDLE_RADIUS_MAX = 0.5;
-const IDLE_SPREAD = 30;
+const {
+  MAX_AGENTS,
+  HUB_BASE_RADIUS,
+  HUB_MAX_RADIUS,
+  AGENT_RADIUS,
+  EDGE_HIGHLIGHT_R,
+  EDGE_HIGHLIGHT_G,
+  EDGE_HIGHLIGHT_B,
+  IDLE_NODE_COUNT,
+  IDLE_SPEED,
+  IDLE_RADIUS_MIN,
+  IDLE_RADIUS_MAX,
+  IDLE_SPREAD,
+  PARTICLE_COUNT,
+  PARTICLE_SPEED,
+  MAX_EDGES,
+} = GRAPH_CONFIG;
 
 // ---------------------------------------------------------------------------
 // Force simulation manager (runs outside React render cycle)
@@ -154,7 +155,7 @@ class ForceGraphSimulation {
 
     // --- Agent nodes from trader edges ---
     const agentCount = this.nodes.filter((n) => n.type === 'agent').length;
-    const budget = MAX_AGENT_NODES - agentCount;
+    const budget = MAX_AGENTS - agentCount;
     let added = 0;
 
     for (const edge of traderEdges) {
@@ -486,7 +487,7 @@ const AgentNodes = memo<{
     if (!mesh) return;
 
     const agents = sim.nodes.filter((n) => n.type === 'agent');
-    const count = Math.min(agents.length, MAX_AGENT_NODES);
+    const count = Math.min(agents.length, MAX_AGENTS);
     mesh.count = count;
 
     const ac = activeColorRef.current;
@@ -560,7 +561,7 @@ const AgentNodes = memo<{
   return (
     <instancedMesh
       ref={meshRef}
-      args={[geometry, material, MAX_AGENT_NODES]}
+      args={[geometry, material, MAX_AGENTS]}
       frustumCulled={false}
     />
   );
@@ -579,7 +580,7 @@ const Edges = memo<{
   const lineRef = useRef<THREE.LineSegments>(null);
   const posAttr = useRef<THREE.Float32BufferAttribute | null>(null);
   const colorAttr = useRef<THREE.Float32BufferAttribute | null>(null);
-  const maxEdges = 20000;
+  const maxEdges = MAX_EDGES;
   const edgeColor = useMemo(() => new THREE.Color(), []);
 
   useEffect(() => {
@@ -696,9 +697,6 @@ Edges.displayName = 'Edges';
 // ---------------------------------------------------------------------------
 // Animated edge particles — glowing dots flowing along edges (agent → hub)
 // ---------------------------------------------------------------------------
-
-const PARTICLE_COUNT = 150;
-const PARTICLE_SPEED = 2.5;
 
 const EdgeParticles = memo<{ sim: ForceGraphSimulation; isDark?: boolean }>(({ sim, isDark = true }) => {
   const meshRef = useRef<THREE.InstancedMesh>(null);
