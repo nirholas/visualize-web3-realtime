@@ -488,6 +488,14 @@ export interface ForceGraphHandle {
   focusHub: (index: number, durationMs?: number) => void;
   /** Animate camera to focus on a specific agent node */
   focusAgent: (address: string, durationMs?: number) => void;
+  /** Animate camera to a position/target */
+  animateCameraTo: (opts: { position: [number, number, number]; lookAt?: [number, number, number]; durationMs?: number }) => void;
+  /** Enable or disable orbit controls */
+  setOrbitEnabled: (enabled: boolean) => void;
+  /** Get the number of hub nodes */
+  getHubCount: () => number;
+  /** Get the underlying canvas element */
+  getCanvasElement: () => HTMLCanvasElement | null;
 }
 
 export interface ForceGraphProps {
@@ -586,6 +594,17 @@ const ForceGraph = forwardRef<ForceGraphHandle, ForceGraphProps>(
         const z = target.z ?? 0;
         cameraControlsRef.current?.setLookAt(x, y + 20, z + 20, x, y, z, true);
       },
+      animateCameraTo: (opts) => {
+        const { position, lookAt = [0, 0, 0] } = opts;
+        cameraControlsRef.current?.setLookAt(...position, ...lookAt, true);
+      },
+      setOrbitEnabled: (enabled: boolean) => {
+        if (cameraControlsRef.current) {
+          cameraControlsRef.current.enabled = enabled;
+        }
+      },
+      getHubCount: () => sim.nodes.filter((n) => n.type === 'hub').length,
+      getCanvasElement: () => gl.domElement,
     }));
 
     const showNetwork = topTokens.length > 0;

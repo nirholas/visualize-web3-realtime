@@ -49,7 +49,7 @@ export const HubNodeMesh = memo(
     const targetOpacity = useRef(1);
     const targetRingOpacity = useRef(0);
     const targetGlowOpacity = useRef(0);
-    const radiusRef = useRef(HUB_BASE_RADIUS);
+    const radiusRef = useRef<number>(HUB_BASE_RADIUS);
 
     const node = useMemo(() => sim.nodeMap.get(nodeId), [sim, nodeId]);
     const isAgentHub = node?.source === 'agents';
