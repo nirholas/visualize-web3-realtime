@@ -492,6 +492,36 @@ export default function BenchmarksPage() {
       }}
     >
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '48px 24px' }}>
+        <nav style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
+          {[
+            { href: '/', label: '← Home' },
+            { href: '/world', label: 'World' },
+            { href: '/agents', label: 'Agents' },
+            { href: '/demos', label: 'Demos' },
+            { href: '/tools', label: 'Tools' },
+            { href: '/docs', label: 'Docs' },
+            { href: '/blog', label: 'Blog' },
+            { href: '/showcase', label: 'Showcase' },
+            { href: '/plugins', label: 'Plugins' },
+            { href: '/playground', label: 'Playground' },
+          ].map(({ href, label }) => (
+            <a
+              key={href}
+              href={href}
+              style={{
+                fontSize: 11,
+                color: '#888',
+                textDecoration: 'none',
+                padding: '6px 12px',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 4,
+                transition: 'color 150ms',
+              }}
+            >
+              {label}
+            </a>
+          ))}
+        </nav>
         <h1 style={{ fontSize: 32, fontWeight: 700, marginBottom: 8 }}>Performance Benchmarks</h1>
         <p style={{ color: '#888', marginBottom: 32, fontSize: 16 }}>
           Reproducible benchmarks proving 60fps at 5,000 nodes. Run them yourself.

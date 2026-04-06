@@ -121,7 +121,7 @@ export default function PlaygroundPage() {
     <div className="h-screen w-screen flex flex-col bg-[#0a0a12] text-slate-200 overflow-hidden">
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-2 border-b border-white/10 bg-[#0e0e1a] shrink-0">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           <Link
             href="/"
             className="text-sm font-semibold tracking-wider text-slate-300 hover:text-white transition-colors"
@@ -131,6 +131,24 @@ export default function PlaygroundPage() {
           <span className="text-slate-600">/</span>
           <span className="text-sm text-blue-400 font-mono tracking-wide">playground</span>
           <PresetSelector current={currentPreset} onSelect={handlePresetSelect} />
+          <nav className="flex gap-2 ml-2">
+            {[
+              { href: '/world', label: 'World' },
+              { href: '/agents', label: 'Agents' },
+              { href: '/demos', label: 'Demos' },
+              { href: '/tools', label: 'Tools' },
+              { href: '/docs', label: 'Docs' },
+              { href: '/blog', label: 'Blog' },
+            ].map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className="text-[10px] text-slate-500 hover:text-slate-200 border border-white/10 rounded px-2 py-1 transition-colors"
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
         </div>
 
         <div className="flex items-center gap-3">

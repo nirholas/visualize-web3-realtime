@@ -163,16 +163,25 @@ Copy `.env.example` to `.env.local`:
 cp .env.example .env.local
 ```
 
-| Variable | Required | Description |
-|---|---|---|
-| `ANTHROPIC_API_KEY` | No | Claude API key for `/world` AI chat |
-| `NEXT_PUBLIC_SOLANA_WS_URL` | No | Solana RPC WebSocket (e.g. Helius) |
-| `NEXT_PUBLIC_ETH_WS_URL` | No | Ethereum RPC WebSocket (has public fallback) |
-| `NEXT_PUBLIC_BASE_WS_URL` | No | Base chain RPC WebSocket (has public fallback) |
-| `NEXT_PUBLIC_SPERAXOS_WS_URL` | No | Agent event WebSocket |
-| `NEXT_PUBLIC_SPERAXOS_API_KEY` | No | Agent API key (mock mode if empty) |
-| `NEXT_PUBLIC_AGENT_MOCK` | No | `true` for mock agents (default) |
-| `EXECUTOR_PORT` | No | Executor server port (default 8765) |
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| **AI** | | | |
+| `ANTHROPIC_API_KEY` | No | — | Claude API key for `/world` AI chat |
+| **Blockchain Providers** | | | |
+| `NEXT_PUBLIC_SOLANA_WS_URL` | No | — | Solana RPC WebSocket (e.g. Helius, Alchemy) |
+| `NEXT_PUBLIC_ETH_WS_URL` | No | `wss://ethereum-rpc.publicnode.com` | Ethereum RPC WebSocket |
+| `NEXT_PUBLIC_BASE_WS_URL` | No | `wss://base-rpc.publicnode.com` | Base chain RPC WebSocket |
+| **SperaxOS Agent API** | | | |
+| `NEXT_PUBLIC_SPERAXOS_WS_URL` | No | `wss://api.speraxos.io/agents/v1/stream` | Agent event WebSocket endpoint |
+| `NEXT_PUBLIC_SPERAXOS_API_KEY` | No | — | SperaxOS API key (mock mode if empty) |
+| `NEXT_PUBLIC_AGENT_MOCK` | No | `true` | Set to `false` to use real agent data |
+| **Executor** | | | |
+| `EXECUTOR_URL` | No | `http://localhost:8765` | Executor backend URL (used by `/api/executor` proxy) |
+| `EXECUTOR_PORT` | No | `8765` | Executor WebSocket server port |
+| `EXECUTOR_MAX_AGENTS` | No | `5` | Max concurrent agents |
+| `SPERAXOS_URL` | No | `https://api.speraxos.io` | SperaxOS API base URL (executor) |
+| `SPERAXOS_API_KEY` | No | — | SperaxOS API key (executor) |
+| `STATE_PATH` | No | `./data/executor.db` | Executor state database path |
 
 The app works without any env vars — PumpFun data streams need no authentication.
 

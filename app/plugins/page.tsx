@@ -301,13 +301,30 @@ export default function PluginsPage() {
       {/* Header */}
       <div className="border-b border-white/10 bg-white/[0.02]">
         <div className="mx-auto max-w-5xl px-6 py-8">
+          <nav className="flex flex-wrap gap-2 mb-3">
+            {[
+              { href: '/', label: '← Home' },
+              { href: '/world', label: 'World' },
+              { href: '/agents', label: 'Agents' },
+              { href: '/demos', label: 'Demos' },
+              { href: '/tools', label: 'Tools' },
+              { href: '/docs', label: 'Docs' },
+              { href: '/blog', label: 'Blog' },
+              { href: '/showcase', label: 'Showcase' },
+              { href: '/playground', label: 'Playground' },
+              { href: '/benchmarks', label: 'Benchmarks' },
+            ].map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className="text-xs text-white/40 hover:text-white/70 border border-white/10 rounded px-2.5 py-1 transition-colors"
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
           <div className="flex items-center gap-3 mb-1">
-            <Link
-              href="/"
-              className="text-sm text-white/40 hover:text-white/60 transition-colors"
-            >
-              swarming
-            </Link>
+            <span className="text-sm text-white/40">swarming</span>
             <span className="text-white/20">/</span>
             <span className="text-sm text-white/60">plugins</span>
           </div>

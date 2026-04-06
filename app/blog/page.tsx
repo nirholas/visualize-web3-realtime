@@ -14,6 +14,28 @@ export default function BlogIndex() {
     <main className="min-h-screen bg-[#0a0a12] text-[#d8d8e8] px-6 py-16 font-[family-name:var(--font-ibm-plex-mono)]">
       <div className="max-w-4xl mx-auto">
         <header className="mb-16">
+          <nav className="flex flex-wrap gap-3 mb-8 text-xs">
+            {[
+              { href: '/', label: '← Home' },
+              { href: '/world', label: 'World' },
+              { href: '/agents', label: 'Agents' },
+              { href: '/demos', label: 'Demos' },
+              { href: '/tools', label: 'Tools' },
+              { href: '/docs', label: 'Docs' },
+              { href: '/showcase', label: 'Showcase' },
+              { href: '/plugins', label: 'Plugins' },
+              { href: '/playground', label: 'Playground' },
+              { href: '/benchmarks', label: 'Benchmarks' },
+            ].map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className="text-[#6a6a8a] hover:text-white border border-[#1e1e2e] rounded px-3 py-1.5 transition-colors"
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
           <h1 className="text-4xl font-semibold tracking-tight mb-4">Blog</h1>
           <p className="text-[#8888a8] text-lg leading-relaxed max-w-2xl">
             Technical deep-dives on real-time data visualization, WebGL

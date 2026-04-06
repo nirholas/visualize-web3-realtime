@@ -93,34 +93,34 @@ export default function DemosIndex() {
               Real-time network visualization for every domain &mdash; all running on mock data, no API keys required
             </p>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <Link
-              href="/world"
-              style={{
-                fontSize: 11,
-                color: '#888',
-                textDecoration: 'none',
-                padding: '6px 14px',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 4,
-              }}
-            >
-              &larr; Dashboard
-            </Link>
-            <Link
-              href="/tools"
-              style={{
-                fontSize: 11,
-                color: '#888',
-                textDecoration: 'none',
-                padding: '6px 14px',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 4,
-              }}
-            >
-              Tools &rarr;
-            </Link>
-          </div>
+          <nav style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {[
+              { href: '/world', label: '← World' },
+              { href: '/tools', label: 'Tools' },
+              { href: '/agents', label: 'Agents' },
+              { href: '/docs', label: 'Docs' },
+              { href: '/blog', label: 'Blog' },
+              { href: '/showcase', label: 'Showcase' },
+              { href: '/plugins', label: 'Plugins' },
+              { href: '/playground', label: 'Playground' },
+              { href: '/benchmarks', label: 'Benchmarks' },
+            ].map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                style={{
+                  fontSize: 11,
+                  color: '#888',
+                  textDecoration: 'none',
+                  padding: '6px 14px',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 4,
+                }}
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
         </div>
 
         {/* Category filter */}

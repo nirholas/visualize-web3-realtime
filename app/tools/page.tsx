@@ -89,20 +89,35 @@ export default function ToolsHub() {
             Standalone experiments — isolated from the main dashboard
           </p>
         </div>
-        <Link
-          href="/world"
-          style={{
-            fontSize: 11,
-            color: '#888',
-            textDecoration: 'none',
-            padding: '6px 12px',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: 4,
-            transition: 'all 150ms',
-          }}
-        >
-          ← Back to World
-        </Link>
+        <nav style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {[
+            { href: '/world', label: '← World' },
+            { href: '/demos', label: 'Demos' },
+            { href: '/agents', label: 'Agents' },
+            { href: '/docs', label: 'Docs' },
+            { href: '/blog', label: 'Blog' },
+            { href: '/showcase', label: 'Showcase' },
+            { href: '/plugins', label: 'Plugins' },
+            { href: '/playground', label: 'Playground' },
+            { href: '/benchmarks', label: 'Benchmarks' },
+          ].map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              style={{
+                fontSize: 11,
+                color: '#888',
+                textDecoration: 'none',
+                padding: '6px 12px',
+                border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 4,
+                transition: 'all 150ms',
+              }}
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
       </header>
 
       {/* Grid */}

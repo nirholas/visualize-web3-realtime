@@ -60,6 +60,7 @@ export default function LandingPage() {
           bottom: 24,
           right: 32,
           display: 'flex',
+          flexWrap: 'wrap' as const,
           gap: 20,
           zIndex: 20,
           fontFamily: "'IBM Plex Mono', monospace",
@@ -69,44 +70,34 @@ export default function LandingPage() {
           textTransform: 'uppercase',
         }}
       >
-        <a
-          href="/world"
-          style={{
-            color: '#94a3b8',
-            textDecoration: 'none',
-            transition: 'color 150ms ease',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff' }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = '#94a3b8' }}
-        >
-          Try Live Demo
-        </a>
-        <a
-          href="/tools"
-          style={{
-            color: '#94a3b8',
-            textDecoration: 'none',
-            transition: 'color 150ms ease',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff' }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = '#94a3b8' }}
-        >
-          Tools
-        </a>
-        <a
-          href="https://github.com/nirholas/swarming.world"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{
-            color: '#94a3b8',
-            textDecoration: 'none',
-            transition: 'color 150ms ease',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff' }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = '#94a3b8' }}
-        >
-          GitHub
-        </a>
+        {[
+          { href: '/world', label: 'World' },
+          { href: '/agents', label: 'Agents' },
+          { href: '/demos', label: 'Demos' },
+          { href: '/tools', label: 'Tools' },
+          { href: '/docs', label: 'Docs' },
+          { href: '/blog', label: 'Blog' },
+          { href: '/showcase', label: 'Showcase' },
+          { href: '/plugins', label: 'Plugins' },
+          { href: '/playground', label: 'Playground' },
+          { href: '/benchmarks', label: 'Benchmarks' },
+          { href: 'https://github.com/nirholas/swarming.world', label: 'GitHub', external: true },
+        ].map(({ href, label, external }) => (
+          <a
+            key={href}
+            href={href}
+            {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+            style={{
+              color: '#94a3b8',
+              textDecoration: 'none',
+              transition: 'color 150ms ease',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = '#ffffff' }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = '#94a3b8' }}
+          >
+            {label}
+          </a>
+        ))}
       </nav>
 
       {/* Bottom-left branding */}

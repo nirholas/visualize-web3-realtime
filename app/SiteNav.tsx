@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 
 const NAV_LINKS: { href: string; label: string }[] = [
-  { href: '/', label: 'Home' },
   { href: '/world', label: 'World' },
   { href: '/agents', label: 'Agents' },
   { href: '/demos', label: 'Demos' },
@@ -14,21 +13,22 @@ const NAV_LINKS: { href: string; label: string }[] = [
   { href: '/blog', label: 'Blog' },
   { href: '/showcase', label: 'Showcase' },
   { href: '/plugins', label: 'Plugins' },
+  { href: '/playground', label: 'Playground' },
   { href: '/benchmarks', label: 'Benchmarks' },
 ];
 
 export const SiteNav = memo(function SiteNav() {
-  const [open, setOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   const menuRef = useRef<HTMLElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   // Close on route change
-  useEffect(() => setOpen(false), [pathname]);
+  useEffect(() => setMobileOpen(false), [pathname]);
 
   // Close on outside click
   useEffect(() => {
-    if (!open) return;
+    if (!mobileOpen) return;
     const handler = (e: MouseEvent) => {
       if (
         menuRef.current &&
@@ -36,72 +36,70 @@ export const SiteNav = memo(function SiteNav() {
         buttonRef.current &&
         !buttonRef.current.contains(e.target as Node)
       ) {
-        setOpen(false);
+        setMobileOpen(false);
       }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
+  }, [mobileOpen]);
 
   // Close on Escape
   useEffect(() => {
-    if (!open) return;
+    if (!mobileOpen) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === 'Escape') setMobileOpen(false);
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [open]);
+  }, [mobileOpen]);
 
-  const toggle = useCallback(() => setOpen((v) => !v), []);
+  const toggle = useCallback(() => setMobileOpen((v) => !v), []);
 
   const isActive = (href: string) =>
     href === '/' ? pathname === '/' : pathname.startsWith(href);
 
   return (
     <>
-      {/* Hamburger button */}
+      {/* ── Desktop horizontal nav bar ── */}
+      <nav
+        role="navigation"
+        aria-label="Site navigation"
+        className="siteNav-desktop"
+      >
+        <Link href="/" className="siteNav-logo">
+          swarming
+        </Link>
+        <div className="siteNav-links">
+          {NAV_LINKS.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              className={`siteNav-link ${isActive(href) ? 'siteNav-active' : ''}`}
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+      </nav>
+
+      {/* ── Mobile hamburger button ── */}
       <button
         ref={buttonRef}
         onClick={toggle}
-        aria-label={open ? 'Close navigation' : 'Open navigation'}
-        aria-expanded={open}
-        style={{
-          position: 'fixed',
-          top: 16,
-          right: 16,
-          zIndex: 10000,
-          width: 40,
-          height: 40,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'rgba(18, 18, 30, 0.72)',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          borderRadius: 10,
-          cursor: 'pointer',
-          padding: 0,
-          transition: 'background 150ms ease',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'rgba(30, 30, 48, 0.82)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'rgba(18, 18, 30, 0.72)';
-        }}
+        aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'}
+        aria-expanded={mobileOpen}
+        className="siteNav-hamburger"
       >
         <svg
           width="18"
           height="18"
           viewBox="0 0 18 18"
           fill="none"
-          stroke="#94a3b8"
+          stroke="currentColor"
           strokeWidth="1.5"
           strokeLinecap="round"
         >
-          {open ? (
+          {mobileOpen ? (
             <>
               <line x1="4" y1="4" x2="14" y2="14" />
               <line x1="14" y1="4" x2="4" y2="14" />
@@ -116,58 +114,25 @@ export const SiteNav = memo(function SiteNav() {
         </svg>
       </button>
 
-      {/* Dropdown menu */}
-      {open && (
+      {/* ── Mobile dropdown menu ── */}
+      {mobileOpen && (
         <nav
           ref={menuRef}
           role="navigation"
-          aria-label="Site navigation"
-          style={{
-            position: 'fixed',
-            top: 64,
-            right: 16,
-            zIndex: 10000,
-            minWidth: 180,
-            background: 'rgba(18, 18, 30, 0.92)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: 12,
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.35)',
-            padding: '8px 0',
-            fontFamily: "var(--font-ibm-plex-mono), 'IBM Plex Mono', monospace",
-            fontSize: 12,
-            letterSpacing: '0.04em',
-            animation: 'siteNavFadeIn 150ms ease-out',
-          }}
+          aria-label="Mobile navigation"
+          className="siteNav-mobileMenu"
         >
+          <Link
+            href="/"
+            className={`siteNav-mobileLink ${isActive('/') ? 'siteNav-active' : ''}`}
+          >
+            Home
+          </Link>
           {NAV_LINKS.map(({ href, label }) => (
             <Link
               key={href}
               href={href}
-              style={{
-                display: 'block',
-                padding: '10px 20px',
-                color: isActive(href) ? '#e2e8f0' : '#94a3b8',
-                textDecoration: 'none',
-                fontWeight: isActive(href) ? 500 : 400,
-                textTransform: 'uppercase',
-                transition: 'color 120ms ease, background 120ms ease',
-                background: isActive(href)
-                  ? 'rgba(255, 255, 255, 0.04)'
-                  : 'transparent',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#ffffff';
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
-              }}
-              onMouseLeave={(e) => {
-                const active = isActive(href);
-                e.currentTarget.style.color = active ? '#e2e8f0' : '#94a3b8';
-                e.currentTarget.style.background = active
-                  ? 'rgba(255, 255, 255, 0.04)'
-                  : 'transparent';
-              }}
+              className={`siteNav-mobileLink ${isActive(href) ? 'siteNav-active' : ''}`}
             >
               {label}
             </Link>
@@ -175,8 +140,148 @@ export const SiteNav = memo(function SiteNav() {
         </nav>
       )}
 
-      {/* Keyframe animation */}
       <style jsx global>{`
+        /* ── Desktop nav bar ── */
+        .siteNav-desktop {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 10000;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          height: 44px;
+          padding: 0 20px;
+          background: rgba(10, 10, 18, 0.72);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+          font-family: var(--font-ibm-plex-mono), 'IBM Plex Mono', monospace;
+          font-size: 11px;
+          letter-spacing: 0.06em;
+        }
+
+        .siteNav-logo {
+          color: #e2e8f0;
+          text-decoration: none;
+          font-weight: 500;
+          font-size: 13px;
+          text-transform: lowercase;
+          letter-spacing: 0.08em;
+          margin-right: 16px;
+          flex-shrink: 0;
+        }
+
+        .siteNav-links {
+          display: flex;
+          align-items: center;
+          gap: 2px;
+          overflow-x: auto;
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .siteNav-links::-webkit-scrollbar {
+          display: none;
+        }
+
+        .siteNav-link {
+          color: #64748b;
+          text-decoration: none;
+          text-transform: uppercase;
+          padding: 6px 10px;
+          border-radius: 6px;
+          white-space: nowrap;
+          transition: color 120ms ease, background 120ms ease;
+        }
+        .siteNav-link:hover {
+          color: #e2e8f0;
+          background: rgba(255, 255, 255, 0.06);
+        }
+        .siteNav-link.siteNav-active {
+          color: #e2e8f0;
+          font-weight: 500;
+          background: rgba(255, 255, 255, 0.04);
+        }
+
+        .siteNav-hamburger {
+          display: none;
+        }
+
+        .siteNav-mobileMenu {
+          display: none;
+        }
+
+        /* ── Mobile: hide bar, show hamburger ── */
+        @media (max-width: 860px) {
+          .siteNav-desktop {
+            display: none;
+          }
+
+          .siteNav-hamburger {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            z-index: 10000;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(18, 18, 30, 0.78);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            cursor: pointer;
+            padding: 0;
+            color: #94a3b8;
+            transition: background 150ms ease;
+          }
+          .siteNav-hamburger:hover {
+            background: rgba(30, 30, 48, 0.85);
+          }
+
+          .siteNav-mobileMenu {
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 60px;
+            right: 12px;
+            z-index: 10000;
+            min-width: 180px;
+            background: rgba(18, 18, 30, 0.94);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            padding: 6px 0;
+            font-family: var(--font-ibm-plex-mono), 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            letter-spacing: 0.04em;
+            animation: siteNavFadeIn 150ms ease-out;
+          }
+
+          .siteNav-mobileLink {
+            display: block;
+            padding: 10px 20px;
+            color: #94a3b8;
+            text-decoration: none;
+            text-transform: uppercase;
+            transition: color 120ms ease, background 120ms ease;
+          }
+          .siteNav-mobileLink:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.06);
+          }
+          .siteNav-mobileLink.siteNav-active {
+            color: #e2e8f0;
+            font-weight: 500;
+            background: rgba(255, 255, 255, 0.04);
+          }
+        }
+
         @keyframes siteNavFadeIn {
           from { opacity: 0; transform: translateY(-8px); }
           to   { opacity: 1; transform: translateY(0); }

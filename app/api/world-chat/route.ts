@@ -3,17 +3,25 @@ import Anthropic from '@anthropic-ai/sdk';
 import { getToolDefinitions } from '@/features/World/ai/componentRegistry';
 
 // ---------------------------------------------------------------------------
-// Simple in-memory rate limiter (per-IP, 20 requests / 60 s window)
+// In-memory rate limiter (per-IP, 20 requests / 60 s window, bounded)
 // ---------------------------------------------------------------------------
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 20;
+const MAX_TRACKED_IPS = 10_000;
 const ipHits = new Map<string, { count: number; resetAt: number }>();
 
 function isRateLimited(ip: string): boolean {
   const now = Date.now();
   const entry = ipHits.get(ip);
   if (!entry || now > entry.resetAt) {
+    // Purge expired entries to bound memory usage
+    if (ipHits.size >= MAX_TRACKED_IPS) {
+      for (const [k, v] of ipHits) {
+        if (now > v.resetAt) ipHits.delete(k);
+      }
+    }
+    if (ipHits.size >= MAX_TRACKED_IPS) return true;
     ipHits.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
     return false;
   }
@@ -69,8 +77,26 @@ interface IncomingMessage {
   content: string;
 }
 
+// ---------------------------------------------------------------------------
+// Input constraints
+// ---------------------------------------------------------------------------
+const MAX_MESSAGES = 50;
+const MAX_MESSAGE_LENGTH = 4_000; // characters per message
+const MAX_TOOL_CALLS_SHOWN = 5;
+const VALID_ROLES = new Set(['user', 'assistant']);
+
+function getClientIp(request: NextRequest): string {
+  return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+}
+
+/** Sanitize a plain-text string: trim and truncate to maxLen. */
+function sanitizeString(val: unknown, maxLen: number): string {
+  if (typeof val !== 'string') return '';
+  return val.trim().slice(0, maxLen);
+}
+
 export async function POST(request: NextRequest) {
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  const ip = getClientIp(request);
   if (isRateLimited(ip)) {
     return NextResponse.json({ error: 'Too many requests. Please wait a minute.' }, { status: 429 });
   }
@@ -89,20 +115,66 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Messages array is required' }, { status: 400 });
   }
 
-  // Build agent context section if metrics are available
-  const agentSection = context.agentMetrics
-    ? `\nAgent System Status:
-- ${context.agentMetrics.activeAgents} active AI agents
-- ${context.agentMetrics.activeTasks} tasks in progress, ${context.agentMetrics.completedTasks} completed
-- Recent tool calls: ${context.agentMetrics.recentToolCalls.slice(0, 5).join(', ') || 'none'}
-Agents use Claude to autonomously analyze DeFi data via MCP tools (protocol_stats, recent_trades, agent_activity, proof_status).`
-    : '';
+  if (messages.length > MAX_MESSAGES) {
+    return NextResponse.json({ error: `Maximum ${MAX_MESSAGES} messages allowed` }, { status: 400 });
+  }
+
+  // Validate and sanitize each message
+  const sanitizedMessages: IncomingMessage[] = [];
+  for (const m of messages) {
+    if (!m || typeof m !== 'object') {
+      return NextResponse.json({ error: 'Invalid message format' }, { status: 400 });
+    }
+    if (!VALID_ROLES.has(m.role)) {
+      return NextResponse.json({ error: 'Invalid message role' }, { status: 400 });
+    }
+    if (typeof m.content !== 'string' || m.content.trim().length === 0) {
+      return NextResponse.json({ error: 'Message content must be a non-empty string' }, { status: 400 });
+    }
+    if (m.content.length > MAX_MESSAGE_LENGTH) {
+      return NextResponse.json(
+        { error: `Message exceeds maximum length of ${MAX_MESSAGE_LENGTH} characters` },
+        { status: 400 },
+      );
+    }
+    sanitizedMessages.push({ role: m.role, content: m.content.trim() });
+  }
+
+  // Sanitize context — treat all values as untrusted
+  const safeStats = {
+    totalEvents: Number(context?.stats?.totalEvents) || 0,
+    totalVolume: Number(context?.stats?.totalVolume) || 0,
+    connections: Number(context?.stats?.connections) || 0,
+  };
+  const safeHubCount = Number(context?.hubCount) || 0;
+
+  // Build agent context section if metrics are available (sanitized)
+  let agentSection = '';
+  if (context?.agentMetrics) {
+    const am = context.agentMetrics;
+    const activeAgents = Number(am.activeAgents) || 0;
+    const activeTasks = Number(am.activeTasks) || 0;
+    const completedTasks = Number(am.completedTasks) || 0;
+    const recentTools = Array.isArray(am.recentToolCalls)
+      ? am.recentToolCalls
+          .slice(0, MAX_TOOL_CALLS_SHOWN)
+          .map((t: unknown) => sanitizeString(t, 80))
+          .filter(Boolean)
+          .join(', ')
+      : 'none';
+
+    agentSection = `\nAgent System Status:
+- ${activeAgents} active AI agents
+- ${activeTasks} tasks in progress, ${completedTasks} completed
+- Recent tool calls: ${recentTools || 'none'}
+Agents use Claude to autonomously analyze DeFi data via MCP tools (protocol_stats, recent_trades, agent_activity, proof_status).`;
+  }
 
   // Build system prompt with live context
   const systemPrompt = `You are the AI agent controlling a 3D visualization of Web3 activity.
-You can see ${context.stats.totalEvents} events across ${context.hubCount} protocol hubs.
-Total volume: $${context.stats.totalVolume.toLocaleString()}.
-Active connections: ${context.stats.connections}.${agentSection}
+You can see ${safeStats.totalEvents} events across ${safeHubCount} protocol hubs.
+Total volume: $${safeStats.totalVolume.toLocaleString()}.
+Active connections: ${safeStats.connections}.${agentSection}
 
 You can use tools to modify the scene:
 - sceneColorUpdate: Change background, protocol, and user node colors (hex strings)
@@ -123,7 +195,7 @@ Always respond with a brief text message in addition to any tool calls.`;
       model: 'claude-sonnet-4-6',
       max_tokens: 1024,
       system: systemPrompt,
-      messages: messages.map((m) => ({
+      messages: sanitizedMessages.map((m) => ({
         role: m.role,
         content: m.content,
       })),
@@ -163,6 +235,7 @@ Always respond with a brief text message in addition to any tool calls.`;
       );
     }
 
-    return NextResponse.json({ error: message }, { status: 500 });
+    // Don't leak internal error details to clients
+    return NextResponse.json({ error: 'An internal error occurred' }, { status: 500 });
   }
 }

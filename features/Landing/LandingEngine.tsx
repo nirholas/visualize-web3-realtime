@@ -220,6 +220,24 @@ export default function LandingEngine() {
         .le-brand:hover {
           color: #fff;
         }
+        .le-nav {
+          position: fixed; top: 16px; right: 24px; z-index: 100;
+          display: flex; gap: 20px; align-items: center;
+          pointer-events: auto;
+        }
+        .le-nav a {
+          font: 400 10px ${FONT_FAMILY};
+          letter-spacing: 0.12em; text-transform: uppercase;
+          color: ${MUTED_COLOR}; text-decoration: none;
+          transition: color 0.2s ease;
+          white-space: nowrap;
+        }
+        .le-nav a:hover {
+          color: #fff;
+        }
+        @media (max-width: 760px) {
+          .le-nav { display: none; }
+        }
         .le-hint {
           position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
           font: 400 10px ${FONT_FAMILY};
@@ -234,7 +252,7 @@ export default function LandingEngine() {
         }
         .le-hint.le-visible { display: block; }
         .le-stats {
-          position: fixed; top: 18px; right: 24px; z-index: 100;
+          position: fixed; top: 48px; right: 24px; z-index: 100;
           display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
           pointer-events: none;
         }
@@ -307,6 +325,18 @@ export default function LandingEngine() {
 
       <div ref={stageRef} className="le-stage" />
       <a className="le-brand" href="/">SWARMING<span className="le-brand-tld">.world</span></a>
+      <nav className="le-nav">
+        <a href="/world">World</a>
+        <a href="/agents">Agents</a>
+        <a href="/demos">Demos</a>
+        <a href="/tools">Tools</a>
+        <a href="/docs">Docs</a>
+        <a href="/blog">Blog</a>
+        <a href="/showcase">Showcase</a>
+        <a href="/plugins">Plugins</a>
+        <a href="/playground">Playground</a>
+        <a href="/benchmarks">Benchmarks</a>
+      </nav>
       <div className="le-stats">
         <span className="le-stats-line"><strong>{nodeCount.toLocaleString()}</strong> Nodes</span>
         <span className="le-stats-line"><strong>{fpsCount}</strong> Frames Per Second</span>
