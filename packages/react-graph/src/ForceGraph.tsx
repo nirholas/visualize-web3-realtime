@@ -415,7 +415,7 @@ const CameraSetup = memo<{
       enableDamping
       dampingFactor={0.15}
       minDistance={10}
-      maxDistance={150}
+      maxDistance={500}
       enablePan
     />
   );

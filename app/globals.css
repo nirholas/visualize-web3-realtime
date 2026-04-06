@@ -358,6 +358,12 @@ canvas:active {
   .docs-article h1 { font-size: 22px; }
 }
 
+/* ─── Scrollytelling ─── */
+@keyframes float {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-6px); }
+}
+
 /* ─── Reduced Motion ─── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

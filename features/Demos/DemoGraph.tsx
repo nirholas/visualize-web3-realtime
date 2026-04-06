@@ -39,11 +39,11 @@ function DemoGraph({
   });
 
   const simConfig = useMemo<ForceGraphConfig>(() => ({
-    hubRadius: 2.5,
-    agentRadius: 0.5,
-    chargeStrength: -40,
-    linkDistance: 18,
-    collisionRadius: 1.5,
+    hubRadius: 5,
+    agentRadius: 1.2,
+    chargeStrength: -120,
+    linkDistance: 45,
+    collisionRadius: 3,
     ...simulationConfig,
   }), [simulationConfig]);
 
@@ -59,7 +59,7 @@ function DemoGraph({
         showGround={false}
         showShadows={false}
         fov={50}
-        cameraPosition={[0, 45, 25]}
+        cameraPosition={[0, 140, 80]}
         labelStyle={{
           color: '#e5e5e5',
           background: 'rgba(20,20,30,0.85)',
