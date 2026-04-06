@@ -446,7 +446,7 @@ const NetworkScene = memo<{
               onSelectProtocol(activeProtocol === hub.id ? null : hub.id);
               onDismissHighlight?.();
             }}
-            colorOverride={shareColors?.palette?.[i]}
+            colorOverride={shareColors?.protocol}
             isDark={isDark}
           />
         ))}
@@ -455,11 +455,10 @@ const NetworkScene = memo<{
           activeProtocol={activeProtocol}
           highlightedHubId={highlightedHubId}
           highlightedAddress={highlightedAddress}
-          colorOverride={shareColors?.palette?.[hubIds.findIndex((h) => h.id === activeProtocol)]}
           isDark={isDark}
         />
 
-        {agentPositionRef.current && <YouAreHereMarker position={agentPositionRef.current} />}
+        {highlightedAddress && <YouAreHereMarker positionRef={agentPositionRef} onDismiss={() => onDismissHighlight?.()} />}
       </>
     );
   },
@@ -576,7 +575,7 @@ const ForceGraph = forwardRef<ForceGraphHandle, ForceGraphProps>(
           mouseButtons={{ left: 1, middle: 0, right: 2, wheel: 8 }}
           touches={{ one: 32, two: 1024, three: 0 }}
         />
-        <PostProcessing isDark={isDark} />
+        <PostProcessing />
       </>
     );
   },

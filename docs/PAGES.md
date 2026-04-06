@@ -9,7 +9,7 @@ Complete reference for every page, API route, and special file in the Next.js Ap
 ### `/` — Home
 
 - **File:** `app/page.tsx`
-- **Description:** Marketing landing page. Renders the `LandingEngine` component (dynamic import, no SSR).
+- **Description:** Scrollytelling home page. Dynamically imports `ScrollytellingPage` (no SSR). Features scroll-driven animations with three dashboard mockup states (data stream, physics particles, chart visualization), hero section, floating particle background (React Three Fiber), and footer CTA.
 
 ### `/landing` — Alternate Landing
 

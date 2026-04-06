@@ -38,7 +38,9 @@ function EmbedInner() {
       <ForceGraph
         topTokens={topTokens}
         traderEdges={stats.traderEdges}
-        height="100%"
+        activeProtocol={null}
+        highlightedHubIndex={null}
+        onSelectProtocol={() => {}}
         isDark={isDark}
       />
 
