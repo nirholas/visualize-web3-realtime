@@ -482,6 +482,10 @@ export interface ForceGraphHandle {
   getCamera: () => { position: [number, number, number]; target: [number, number, number] };
   /** Get an array of the current hub IDs (token addresses) in order */
   getHubIds: () => string[];
+  /** Find which hub an agent belongs to by wallet address */
+  findAgentHub: (address: string) => { hubIndex: number; hubMint: string } | null;
+  /** Animate camera to focus on a specific agent node */
+  focusAgent: (address: string, durationMs?: number) => void;
 }
 
 export interface ForceGraphProps {
@@ -546,6 +550,31 @@ const ForceGraph = forwardRef<ForceGraphHandle, ForceGraphProps>(
         };
       },
       getHubIds: () => sim.nodes.filter((n) => n.type === 'hub').map((n) => n.id),
+      findAgentHub: (address: string) => {
+        const lowerAddr = address.toLowerCase();
+        const agentNode = sim.nodes.find(
+          (n) => n.type === 'agent' && n.id.toLowerCase().includes(lowerAddr),
+        );
+        if (!agentNode?.hubTokenAddress) return null;
+        const hubs = sim.nodes.filter((n) => n.type === 'hub');
+        const hubIndex = hubs.findIndex((h) => h.id === agentNode.hubTokenAddress);
+        if (hubIndex === -1) return null;
+        return { hubIndex, hubMint: agentNode.hubTokenAddress };
+      },
+      focusAgent: (address: string, durationMs = 800) => {
+        const lowerAddr = address.toLowerCase();
+        const agentNode = sim.nodes.find(
+          (n) => n.type === 'agent' && n.id.toLowerCase().includes(lowerAddr),
+        );
+        const target = agentNode ?? sim.nodes.find(
+          (n) => n.type === 'hub' && n.id.toLowerCase() === lowerAddr,
+        );
+        if (!target) return;
+        const x = target.x ?? 0;
+        const y = target.y ?? 0;
+        const z = target.z ?? 0;
+        cameraControlsRef.current?.setLookAt(x, y + 20, z + 20, x, y, z, true);
+      },
     }));
 
     const showNetwork = topTokens.length > 0;
