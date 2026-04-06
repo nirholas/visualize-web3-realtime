@@ -8,8 +8,8 @@ import { agentThemeTokens } from '@/packages/ui/src/tokens/agent-colors';
 // Helpers
 // ---------------------------------------------------------------------------
 
-function timeAgo(ts: number): string {
-  const diff = Date.now() - ts;
+function timeAgo(ts: number, now: number): string {
+  const diff = now - ts;
   const secs = Math.floor(diff / 1000);
   if (secs < 5) return 'just now';
   if (secs < 60) return `${secs}s ago`;
@@ -69,8 +69,9 @@ const EventRow = memo<{
   event: AgentEvent;
   agentName: string;
   isNew: boolean;
+  now: number;
   onClick: () => void;
-}>(({ event, agentName, isNew, onClick }) => {
+}>(({ event, agentName, isNew, now, onClick }) => {
   const color = getEventColor(event.type);
   const icon = getEventIcon(event.type);
   const { title, sub } = getEventLabel(event, agentName);
@@ -97,7 +98,7 @@ const EventRow = memo<{
         <span style={{ fontSize: 10, fontWeight: 600, color: '#e5e7eb', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {title}
         </span>
-        <span style={{ fontSize: 8, color: '#4b5563', flexShrink: 0 }}>{timeAgo(event.timestamp)}</span>
+        <span style={{ fontSize: 8, color: '#4b5563', flexShrink: 0 }}>{timeAgo(event.timestamp, now)}</span>
       </div>
       <div
         style={{
@@ -134,6 +135,15 @@ const AgentLiveFeed = memo<AgentLiveFeedProps>(({ events, agents, onSelectAgent,
   const containerRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
   const [newIds, setNewIds] = useState<Set<string>>(new Set());
+
+  // Hydration-safe clock: starts at 0 (renders nothing time-dependent on server),
+  // then ticks every 5s on the client so relative timestamps stay fresh.
+  const [now, setNow] = useState(0);
+  useEffect(() => {
+    setNow(Date.now());
+    const id = setInterval(() => setNow(Date.now()), 5_000);
+    return () => clearInterval(id);
+  }, []);
   const prevIdsRef = useRef<Set<string>>(new Set());
 
   // Cap visible events
@@ -279,6 +289,7 @@ const AgentLiveFeed = memo<AgentLiveFeedProps>(({ events, agents, onSelectAgent,
                 event={evt}
                 agentName={agent?.name ?? evt.agentId.slice(0, 8)}
                 isNew={newIds.has(evt.eventId)}
+                now={now}
                 onClick={() => onSelectAgent?.(evt.agentId)}
               />
             );

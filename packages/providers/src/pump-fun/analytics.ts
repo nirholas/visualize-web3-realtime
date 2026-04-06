@@ -10,6 +10,7 @@
 
 import type { DataProviderEvent } from '@web3viz/core';
 import { BoundedMap, BoundedSet } from '../shared';
+import { PumpFunRestClient } from './pumpfun-rest';
 
 // ---------------------------------------------------------------------------
 // Bonding Curve Progress
@@ -173,94 +174,108 @@ export interface TokenMetadata {
   twitter?: string;
   telegram?: string;
   website?: string;
+  /** USD market cap from pump.fun REST API */
+  usdMarketCap?: number;
+  /** SOL market cap from pump.fun REST API */
+  marketCap?: number;
+  /** Whether the token graduated to Raydium */
+  graduated?: boolean;
+  /** Raydium pool address if graduated */
+  raydiumPool?: string;
+  /** Bonding curve progress 0–1 */
+  bondingCurveProgress?: number;
+  /** Number of comments/replies on pump.fun */
+  replyCount?: number;
+  /** King of the hill timestamp */
+  kingOfTheHillTimestamp?: number;
+  /** Token creator address */
+  creator?: string;
+  /** Token creation timestamp from pump.fun */
+  createdTimestamp?: number;
+  /** Total token supply */
+  totalSupply?: number;
+  /** Whether flagged NSFW on pump.fun */
+  nsfw?: boolean;
   fetchedAt: number;
 }
 
 /**
- * Fetches and caches token metadata from PumpFun's metadata URI.
- * PumpPortal token create messages include a `uri` field pointing to
- * an IPFS/Arweave JSON with image, description, and social links.
+ * Fetches and caches token metadata from the pump.fun REST API.
+ * Uses the official `frontend-api-v3.pump.fun/coins/{mint}` endpoint
+ * which returns image, description, social links, bonding curve state,
+ * market cap in USD, graduation status, and more.
  */
 export class TokenMetadataEnricher {
-  private cache = new BoundedMap<string, TokenMetadata>(5_000);
-  private pending = new BoundedSet<string>(1_000);
-  private fetchQueue: Array<{ mint: string; uri: string }> = [];
-  private processing = false;
-  private batchSize = 5;
-  private batchDelayMs = 500;
+  private restClient = new PumpFunRestClient();
+  private metaCache = new BoundedMap<string, TokenMetadata>(5_000);
 
   /**
-   * Queue a metadata fetch for a newly created token.
+   * Queue a metadata fetch for a token via the pump.fun REST API.
    * Returns immediately — metadata will be available via get() after fetch.
    */
-  enqueue(mint: string, uri: string): void {
-    if (!uri || this.cache.has(mint) || this.pending.has(mint)) return;
-    this.pending.add(mint);
-    this.fetchQueue.push({ mint, uri });
-    this.processBatch();
+  enqueue(mint: string, _uri?: string): void {
+    if (!mint) return;
+    this.restClient.enqueue(mint);
   }
 
   get(mint: string): TokenMetadata | undefined {
-    return this.cache.get(mint);
-  }
-
-  private async processBatch(): Promise<void> {
-    if (this.processing) return;
-    this.processing = true;
-
-    while (this.fetchQueue.length > 0) {
-      const batch = this.fetchQueue.splice(0, this.batchSize);
-      await Promise.allSettled(
-        batch.map(({ mint, uri }) => this.fetchMetadata(mint, uri)),
-      );
-      // Rate-limit: wait between batches
-      if (this.fetchQueue.length > 0) {
-        await new Promise((r) => setTimeout(r, this.batchDelayMs));
-      }
-    }
-
-    this.processing = false;
-  }
-
-  private async fetchMetadata(mint: string, uri: string): Promise<void> {
-    try {
-      // Validate URI before fetching - only allow https and ipfs gateway URLs
-      if (!uri.startsWith('https://')) {
-        this.pending.delete(mint);
-        return;
-      }
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-      const res = await fetch(uri, {
-        signal: controller.signal,
-        headers: { Accept: 'application/json' },
-      });
-      clearTimeout(timeoutId);
-
-      if (!res.ok) {
-        this.pending.delete(mint);
-        return;
-      }
-
-      const json = await res.json() as Record<string, unknown>;
+    // Check if REST client has fresh data we haven't converted yet
+    const coin = this.restClient.get(mint);
+    if (coin && !this.metaCache.has(mint)) {
       const meta: TokenMetadata = {
         mint,
-        imageUrl: typeof json.image === 'string' ? json.image : undefined,
-        description: typeof json.description === 'string' ? json.description.slice(0, 500) : undefined,
-        twitter: typeof json.twitter === 'string' ? json.twitter : undefined,
-        telegram: typeof json.telegram === 'string' ? json.telegram : undefined,
-        website: typeof json.website === 'string' ? json.website : undefined,
+        imageUrl: coin.imageUri || undefined,
+        description: coin.description ? coin.description.slice(0, 500) : undefined,
+        twitter: coin.twitter || undefined,
+        telegram: coin.telegram || undefined,
+        website: coin.website || undefined,
+        usdMarketCap: coin.usdMarketCap || undefined,
+        marketCap: coin.marketCap || undefined,
+        graduated: coin.complete,
+        raydiumPool: coin.raydiumPool || undefined,
+        bondingCurveProgress: coin.bondingCurveProgress,
+        replyCount: coin.replyCount || undefined,
+        kingOfTheHillTimestamp: coin.kingOfTheHillTimestamp || undefined,
+        creator: coin.creator || undefined,
+        createdTimestamp: coin.createdTimestamp || undefined,
+        totalSupply: coin.totalSupply || undefined,
+        nsfw: coin.nsfw || undefined,
         fetchedAt: Date.now(),
       };
-
-      this.cache.set(mint, meta);
-    } catch {
-      // Silently fail — metadata is best-effort enrichment
-    } finally {
-      this.pending.delete(mint);
+      this.metaCache.set(mint, meta);
     }
+    return this.metaCache.get(mint);
+  }
+
+  /**
+   * Fetch coin data synchronously (returns a Promise).
+   * Useful for on-demand lookups (e.g. user clicks a token).
+   */
+  async fetchCoin(mint: string): Promise<TokenMetadata | null> {
+    const coin = await this.restClient.fetchCoin(mint);
+    if (!coin) return null;
+    const meta: TokenMetadata = {
+      mint,
+      imageUrl: coin.imageUri || undefined,
+      description: coin.description ? coin.description.slice(0, 500) : undefined,
+      twitter: coin.twitter || undefined,
+      telegram: coin.telegram || undefined,
+      website: coin.website || undefined,
+      usdMarketCap: coin.usdMarketCap || undefined,
+      marketCap: coin.marketCap || undefined,
+      graduated: coin.complete,
+      raydiumPool: coin.raydiumPool || undefined,
+      bondingCurveProgress: coin.bondingCurveProgress,
+      replyCount: coin.replyCount || undefined,
+      kingOfTheHillTimestamp: coin.kingOfTheHillTimestamp || undefined,
+      creator: coin.creator || undefined,
+      createdTimestamp: coin.createdTimestamp || undefined,
+      totalSupply: coin.totalSupply || undefined,
+      nsfw: coin.nsfw || undefined,
+      fetchedAt: Date.now(),
+    };
+    this.metaCache.set(mint, meta);
+    return meta;
   }
 }
 

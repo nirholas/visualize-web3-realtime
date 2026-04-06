@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import type { AgentIdentity, ExecutorState } from '@web3viz/core';
 import { TOOL_CLUSTER_ICONS } from './constants';
 import { agentThemeTokens } from '@/packages/ui/src/tokens/agent-colors';
@@ -206,7 +206,13 @@ const ExecutorStatus = memo<{ executorState: ExecutorState | null }>(({ executor
   }
 
   const uptime = formatUptime(executorState.uptime);
-  const isHealthy = Date.now() - executorState.lastHeartbeat < 60000;
+  const [isHealthy, setIsHealthy] = useState(true);
+  useEffect(() => {
+    const check = () => setIsHealthy(Date.now() - executorState.lastHeartbeat < 60000);
+    check();
+    const id = setInterval(check, 5_000);
+    return () => clearInterval(id);
+  }, [executorState.lastHeartbeat]);
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0' }}>

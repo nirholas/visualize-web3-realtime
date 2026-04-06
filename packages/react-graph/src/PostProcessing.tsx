@@ -2,6 +2,7 @@
 
 import { memo } from 'react';
 import { EffectComposer, SMAA, N8AO, Bloom } from '@react-three/postprocessing';
+import { HalfFloatType } from 'three';
 
 export interface PostProcessingProps {
   /** Enable/disable the entire pipeline */
@@ -23,12 +24,13 @@ const PostProcessing = memo<PostProcessingProps>(({
   if (!enabled) return null;
 
   return (
-    <EffectComposer multisampling={0} depthBuffer stencilBuffer={false}>
+    <EffectComposer multisampling={0} depthBuffer stencilBuffer={false} frameBufferType={HalfFloatType}>
       {/* SMAA replaces hardware MSAA — better quality, compatible with post-processing */}
       <SMAA />
 
       {/* N8AO is a high-performance SSAO implementation optimized for R3F */}
       <N8AO
+        halfRes
         aoRadius={0.5}
         intensity={aoIntensity}
         distanceFalloff={0.5}

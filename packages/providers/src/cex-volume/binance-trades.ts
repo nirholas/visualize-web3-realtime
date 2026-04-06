@@ -27,7 +27,8 @@ export class BinanceTradeStream {
   }
 
   connect(): void {
-    if (this.wsManager?.isConnected) return;
+    // Avoid orphaning an existing manager that may still be connecting/reconnecting
+    if (this.wsManager) return;
 
     // Build combined stream URL: trade streams for each pair + mini-ticker for price data
     const streams = [

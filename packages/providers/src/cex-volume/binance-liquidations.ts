@@ -24,7 +24,8 @@ export class BinanceLiquidationStream {
   }
 
   connect(): void {
-    if (this.wsManager?.isConnected) return;
+    // Avoid orphaning an existing manager that may still be connecting/reconnecting
+    if (this.wsManager) return;
 
     this.wsManager = new WebSocketManager({
       url: 'wss://fstream.binance.com/ws/!forceOrder@arr',

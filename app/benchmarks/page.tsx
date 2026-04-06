@@ -53,7 +53,7 @@ function crashed(): LibResult {
 }
 
 const PLACEHOLDER: BenchSummary = {
-  timestamp: new Date().toISOString(),
+  timestamp: '2025-01-01T00:00:00.000Z',
   machine: { cpu: 'Run benchmarks to populate', ram: '-', os: '-', node: '-' },
   nodeCounts: [500, 1000, 2000, 5000, 10000, 20000],
   libraries: [

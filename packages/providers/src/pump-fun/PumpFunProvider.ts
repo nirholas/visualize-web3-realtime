@@ -106,17 +106,31 @@ export class PumpFunProvider implements DataProvider {
       .sort((a, b) => b.volume - a.volume)
       .slice(0, this.maxTopTokens);
 
-    // Enrich top tokens with bonding curve progress and metadata
+    // Enrich top tokens with bonding curve progress and metadata from REST API
     for (const token of topTokens) {
-      const curve = this.bondingCurve.get(token.tokenAddress);
-      if (curve) {
-        token.bondingCurveProgress = curve.progress;
-        token.graduated = curve.graduated;
-      }
+      // REST API metadata is authoritative when available
       const meta = this.metadataEnricher.get(token.tokenAddress);
       if (meta) {
         token.imageUrl = meta.imageUrl;
         token.description = meta.description;
+        // REST API bonding curve data is more accurate than WS-derived
+        if (meta.bondingCurveProgress !== undefined) {
+          token.bondingCurveProgress = meta.bondingCurveProgress;
+        }
+        if (meta.graduated !== undefined) {
+          token.graduated = meta.graduated;
+        }
+        // Enrich with USD market cap
+        if (meta.usdMarketCap) {
+          token.volumeUsd = meta.usdMarketCap;
+        }
+      } else {
+        // Fall back to WS-derived bonding curve data
+        const curve = this.bondingCurve.get(token.tokenAddress);
+        if (curve) {
+          token.bondingCurveProgress = curve.progress;
+          token.graduated = curve.graduated;
+        }
       }
     }
 
@@ -283,9 +297,8 @@ export class PumpFunProvider implements DataProvider {
     // Analytics: record creation time for sniper detection
     this.sniperDetector.recordTokenCreation(mint, Date.now());
 
-    // Analytics: enqueue metadata fetch if URI available
-    const uri = getString(raw, 'uri', '');
-    if (uri) this.metadataEnricher.enqueue(mint, uri);
+    // Enqueue REST API metadata fetch for this token
+    this.metadataEnricher.enqueue(mint);
   }
 
   private handleTrade(raw: Record<string, unknown>): void {

@@ -38,16 +38,23 @@ const RECONNECT_INTERVAL = 5; // seconds
 const ExecutorBanner = memo<ExecutorBannerProps>(({ executorState, connected, lastHeartbeat, sidebarWidth = 200, feedWidth = 260, colorScheme = 'dark' }) => {
   const themeTokens = agentThemeTokens[colorScheme];
   const [reconnectCountdown, setReconnectCountdown] = useState(RECONNECT_INTERVAL);
+  const [health, setHealth] = useState<Health>('offline');
 
-  const health = useMemo<Health>(() => {
-    if (!connected && !executorState) return 'offline';
-    if (executorState?.status === 'error') return 'degraded';
-    if (lastHeartbeat) {
-      const age = Date.now() - lastHeartbeat;
-      if (age > 90_000) return 'offline';
-      if (age > 45_000) return 'reconnecting';
-    }
-    return 'healthy';
+  // Compute health in an effect to avoid Date.now() hydration mismatch
+  useEffect(() => {
+    const compute = (): Health => {
+      if (!connected && !executorState) return 'offline';
+      if (executorState?.status === 'error') return 'degraded';
+      if (lastHeartbeat) {
+        const age = Date.now() - lastHeartbeat;
+        if (age > 90_000) return 'offline';
+        if (age > 45_000) return 'reconnecting';
+      }
+      return 'healthy';
+    };
+    setHealth(compute());
+    const id = setInterval(() => setHealth(compute()), 5_000);
+    return () => clearInterval(id);
   }, [connected, executorState, lastHeartbeat]);
 
   // Reconnecting countdown timer
@@ -64,10 +71,19 @@ const ExecutorBanner = memo<ExecutorBannerProps>(({ executorState, connected, la
 
   const colors = HEALTH_COLORS[health];
 
+  const [ageSecs, setAgeSecs] = useState(0);
+
+  // Keep age counter fresh — avoids Date.now() in render path
+  useEffect(() => {
+    if (!lastHeartbeat) return;
+    setAgeSecs(Math.floor((Date.now() - lastHeartbeat) / 1000));
+    const id = setInterval(() => setAgeSecs(Math.floor((Date.now() - lastHeartbeat) / 1000)), 1_000);
+    return () => clearInterval(id);
+  }, [lastHeartbeat]);
+
   const message = useMemo(() => {
     if (health === 'offline') {
       if (lastHeartbeat) {
-        const ageSecs = Math.floor((Date.now() - lastHeartbeat) / 1000);
         return `✗ EXECUTOR OFFLINE · last seen ${ageSecs}s ago · retry in ${reconnectCountdown}s`;
       }
       return '✗ EXECUTOR OFFLINE · mock mode active';
@@ -76,13 +92,12 @@ const ExecutorBanner = memo<ExecutorBannerProps>(({ executorState, connected, la
       return `⟳ RECONNECTING... · retry in ${reconnectCountdown}s`;
     }
     if (health === 'degraded') {
-      const ageSecs = lastHeartbeat ? Math.floor((Date.now() - lastHeartbeat) / 1000) : 0;
       return `⚠ EXECUTOR SLOW · last heartbeat ${ageSecs}s ago`;
     }
     const agents = executorState?.activeAgents.length ?? 0;
     const uptime = executorState ? formatUptime(executorState.uptime) : '—';
     return `● EXECUTOR RUNNING · ${agents} agents · uptime ${uptime}`;
-  }, [health, executorState, lastHeartbeat, reconnectCountdown]);
+  }, [health, executorState, lastHeartbeat, reconnectCountdown, ageSecs]);
 
   return (
     <div

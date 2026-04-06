@@ -73,14 +73,22 @@ export const TaskInspectorPanel = memo<TaskInspectorPanelProps>(
     const statusColor = TASK_STATUS_COLORS[task.status] || '#999999';
     const statusIcon = getStatusIcon(task.status);
 
-    const duration = useMemo(() => {
-      if (task.startedAt && task.endedAt) {
-        return formatDuration(task.endedAt - task.startedAt);
+    const [duration, setDuration] = useState('—');
+    useEffect(() => {
+      const compute = () => {
+        if (task.startedAt && task.endedAt) {
+          return formatDuration(task.endedAt - task.startedAt);
+        }
+        if (task.startedAt) {
+          return formatDuration(Date.now() - task.startedAt) + ' (running)';
+        }
+        return '—';
+      };
+      setDuration(compute());
+      if (task.startedAt && !task.endedAt) {
+        const id = setInterval(() => setDuration(compute()), 1_000);
+        return () => clearInterval(id);
       }
-      if (task.startedAt) {
-        return formatDuration(Date.now() - task.startedAt) + ' (running)';
-      }
-      return '—';
     }, [task.startedAt, task.endedAt]);
 
     const reasoning = useMemo(() => getLatestReasoning(recentEvents), [recentEvents]);
@@ -285,7 +293,7 @@ export const TaskInspectorPanel = memo<TaskInspectorPanelProps>(
                 </div>
               </div>
               <div style={{ fontSize: 8, color: '#9ca3af' }}>
-                Started: {task.startedAt ? new Date(task.startedAt).toLocaleTimeString() : '—'}
+                Started: {task.startedAt ? new Date(task.startedAt).toLocaleTimeString('en-US') : '—'}
               </div>
               <div style={{ fontSize: 8, color: '#9ca3af' }}>
                 Duration: {duration}

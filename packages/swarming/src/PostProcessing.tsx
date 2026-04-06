@@ -21,9 +21,10 @@ const PostProcessing = memo<PostProcessingProps>(
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const pp = require('@react-three/postprocessing');
       const { EffectComposer, SMAA, N8AO, Bloom } = pp;
+      const THREE = require('three');
 
       return (
-        <EffectComposer multisampling={0} stencilBuffer={false}>
+        <EffectComposer multisampling={0} stencilBuffer={false} frameBufferType={THREE.HalfFloatType}>
           <SMAA />
           <N8AO aoRadius={0.5} intensity={0.5} distanceFalloff={0.5} />
           <Bloom
