@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { IBM_Plex_Mono } from "next/font/google";
+import { SiteNav } from "./SiteNav";
 
 const ibmPlexMono = IBM_Plex_Mono({
   subsets: ['latin'],
@@ -95,6 +96,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        <SiteNav />
         {children}
       </body>
     </html>

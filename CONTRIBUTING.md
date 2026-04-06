@@ -165,6 +165,10 @@ cp .env.example .env.local
 
 | Variable | Required | Description |
 |---|---|---|
+| `ANTHROPIC_API_KEY` | No | Claude API key for `/world` AI chat |
+| `NEXT_PUBLIC_SOLANA_WS_URL` | No | Solana RPC WebSocket (e.g. Helius) |
+| `NEXT_PUBLIC_ETH_WS_URL` | No | Ethereum RPC WebSocket (has public fallback) |
+| `NEXT_PUBLIC_BASE_WS_URL` | No | Base chain RPC WebSocket (has public fallback) |
 | `NEXT_PUBLIC_SPERAXOS_WS_URL` | No | Agent event WebSocket |
 | `NEXT_PUBLIC_SPERAXOS_API_KEY` | No | Agent API key (mock mode if empty) |
 | `NEXT_PUBLIC_AGENT_MOCK` | No | `true` for mock agents (default) |

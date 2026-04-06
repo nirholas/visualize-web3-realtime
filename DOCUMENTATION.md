@@ -283,6 +283,10 @@ Only `app/` and `features/` are scanned for classes. The `packages/` directory u
 
 | Variable | Default | Purpose |
 |---|---|---|
+| `ANTHROPIC_API_KEY` | *(empty)* | Required for `/world` AI chat (Claude Sonnet) |
+| `NEXT_PUBLIC_SOLANA_WS_URL` | *(empty)* | Solana RPC WebSocket (e.g. Helius, Alchemy) |
+| `NEXT_PUBLIC_ETH_WS_URL` | `wss://ethereum-rpc.publicnode.com` | Ethereum RPC WebSocket endpoint |
+| `NEXT_PUBLIC_BASE_WS_URL` | `wss://base-rpc.publicnode.com` | Base chain RPC WebSocket endpoint |
 | `NEXT_PUBLIC_SPERAXOS_WS_URL` | `wss://api.speraxos.io/agents/v1/stream` | WebSocket endpoint for real-time agent events from SperaxOS |
 | `NEXT_PUBLIC_SPERAXOS_API_KEY` | *(empty)* | API key for SperaxOS authentication |
 | `NEXT_PUBLIC_AGENT_MOCK` | `true` | When `true`, uses mock agent data instead of real SperaxOS |
