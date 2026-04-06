@@ -661,9 +661,10 @@ const Edges = memo<{
         if (activeProtocol) {
           const srcRelated = src.id === activeProtocol || src.hubTokenAddress === activeProtocol;
           const tgtRelated = tgt.id === activeProtocol || tgt.hubTokenAddress === activeProtocol;
-          attenuation = (srcRelated || tgtRelated) ? (isHubEdge ? 0.55 : 0.4) : 0.08;
+          attenuation = (srcRelated || tgtRelated) ? (isHubEdge ? 0.7 : 0.08) : 0.02;
         } else {
-          attenuation = isDark ? (isHubEdge ? 0.6 : 0.4) : (isHubEdge ? 0.35 : 0.25);
+          // Hub-to-hub edges stay visible; agent edges nearly invisible
+          attenuation = isDark ? (isHubEdge ? 0.8 : 0.06) : (isHubEdge ? 0.5 : 0.04);
         }
 
         if (hubNode && hubNode.color) {

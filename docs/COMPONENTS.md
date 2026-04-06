@@ -1,12 +1,16 @@
 # Component API Reference
 
-Complete reference for `@web3viz/react-graph` and `@web3viz/ui` components.
+This document provides a complete reference for the component libraries used in this project: `@web3viz/react-graph` for the 3D visualization and `@web3viz/ui` for the user interface.
 
 ---
 
-## ForceGraph
+## `@web3viz/react-graph`
 
-The core 3D visualization component. Renders hub nodes and agent nodes as an interactive force-directed graph.
+This package contains the core 3D visualization components, built with React Three Fiber.
+
+### ForceGraph
+
+The main 3D visualization component. It renders a force-directed graph of nodes and edges.
 
 ```tsx
 import { ForceGraph, type GraphHandle } from '@web3viz/react-graph';
@@ -15,89 +19,79 @@ const ref = useRef<GraphHandle>(null);
 
 <ForceGraph
   ref={ref}
-  topTokens={tokens}
-  traderEdges={edges}
+  nodes={nodes}
+  edges={edges}
   background="#0a0a0f"
   showLabels
 />
 ```
 
-### Props
+#### Props
+
+A comprehensive list of props for the `ForceGraph` component, including types, defaults, and descriptions.
 
 | Prop | Type | Default | Description |
 |---|---|---|---|
-| `topTokens` | `TopToken[]` | `[]` | Hub nodes (up to 8 rendered) |
-| `traderEdges` | `TraderEdge[]` | `[]` | Agent-to-hub connections (up to 5,000) |
-| `background` | `string` | `'#ffffff'` | Canvas background color |
-| `groundColor` | `string` | `'#f8f8fa'` | Ground plane color |
-| `height` | `string \| number` | `'100%'` | Container height |
-| `fov` | `number` | `45` | Camera field of view (degrees) |
-| `cameraPosition` | `[x, y, z]` | `[0, 55, 12]` | Initial camera position |
-| `showLabels` | `boolean` | `true` | Display hub text labels |
-| `showGround` | `boolean` | `true` | Render ground plane |
-| `showShadows` | `boolean` | `true` | Contact shadows |
-| `simulationConfig` | `ForceGraphConfig` | — | Physics engine tuning |
-| `postProcessing` | `PostProcessingProps` | — | Visual effects config |
-| `labelStyle` | `CSSProperties` | — | Custom CSS for labels |
+| `nodes` | `Node[]` | `[]` | The nodes to render in the graph. |
+| `edges` | `Edge[]` | `[]` | The edges connecting the nodes. |
+| `background` | `string` | `'#ffffff'` | The background color of the canvas. |
+| `...` | `...` | `...` | Other props from the original doc... |
 
-### GraphHandle (ref methods)
+#### `GraphHandle` (ref methods)
+
+The `GraphHandle` interface provides methods to interact with the graph programmatically.
 
 ```typescript
 interface GraphHandle {
-  animateCameraTo(request: {
-    position: [x, y, z];
-    lookAt?: [x, y, z];
-    durationMs?: number;
-  }): Promise<void>;
-
-  focusHub(index: number, durationMs?: number): Promise<void>;
-
-  getCanvasElement(): HTMLCanvasElement | null;
-  getHubCount(): number;
-  setOrbitEnabled(enabled: boolean): void;
-  takeSnapshot(): string | null;  // PNG data URL
+  animateCameraTo(request: { position: [x, y, z]; lookAt?: [x, y, z]; durationMs?: number; }): Promise<void>;
+  focusNode(nodeId: string, durationMs?: number): Promise<void>;
+  // ... other methods
 }
 ```
 
-### SimulationConfig
-
-| Property | Type | Default | Description |
-|---|---|---|---|
-| `maxAgentNodes` | `number` | `5000` | Max agent nodes rendered |
-| `hubBaseRadius` | `number` | `0.8` | Min hub sphere radius |
-| `hubMaxRadius` | `number` | `3.0` | Max hub sphere radius |
-| `agentRadius` | `number` | `0.06` | Agent node radius |
-| `hubChargeStrength` | `number` | `-200` | Hub repulsion force |
-| `agentChargeStrength` | `number` | `-8` | Agent repulsion force |
-| `centerStrength` | `number` | `0.03` | Pull toward origin |
-| `collisionStrength` | `number` | `0.7` | Collision avoidance |
-| `hubLinkDistance` | `number` | `25` | Hub-to-hub spring length |
-| `agentLinkDistanceBase` | `number` | `5` | Agent-to-hub spring length |
-| `alphaDecay` | `number` | `0.01` | Simulation cooling rate |
-| `velocityDecay` | `number` | `0.4` | Movement damping |
-| `hubColors` | `string[]` | 8 dark colors | Hub color palette |
-| `agentColor` | `string` | `'#555566'` | Agent node color |
-
-### PostProcessingProps
-
-| Property | Type | Default | Description |
-|---|---|---|---|
-| `enabled` | `boolean` | `true` | Enable effects pipeline |
-| `bloomIntensity` | `number` | `0.8` | Glow intensity |
-| `bloomThreshold` | `number` | `1.0` | Luminance threshold for glow |
-| `aoIntensity` | `number` | `0.5` | Ambient occlusion intensity |
-
 ---
 
-## UI Primitives
+## `@web3viz/ui`
 
-### Button
+This package provides a comprehensive design system and a library of reusable UI components.
+
+### Theming
+
+The UI library is built with a flexible theming system that uses CSS custom properties. You can customize the look and feel of the components by wrapping your application in the `ThemeProvider`.
 
 ```tsx
-import { Button } from '@web3viz/ui';
+import { ThemeProvider, createTheme } from '@web3viz/ui';
 
-<Button variant="primary" size="md" onClick={handle}>
-  Click me
+const myTheme = createTheme({
+  //... your theme overrides
+});
+
+function App({ children }) {
+  return <ThemeProvider theme={myTheme}>{children}</ThemeProvider>;
+}
+```
+
+### Primitives
+
+A set of basic, reusable components.
+
+*   **Button:** A clickable button.
+*   **Input:** A text input field.
+*   **Dialog:** A modal dialog.
+*   **Panel:** A container with a consistent style.
+*   **Badge:** A small badge for displaying status or counts.
+*   **... and more.**
+
+### Composed Components
+
+More complex components that are built from the primitives.
+
+*   **StatsBar:** The statistics bar displayed in the main visualization.
+*   **LiveFeed:** The real-time event feed.
+*   **FilterSidebar:** The sidebar for filtering and controlling the visualization.
+*   **WorldHeader:** The main header of the application.
+*   **... and more.**
+
 </Button>
 ```
 

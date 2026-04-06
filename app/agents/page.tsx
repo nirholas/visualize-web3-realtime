@@ -78,9 +78,13 @@ function AgentsPageInner() {
     return () => mq.removeEventListener('change', handler);
   }, []);
 
+  // Support ?source=local to connect to a local agent-bridge on port 9222
+  const isLocalBridge = searchParams.get('source') === 'local';
+  const bridgePort = searchParams.get('port') ?? '9222';
+
   const { stats, agents, flows, executorState, agentStats, connected, events } = useAgentProvider({
-    mock: process.env.NEXT_PUBLIC_AGENT_MOCK !== 'false',
-    url: process.env.NEXT_PUBLIC_SPERAXOS_WS_URL,
+    mock: isLocalBridge ? false : process.env.NEXT_PUBLIC_AGENT_MOCK !== 'false',
+    url: isLocalBridge ? `ws://localhost:${bridgePort}` : process.env.NEXT_PUBLIC_SPERAXOS_WS_URL,
     apiKey: process.env.NEXT_PUBLIC_SPERAXOS_API_KEY,
     enabled: demoActive,
   });

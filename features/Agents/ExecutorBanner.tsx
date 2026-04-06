@@ -3,6 +3,7 @@
 import { memo, useEffect, useMemo, useState } from 'react';
 import type { ExecutorState } from '@web3viz/core';
 import { agentThemeTokens } from '@/packages/ui/src/tokens/agent-colors';
+import { formatUptime } from './utils/shared';
 
 interface ExecutorBannerProps {
   executorState: ExecutorState | null;
@@ -14,17 +15,6 @@ interface ExecutorBannerProps {
 }
 
 type Health = 'healthy' | 'degraded' | 'offline' | 'reconnecting';
-
-function formatUptime(ms: number): string {
-  const secs = Math.floor(ms / 1000);
-  const mins = Math.floor(secs / 60);
-  const hours = Math.floor(mins / 60);
-  const days = Math.floor(hours / 24);
-  if (days > 0) return `${days}d ${hours % 24}h`;
-  if (hours > 0) return `${hours}h ${mins % 60}m`;
-  if (mins > 0) return `${mins}m`;
-  return `${secs}s`;
-}
 
 const HEALTH_COLORS: Record<Health, { bg: string; border: string; text: string }> = {
   healthy: { bg: 'rgba(52,211,153,0.08)', border: 'rgba(52,211,153,0.2)', text: '#34d399' },

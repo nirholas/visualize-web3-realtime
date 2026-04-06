@@ -64,7 +64,7 @@ Open **http://localhost:3100** — the live visualization will start immediately
 <td width="33%" align="center">
 <img src="docs/assets/feature-websocket.gif" alt="Any data source" width="240" /><br />
 <strong>Real-time Data Providers</strong><br />
-<sub>Built-in provider system for WebSockets, REST, or any custom data stream.</sub>
+<sub>Built-in provider system for WebSockets, REST, or any custom data stream</sub>
 </td>
 <td width="33%" align="center">
 <img src="docs/assets/feature-physics.gif" alt="Force-directed physics" width="240" /><br />
@@ -87,6 +87,40 @@ Open **http://localhost:3100** — the live visualization will start immediately
 <img src="docs/assets/feature-export.gif" alt="Export & share" width="240" /><br />
 <strong>Export & share</strong><br />
 <sub>Screenshot with metadata overlay, share URLs, and embeddable widget</sub>
+</td>
+</tr>
+<tr>
+<td width="33%" align="center">
+<img src="docs/assets/feature-collab.gif" alt="Multiplayer collaboration" width="240" /><br />
+<strong>Multiplayer collaboration</strong><br />
+<sub>Room-based cursors, camera sync, shared annotations, presenter mode</sub>
+</td>
+<td width="33%" align="center">
+<img src="docs/assets/feature-editor.gif" alt="Visual graph editor" width="240" /><br />
+<strong>Visual graph editor</strong><br />
+<sub>Create and edit nodes/edges, undo/redo, import/export JSON, Mermaid, CSV, SVG</sub>
+</td>
+<td width="33%" align="center">
+<img src="docs/assets/feature-ai.gif" alt="AI chat assistant" width="240" /><br />
+<strong>AI chat assistant</strong><br />
+<sub>Natural language graph control via Claude Sonnet with tool-use integration</sub>
+</td>
+</tr>
+<tr>
+<td width="33%" align="center">
+<img src="docs/assets/feature-agents.gif" alt="Agent monitoring" width="240" /><br />
+<strong>Agent monitoring</strong><br />
+<sub>3D visualization of AI agent orchestration, tasks, and tool calls</sub>
+</td>
+<td width="33%" align="center">
+<img src="docs/assets/feature-wasm.gif" alt="WASM physics" width="240" /><br />
+<strong>WASM physics engine</strong><br />
+<sub>Rust Barnes-Hut simulation compiled to WebAssembly — 3-5× faster than JS</sub>
+</td>
+<td width="33%" align="center">
+<img src="docs/assets/feature-multiframework.gif" alt="Multi-framework" width="240" /><br />
+<strong>Multi-framework</strong><br />
+<sub>React, Vue, Svelte, React Native, vanilla JS, and CDN embed</sub>
 </td>
 </tr>
 </table>

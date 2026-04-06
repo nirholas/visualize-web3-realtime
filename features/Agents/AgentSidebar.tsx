@@ -4,6 +4,8 @@ import { memo, useEffect, useState } from 'react';
 import type { AgentIdentity, ExecutorState } from '@web3viz/core';
 import { TOOL_CLUSTER_ICONS } from './constants';
 import { agentThemeTokens } from '@/packages/ui/src/tokens/agent-colors';
+import { formatUptime } from './utils/shared';
+import { FOCUS_RING } from './utils/accessibility';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -38,18 +40,6 @@ function getStatusColor(status: 'active' | 'idle' | 'error'): string {
     case 'error':
       return '#f87171'; // red
   }
-}
-
-function formatUptime(ms: number | undefined): string {
-  if (!ms) return '0s';
-  const secs = Math.floor(ms / 1000);
-  if (secs < 60) return `${secs}s`;
-  const mins = Math.floor(secs / 60);
-  if (mins < 60) return `${mins}m`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ${hours % 24}h`;
 }
 
 // ---------------------------------------------------------------------------
@@ -99,10 +89,11 @@ const AgentItem = memo<{
         outline: 'none',
       }}
       onFocus={(e) => {
-        e.currentTarget.style.outline = `2px solid ${tokens.agentHubActive}`;
+        Object.assign(e.currentTarget.style, FOCUS_RING);
       }}
       onBlur={(e) => {
         e.currentTarget.style.outline = 'none';
+        e.currentTarget.style.outlineOffset = '';
       }}
       title={`${agent.name} (${agent.role})`}
     >
@@ -172,10 +163,11 @@ const ToolCategoryToggle = memo<{
         outline: 'none',
       }}
       onFocus={(e) => {
-        e.currentTarget.style.outline = `2px solid ${tokens.taskActive}`;
+        Object.assign(e.currentTarget.style, FOCUS_RING);
       }}
       onBlur={(e) => {
         e.currentTarget.style.outline = 'none';
+        e.currentTarget.style.outlineOffset = '';
       }}
       title={`Toggle ${category} tools`}
     >

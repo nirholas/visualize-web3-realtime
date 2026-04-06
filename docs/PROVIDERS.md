@@ -1,103 +1,105 @@
-# Building a Custom Provider
+# Data Providers
 
-This guide walks you through creating a data provider from scratch. By the end, your streaming data source will be rendering as a live 3D force graph.
+This document provides a comprehensive guide to the data provider system in this project. It explains how to use the existing providers and how to create your own custom providers to stream data from any source.
 
 ---
 
 ## Overview
 
-A provider is any class that implements the `DataProvider` interface from `@web3viz/core`. It:
+The data provider system is the heart of the real-time visualization platform. It's a modular and extensible system for fetching data from various sources and feeding it to the visualization components.
 
-1. **Connects** to a data source (WebSocket, REST polling, SSE, etc.)
-2. **Normalizes** raw events into `DataProviderEvent` objects
-3. **Tracks** statistics (counts, volumes, top entities, edges)
-4. **Emits** events to subscribers
-
-The rest of the system — ForceGraph, StatsBar, LiveFeed, FilterSidebar — reacts automatically.
+The core of the system is the **`@web3viz/providers`** package, which contains the `DataProvider` interface, the `useProviders` hook, and a set of built-in providers for common Web3 and AI agent data sources.
 
 ---
 
-## Quick Start: Factory Helper
+## Using Existing Providers
 
-For simple providers, use `createProvider()`:
+The easiest way to get started is to use the built-in providers. The `useProviders` hook allows you to easily instantiate and manage multiple providers in your React components.
+
+```tsx
+import { useProviders } from '@web3viz/providers';
+import { EthereumProvider } from '@web3viz/providers/ethereum';
+
+function MyComponent() {
+  const providers = [new EthereumProvider()];
+  const { events, stats } = useProviders(providers);
+
+  //... render your component with the real-time data
+}
+```
+
+The `useProviders` hook will automatically manage the lifecycle of the providers (connecting, disconnecting, etc.) and provide you with a stream of events and aggregated stats.
+
+---
+
+## Building a Custom Provider
+
+You can easily create your own custom providers to stream data from any source. A provider is simply a class that implements the `DataProvider` interface from `@web3viz/core`.
+
+### Quick Start: The `createProvider` Factory
+
+For simple use cases, you can use the `createProvider` factory to create a provider from a simple object.
 
 ```typescript
 import { createProvider, registerProvider } from '@web3viz/core';
 
 const myProvider = createProvider({
-  id: 'github-events',
-  label: 'GitHub Events',
+  id: 'my-provider',
+  label: 'My Custom Provider',
   connect: (emit) => {
-    const es = new EventSource('https://api.github.com/events');
-    es.onmessage = (msg) => {
-      const event = JSON.parse(msg.data);
-      emit({
-        id: event.id,
-        providerId: 'github-events',
-        category: event.type === 'PushEvent' ? 'pushes' : 'other',
-        chain: 'github',
-        timestamp: Date.now(),
-        label: `${event.actor.login} → ${event.repo.name}`,
-        amount: 1,
-        address: event.actor.login,
-        tokenAddress: event.repo.name,
-      });
-    };
-    return () => es.close(); // cleanup function
+    //... connect to your data source and emit events
   },
 });
 
 registerProvider(myProvider);
 ```
 
-This gives you a working provider with built-in event subscription, pause/resume, and enable/disable.
+### Full Implementation: The `DataProvider` Class
+
+For more complex providers with custom logic and stats tracking, you can implement the `DataProvider` interface directly.
+
+```typescript
+import type { DataProvider, DataProviderEvent } from '@web3viz/core';
+
+export class MyCustomProvider implements DataProvider {
+  //... implement the required properties and methods
+}
+```
+
+A full implementation will give you complete control over the provider's lifecycle, state management, and data normalization.
 
 ---
 
-## Full Implementation: Class-Based
+## Complete Example
 
-For production providers with stats tracking, implement the full interface:
+Here is a complete example of how to create a custom provider and use it in a React component.
+
+**1. Create the Provider:**
 
 ```typescript
-import type {
-  DataProvider,
-  DataProviderEvent,
-  DataProviderStats,
-  CategoryConfig,
-  SourceConfig,
-  ConnectionState,
-  RawEvent,
-} from '@web3viz/core';
+// src/providers/MyCustomProvider.ts
+import { createProvider } from '@web3viz/core';
 
-export class UniswapProvider implements DataProvider {
-  // --- Identity ---
-  readonly id = 'uniswap';
-  readonly name = 'Uniswap V3';
-  readonly chains = ['ethereum'];
+export const MyCustomProvider = createProvider({
+  //... your provider implementation
+});
+```
 
-  // --- UI metadata ---
-  readonly sourceConfig: SourceConfig = {
-    id: 'ethereum',
-    label: 'Ethereum',
-    color: '#627EEA',
-    icon: '⬡',
-  };
+**2. Use the Provider in a Component:**
 
-  // --- Categories this provider emits ---
-  readonly categories: CategoryConfig[] = [
-    { id: 'swaps', label: 'Swaps', icon: '⇄', color: '#627EEA', sourceId: 'ethereum' },
-    { id: 'liquidity', label: 'LP Events', icon: '◈', color: '#8799EE', sourceId: 'ethereum' },
-  ];
+```tsx
+// src/components/MyComponent.tsx
+import { useProviders } from '@web3viz/providers';
+import { MyCustomProvider } from '../providers/MyCustomProvider';
 
-  // --- Internal state ---
-  private ws: WebSocket | null = null;
-  private listeners = new Set<(e: DataProviderEvent) => void>();
-  private rawListeners = new Set<(e: RawEvent) => void>();
-  private paused = false;
-  private enabled = true;
-  private counts: Record<string, number> = { swaps: 0, liquidity: 0 };
-  private totalVolume = 0;
-  private recentEvents: DataProviderEvent[] = [];
+function MyComponent() {
+  const providers = [new MyCustomProvider()];
+  const { events, stats } = useProviders(providers);
+
+  //... render your component with the real-time data
+}
+```
+
   private tokenVolumes = new Map<string, { symbol: string; volume: number; trades: number }>();
   private traderEdges = new Map<string, { trader: string; token: string; volume: number; trades: number }>();
 

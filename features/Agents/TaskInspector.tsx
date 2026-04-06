@@ -10,6 +10,8 @@ import { memo, useEffect, useMemo, useState } from 'react';
 import type { AgentTask, AgentToolCall, AgentIdentity, AgentEvent } from '@web3viz/core';
 import { AgentStatusIndicator } from './AgentStatusIndicator';
 import { TASK_STATUS_COLORS } from './constants';
+import { formatDuration } from './utils/shared';
+import { FOCUS_RING } from './utils/accessibility';
 
 interface TaskInspectorPanelProps {
   task: AgentTask | null;
@@ -18,13 +20,6 @@ interface TaskInspectorPanelProps {
   subAgents: AgentIdentity[];
   recentEvents: AgentEvent[];
   onClose: () => void;
-}
-
-function formatDuration(ms: number): string {
-  const secs = Math.floor(ms / 1000);
-  const mins = Math.floor(secs / 60);
-  if (mins > 0) return `${mins}m ${secs % 60}s`;
-  return `${secs}s`;
 }
 
 function getStatusIcon(status: string): string {
@@ -233,8 +228,8 @@ export const TaskInspectorPanel = memo<TaskInspectorPanelProps>(
                 marginLeft: 8,
                 outline: 'none',
               }}
-              onFocus={(e) => { e.currentTarget.style.outline = '2px solid #c084fc'; }}
-              onBlur={(e) => { e.currentTarget.style.outline = 'none'; }}
+              onFocus={(e) => { Object.assign(e.currentTarget.style, FOCUS_RING); }}
+              onBlur={(e) => { e.currentTarget.style.outline = 'none'; e.currentTarget.style.outlineOffset = ''; }}
             >
               ✕
             </button>

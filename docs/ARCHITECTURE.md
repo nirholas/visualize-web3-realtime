@@ -1,102 +1,89 @@
 # Architecture
 
-Deep dive into how web3viz is designed, how data flows, and why.
+This document provides a deep dive into the architecture of the Real-time Web3 + AI Agent Visualization platform. It explains how the system is designed, how data flows through it, and the rationale behind the architectural decisions.
+
+The project is a monorepo built with **npm workspaces** and **Turborepo**, promoting code reuse, separation of concerns, and a streamlined development experience. The architecture is designed to be modular, scalable, and extensible, allowing for the easy addition of new data sources, visualizations, and features.
 
 ---
 
 ## System Overview
 
+The following diagram illustrates the high-level architecture of the application:
+
 ```
-┌─────────────────────────────────────────────────────┐
-│                   Browser / Client                   │
-│                                                      │
-│  ┌──────────────┐   ┌───────────┐   ┌────────────┐ │
-│  │  Data Source  │   │  Provider  │   │  Registry  │ │
-│  │  (WebSocket)  │──▸│  Instance  │──▸│  (global)  │ │
-│  └──────────────┘   └───────────┘   └────────────┘ │
-│                            │                         │
-│                     ┌──────▼──────┐                  │
-│                     │ useProviders │ (React hook)     │
-│                     │  - buffer    │                  │
-│                     │  - merge     │                  │
-│                     │  - filter    │                  │
-│                     └──────┬──────┘                  │
-│                            │                         │
-│              ┌─────────────┼─────────────┐           │
-│              ▼             ▼             ▼           │
-│        ┌──────────┐ ┌──────────┐ ┌────────────┐    │
-│        │ForceGraph│ │ StatsBar │ │  LiveFeed  │    │
-│        │  (3D)    │ │  (HUD)   │ │  (events)  │    │
-│        └──────────┘ └──────────┘ └────────────┘    │
-└─────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────┐
+│                     Browser / Client                      │
+│                                                           │
+│  ┌──────────────────┐   ┌─────────────┐   ┌─────────────┐ │
+│  │   Data Source    │   │  Data Provider  │   │  Provider   │ │
+│  │ (WebSocket/REST) │───▶│   Instance    │───▶│  Registry │ │
+│  └──────────────────┘   └─────────────┘   └─────────────┘ │
+│                              │                            │
+│                       ┌──────▼──────┐                     │
+│                       │ useProviders │ (React Hook)         │
+│                       │  - Buffers   │                     │
+│                       │  - Merges    │                     │
+│                       │  - Filters   │                     │
+│                       └──────┬──────┘                     │
+│                              │                            │
+│                ┌─────────────┼─────────────┐              │
+│                ▼             ▼             ▼              │
+│        ┌───────────┐ ┌───────────┐ ┌────────────┐       │
+│        │ ForceGraph│ │  StatsBar │ │  LiveFeed  │       │
+│        │   (3D)    │ │   (HUD)   │ │  (Events)  │       │
+│        └───────────┘ └───────────┘ └────────────┘       │
+└───────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## Layer Breakdown
 
+The application is divided into several distinct layers, each with a specific responsibility.
+
 ### 1. Core Layer (`@web3viz/core`)
 
-**Zero dependencies.** Pure TypeScript that defines the contract everything else implements.
-
-| Module | Purpose |
-|---|---|
-| `types/` | `TopToken`, `TraderEdge`, `DataProviderEvent`, `GraphHandle`, `Vec3` |
-| `engine/` | `ForceGraphSimulation` (d3-force wrapper), `SpatialHash` (O(1) neighbors) |
-| `categories/` | Category definitions, `CategoryConfig` interface, source configs |
-| `providers/` | `DataProvider` interface, registry functions, `createProvider` factory |
-
-The core package can run in Node.js, Deno, or a browser without React.
+This is the foundational layer of the project, containing pure TypeScript with **zero dependencies**. It defines the core types, interfaces, and engine components that the rest of the application builds upon. This package can run in any JavaScript environment (Node.js, Deno, or a browser) without React.
 
 ### 2. Provider Layer (`@web3viz/providers`)
 
-Implements the `DataProvider` interface for each data source. Each provider:
+This layer is responsible for fetching real-time data from various external sources. It implements the `DataProvider` interface defined in the Core Layer. Each provider is responsible for:
 
-1. Opens WebSocket / RPC connections
-2. Parses raw protocol messages
-3. Emits normalized `DataProviderEvent` objects
-4. Tracks stats (counts, volumes, top tokens, trader edges)
+*   Connecting to a data source (e.g., WebSocket, REST API).
+*   Parsing the raw data.
+*   Emitting normalized `DataProviderEvent` objects.
 
-**Providers ship independently** — you only import the ones you need:
-
-```typescript
-import { PumpFunProvider } from '@web3viz/providers/pump-fun';
-import { MockProvider } from '@web3viz/providers/mock';
-```
-
-The `useProviders()` hook aggregates multiple providers:
-
-- **Event buffering:** 100ms debounce prevents render storms
-- **Stats merging:** Collects top 8 tokens, all trader edges, per-source breakdowns
-- **Category filtering:** Toggle categories and providers on/off
+The `useProviders()` hook in this package is responsible for aggregating data from multiple providers, buffering events, and merging stats.
 
 ### 3. Rendering Layer (`@web3viz/react-graph`)
 
-React Three Fiber component that turns `topTokens` + `traderEdges` into a 3D scene:
+This layer is responsible for rendering the 3D visualization. It's a React Three Fiber component that takes the data from the providers and turns it into a 3D scene. Key features include:
 
-- **InstancedMesh:** Single draw call per node type (hubs, agents)
-- **SpatialHash:** O(1) proximity queries for line drawing
-- **Framerate-independent physics:** `damping^(dt*60)` ensures consistent behavior at any FPS
-- **Post-processing:** SMAA anti-aliasing, N8AO ambient occlusion, selective bloom
+*   **InstancedMesh rendering** for high performance.
+*   **Spatial hashing** for efficient proximity queries.
+*   **Framerate-independent physics** for consistent behavior.
+*   **Post-processing effects** for a polished look and feel.
 
 ### 4. UI Layer (`@web3viz/ui`)
 
-Design system with CSS custom property theming:
-
-- **Tokens:** Colors, spacing, typography, shadows, z-index
-- **Theme:** `ThemeProvider` + `createTheme()` + light/dark presets
-- **Primitives:** Button, Input, Dialog, Panel, Badge, Pill, ColorControl
-- **Composed:** StatsBar, LiveFeed, FilterSidebar, SharePanel, WorldHeader
+This layer provides a comprehensive design system and a library of reusable UI components. It uses CSS custom properties for theming, with light and dark presets.
 
 ### 5. Application Layer (`app/` + `features/`)
 
-Next.js 14 App Router pages that compose everything:
+This is the main Next.js 14 application that brings everything together. It uses the App Router to define the pages and API routes. The `features/` directory contains the feature-specific components that are composed on the pages.
 
-- `app/world/page.tsx` — Main visualization (instantiates providers, renders ForceGraph + UI)
-- `app/agents/page.tsx` — Agent monitoring dashboard
-- `app/embed/page.tsx` — Embeddable widget
-- `features/World/` — World-specific components, hooks, utilities
-- `features/Agents/` — Agent-specific components
+---
+
+## Data Flow
+
+The data flow in the application is designed to be unidirectional and easy to follow:
+
+1.  **Data Ingestion:** The `DataProvider` instances in the Provider Layer connect to external data sources and ingest real-time data.
+2.  **Data Normalization:** The providers normalize the raw data into a consistent format (`DataProviderEvent`).
+3.  **Data Aggregation:** The `useProviders` hook aggregates the events from all active providers, buffers them to prevent performance issues, and merges the stats.
+4.  **Data Consumption:** The React components in the Application Layer consume the aggregated data from the `useProviders` hook.
+5.  **Data Visualization:** The Rendering Layer (`ForceGraph` component) takes the data and renders the 3D visualization. The UI Layer components display the supplementary information (stats, live feed, etc.).
+
 
 ---
 
