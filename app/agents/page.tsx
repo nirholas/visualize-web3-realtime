@@ -15,6 +15,7 @@ import AgentTimeline from '@/features/Agents/AgentTimeline';
 import ExecutorBanner from '@/features/Agents/ExecutorBanner';
 import AgentLoadingScreen from '@/features/Agents/AgentLoadingScreen';
 import { TaskInspectorPanel } from '@/features/Agents/TaskInspector';
+import { usePrefersReducedMotion, FOCUS_RING } from '@/features/Agents/utils/accessibility';
 import { agentThemeTokens } from '@/packages/ui/src/tokens/agent-colors';
 import { timestampedFilename } from '@/features/World/utils/screenshot';
 
@@ -67,16 +68,7 @@ function AgentsPageInner() {
   const [windowWidth, setWindowWidth] = useState(1440);
   const [downloading, setDownloading] = useState<boolean>(false);
   const [demoActive, setDemoActive] = useState(true);
-  const [reducedMotion, setReducedMotion] = useState(false);
-
-  // Detect prefers-reduced-motion
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    setReducedMotion(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
+  const reducedMotion = usePrefersReducedMotion();
 
   // Support ?source=local to connect to a local agent-bridge on port 9222
   const isLocalBridge = searchParams.get('source') === 'local';
@@ -292,6 +284,36 @@ function AgentsPageInner() {
         colorScheme={colorScheme}
       />
 
+      {/* Local bridge indicator */}
+      {isLocalBridge && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 32,
+            left: sidebarWidth + 12,
+            zIndex: 60,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '4px 10px',
+            borderRadius: 6,
+            fontSize: 11,
+            fontFamily: "'IBM Plex Mono', monospace",
+            letterSpacing: '0.05em',
+            background: connected ? 'rgba(52, 211, 153, 0.15)' : 'rgba(251, 191, 36, 0.15)',
+            color: connected ? '#34d399' : '#fbbf24',
+            border: `1px solid ${connected ? 'rgba(52, 211, 153, 0.3)' : 'rgba(251, 191, 36, 0.3)'}`,
+          }}
+        >
+          <span style={{
+            width: 6, height: 6, borderRadius: '50%',
+            background: connected ? '#34d399' : '#fbbf24',
+            animation: connected ? 'none' : 'pulse 1.5s ease-in-out infinite',
+          }} />
+          {connected ? `Bridge connected · localhost:${bridgePort}` : 'Waiting for bridge...'}
+        </div>
+      )}
+
       {/* Timeline scrubber */}
       {!isMobile && (
         <AgentTimeline
@@ -438,10 +460,11 @@ function AgentsPageInner() {
           opacity: downloading ? 0.5 : 1,
         }}
         onFocus={(e) => {
-          e.currentTarget.style.outline = '2px solid #c084fc';
+          Object.assign(e.currentTarget.style, FOCUS_RING);
         }}
         onBlur={(e) => {
           e.currentTarget.style.outline = 'none';
+          e.currentTarget.style.outlineOffset = '';
         }}
       >
         {downloading ? '⟳' : '📷'}
@@ -466,10 +489,11 @@ function AgentsPageInner() {
           outline: 'none',
         }}
         onFocus={(e) => {
-          e.currentTarget.style.outline = '2px solid #c084fc';
+          Object.assign(e.currentTarget.style, FOCUS_RING);
         }}
         onBlur={(e) => {
           e.currentTarget.style.outline = 'none';
+          e.currentTarget.style.outlineOffset = '';
         }}
       >
         {colorScheme === 'dark' ? '☀' : '☽'}
@@ -525,10 +549,11 @@ function AgentsPageInner() {
             outline: 'none',
           }}
           onFocus={(e) => {
-            e.currentTarget.style.outline = '2px solid #c084fc';
+            Object.assign(e.currentTarget.style, FOCUS_RING);
           }}
           onBlur={(e) => {
             e.currentTarget.style.outline = 'none';
+            e.currentTarget.style.outlineOffset = '';
           }}
         >
           {feedVisible ? '▸ Hide Feed' : '◂ Feed'}
@@ -624,8 +649,8 @@ function AgentsPageInner() {
                 whiteSpace: 'nowrap',
                 outline: 'none',
               }}
-              onFocus={(e) => { e.currentTarget.style.outline = `2px solid ${themeTokens.agentHubActive}`; }}
-              onBlur={(e) => { e.currentTarget.style.outline = 'none'; }}
+              onFocus={(e) => { Object.assign(e.currentTarget.style, FOCUS_RING); }}
+              onBlur={(e) => { e.currentTarget.style.outline = 'none'; e.currentTarget.style.outlineOffset = ''; }}}
             >
               <span style={{ fontSize: 14 }}>⬡</span>
               <span>{agent.name.slice(0, 8)}</span>

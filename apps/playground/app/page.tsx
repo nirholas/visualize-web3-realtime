@@ -9,7 +9,7 @@ import { truncateAddress } from '@web3viz/utils';
 // Dynamic import for the 3D graph (avoid SSR for Three.js)
 import dynamic from 'next/dynamic';
 const ForceGraph = dynamic(
-  () => import('@web3viz/react-graph').then((m) => m.ForceGraph),
+  () => import('@web3viz/react-graph'),
   { ssr: false },
 );
 
