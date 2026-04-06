@@ -5,10 +5,18 @@
 // Falls back gracefully when WebGPU is unavailable.
 // ============================================================================
 
+/// <reference types="@webgpu/types" />
+
 import { FORCE_SHADER_SOURCE } from './shaders';
 
-// WebGPU buffer usage flags — declared locally to avoid depending on @webgpu/types
+// Minimal WebGPU ambient type declarations to avoid depending on @webgpu/types
 /* eslint-disable @typescript-eslint/no-explicit-any */
+type GPUDevice = any;
+type GPUComputePipeline = any;
+type GPUBindGroup = any;
+type GPUBuffer = any;
+
+// WebGPU buffer usage flags — declared locally to avoid depending on @webgpu/types
 const GPU_BUFFER_USAGE = {
   STORAGE: 0x0080,
   COPY_SRC: 0x0004,
