@@ -155,4 +155,4 @@ const sim = new SwarmingSimulation({ maxNodes: 5000, hubCharge: -300 })
 
 ## License
 
-MIT
+All Rights Reserved

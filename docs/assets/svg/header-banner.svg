@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 120" fill="none">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6366f1">
+        <animate attributeName="stop-color" values="#6366f1;#8b5cf6;#a855f7;#6366f1" dur="4s" repeatCount="indefinite"/>
+      </stop>
+      <stop offset="50%" style="stop-color:#a855f7">
+        <animate attributeName="stop-color" values="#a855f7;#ec4899;#f59e0b;#a855f7" dur="4s" repeatCount="indefinite"/>
+      </stop>
+      <stop offset="100%" style="stop-color:#22c55e">
+        <animate attributeName="stop-color" values="#22c55e;#06b6d4;#6366f1;#22c55e" dur="4s" repeatCount="indefinite"/>
+      </stop>
+    </linearGradient>
+    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:0.15"/>
+      <stop offset="100%" style="stop-color:#a855f7;stop-opacity:0.05"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="800" height="120" rx="12" fill="#0a0a0f"/>
+  <rect width="800" height="120" rx="12" fill="url(#grad2)"/>
+
+  <!-- Animated orbital rings -->
+  <g transform="translate(400, 60)" opacity="0.3">
+    <ellipse cx="0" cy="0" rx="120" ry="30" stroke="url(#grad1)" stroke-width="0.5" fill="none">
+      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="20s" repeatCount="indefinite"/>
+    </ellipse>
+    <ellipse cx="0" cy="0" rx="180" ry="40" stroke="url(#grad1)" stroke-width="0.3" fill="none">
+      <animateTransform attributeName="transform" type="rotate" from="0" to="-360" dur="30s" repeatCount="indefinite"/>
+    </ellipse>
+    <ellipse cx="0" cy="0" rx="250" ry="50" stroke="url(#grad1)" stroke-width="0.2" fill="none">
+      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="40s" repeatCount="indefinite"/>
+    </ellipse>
+  </g>
+
+  <!-- Floating particles -->
+  <circle cx="100" cy="30" r="2" fill="#6366f1" opacity="0.6" filter="url(#glow)">
+    <animate attributeName="cy" values="30;90;30" dur="6s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.6;0.2;0.6" dur="6s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="200" cy="80" r="1.5" fill="#a855f7" opacity="0.5" filter="url(#glow)">
+    <animate attributeName="cy" values="80;20;80" dur="5s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.5;0.15;0.5" dur="5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="320" cy="50" r="2.5" fill="#22c55e" opacity="0.4" filter="url(#glow)">
+    <animate attributeName="cy" values="50;100;50" dur="7s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.4;0.1;0.4" dur="7s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="500" cy="70" r="1.8" fill="#f59e0b" opacity="0.5" filter="url(#glow)">
+    <animate attributeName="cy" values="70;15;70" dur="5.5s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.5;0.2;0.5" dur="5.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="620" cy="40" r="2" fill="#ec4899" opacity="0.6" filter="url(#glow)">
+    <animate attributeName="cy" values="40;95;40" dur="6.5s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.6;0.15;0.6" dur="6.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="720" cy="85" r="1.5" fill="#06b6d4" opacity="0.4" filter="url(#glow)">
+    <animate attributeName="cy" values="85;25;85" dur="4.5s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.4;0.1;0.4" dur="4.5s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Connection lines between particles (animated opacity) -->
+  <line x1="100" y1="30" x2="200" y2="80" stroke="#6366f1" stroke-width="0.3" opacity="0.2">
+    <animate attributeName="opacity" values="0.2;0.05;0.2" dur="6s" repeatCount="indefinite"/>
+  </line>
+  <line x1="320" y1="50" x2="500" y2="70" stroke="#a855f7" stroke-width="0.3" opacity="0.15">
+    <animate attributeName="opacity" values="0.15;0.03;0.15" dur="7s" repeatCount="indefinite"/>
+  </line>
+  <line x1="620" y1="40" x2="720" y2="85" stroke="#ec4899" stroke-width="0.3" opacity="0.2">
+    <animate attributeName="opacity" values="0.2;0.05;0.2" dur="5s" repeatCount="indefinite"/>
+  </line>
+
+  <!-- Title text -->
+  <text x="400" y="52" text-anchor="middle" font-family="monospace" font-size="28" font-weight="bold" fill="url(#grad1)" filter="url(#glow)">
+    swarming
+  </text>
+  <text x="400" y="78" text-anchor="middle" font-family="monospace" font-size="11" fill="#94a3b8" letter-spacing="3">
+    REAL-TIME 3D NETWORK VISUALIZATION
+  </text>
+
+  <!-- Animated gradient bar at bottom -->
+  <rect x="200" y="100" width="400" height="2" rx="1" fill="url(#grad1)" opacity="0.6">
+    <animate attributeName="width" values="400;300;400" dur="3s" repeatCount="indefinite"/>
+    <animate attributeName="x" values="200;250;200" dur="3s" repeatCount="indefinite"/>
+  </rect>
+</svg>

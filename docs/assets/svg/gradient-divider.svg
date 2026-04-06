@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 12" fill="none">
+  <defs>
+    <linearGradient id="divGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:0"/>
+      <stop offset="20%" style="stop-color:#6366f1;stop-opacity:1">
+        <animate attributeName="stop-color" values="#6366f1;#8b5cf6;#a855f7;#6366f1" dur="4s" repeatCount="indefinite"/>
+      </stop>
+      <stop offset="50%" style="stop-color:#a855f7;stop-opacity:1">
+        <animate attributeName="stop-color" values="#a855f7;#ec4899;#22c55e;#a855f7" dur="4s" repeatCount="indefinite"/>
+      </stop>
+      <stop offset="80%" style="stop-color:#22c55e;stop-opacity:1">
+        <animate attributeName="stop-color" values="#22c55e;#06b6d4;#6366f1;#22c55e" dur="4s" repeatCount="indefinite"/>
+      </stop>
+      <stop offset="100%" style="stop-color:#22c55e;stop-opacity:0"/>
+    </linearGradient>
+  </defs>
+  <line x1="0" y1="6" x2="800" y2="6" stroke="url(#divGrad)" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Animated pulse dot -->
+  <circle cx="400" cy="6" r="3" fill="#a855f7" opacity="0.8">
+    <animate attributeName="r" values="3;5;3" dur="2s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.8;0.3;0.8" dur="2s" repeatCount="indefinite"/>
+  </circle>
+</svg>

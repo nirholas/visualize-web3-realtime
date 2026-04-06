@@ -36,17 +36,51 @@ This is a monorepo with npm workspaces:
 
 ```
 packages/
-├── core/             # Types, engine, provider interface (0 React deps)
-├── react-graph/      # <ForceGraph /> 3D component
-├── providers/        # Data provider implementations
-├── ui/               # Design system (tokens, theme, components)
+├── core/             # Types, engine, categories, plugins, themes (0 React deps)
+├── react-graph/      # <ForceGraph /> 3D component + PostProcessing + SwarmingProvider
+├── providers/        # Data providers (PumpFun, Ethereum, CEX, Agent, Mock, Custom)
+├── ui/               # Design system (tokens, theme, primitives, composed components)
 ├── utils/            # Screenshots, sharing, formatters
-├── executor/         # Agent executor backend (Node.js)
 ├── mcp/              # MCP server (DeFi Llama, cookie.fun, proof registry)
+├── executor/         # Agent executor backend (WebSocket + REST, Claude SDK) ⚠️ broken
+├── engine/           # Framework-agnostic simulation engine
+├── react/            # React wrapper for swarming engine
+├── vue/              # Vue 3 wrapper
+├── svelte/           # Svelte wrapper
+├── react-native/     # React Native + Expo wrapper
+├── swarming/         # CDN/UMD bundle
+├── swarming-physics/ # Rust/WASM Barnes-Hut simulation
+├── swarming-collab-server/  # Multiplayer WebSocket relay
+├── agent-bridge/     # CLI for connecting external AI agents
+├── create-swarming-app/     # Project scaffolder
+├── create-swarming-plugin/  # Plugin scaffolder
 
 app/                  # Next.js 14 reference app (App Router)
-features/             # Feature modules for the reference app
-apps/playground/      # Standalone demo app
+  api/                # 4 API routes (world-chat, executor, agents/cookie, thumbnail)
+  world/              # Main 3D visualization page
+  agents/             # AI agent dashboard
+  demos/              # 6 demo scenarios
+  tools/              # 7 tool showcases
+  blog/               # 5 blog posts
+  docs/               # Documentation hub
+  playground/         # Code editor + live preview
+  showcase/           # Community gallery
+  plugins/            # Plugin directory
+  benchmarks/         # Performance comparisons
+  embed/              # Embeddable widget
+  landing/            # Alternative landing page
+
+features/             # Feature modules
+  World/              # 3D blockchain visualization (ForceGraph, Desktop Shell, AI Chat, Verification, Onboarding)
+  Agents/             # Agent visualization (AgentForceGraph, TaskInspector, ExecutorBanner)
+  Scrollytelling/     # Scroll-driven home page animations
+  Landing/            # Editorial engine + 3D Giza scene
+  Demos/              # Demo datasets and simulation hook
+  Tools/              # Tool demo components
+
+hooks/                # Custom React hooks (useAgentEvents, useAgentProvider)
+apps/playground/      # Standalone demo app ⚠️ broken
+apps/mobile-demo/     # Expo React Native demo
 ```
 
 ### Dependency rules
@@ -57,6 +91,8 @@ apps/playground/      # Standalone demo app
 - `ui` depends on `core` only
 - `utils` depends on `core` only
 - Feature modules in `features/` can import from any `@web3viz/*` package
+- All caches must use `BoundedMap`/`BoundedSet` — never unbounded `Map`/`Set`
+- External data must be validated with `packages/providers/src/shared/validate.ts`
 
 ---
 
