@@ -9,14 +9,7 @@
 
 import { FORCE_SHADER_SOURCE } from './shaders';
 
-// Minimal WebGPU ambient type declarations to avoid depending on @webgpu/types
-/* eslint-disable @typescript-eslint/no-explicit-any */
-type GPUDevice = any;
-type GPUComputePipeline = any;
-type GPUBindGroup = any;
-type GPUBuffer = any;
-
-// WebGPU buffer usage flags — declared locally to avoid depending on @webgpu/types
+// WebGPU buffer usage flags — declared locally to avoid depending on runtime imports
 const GPU_BUFFER_USAGE = {
   STORAGE: 0x0080,
   COPY_SRC: 0x0004,
@@ -25,7 +18,6 @@ const GPU_BUFFER_USAGE = {
   MAP_READ: 0x0001,
 } as const;
 const GPU_MAP_MODE = { READ: 0x0001 } as const;
-/* eslint-enable @typescript-eslint/no-explicit-any */
 
 // ============================================================================
 // Types
