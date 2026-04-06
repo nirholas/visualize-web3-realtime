@@ -2,7 +2,7 @@
   "name": "@web3viz/core",
   "version": "0.1.0",
   "private": true,
-  "license": "MIT",
+  "license": "UNLICENSED",
   "description": "Core engine, types, and data provider interface for Web3 visualizations",
   "main": "./src/index.ts",
   "types": "./src/index.ts",

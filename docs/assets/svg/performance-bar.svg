@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 50" fill="none">
+  <defs>
+    <linearGradient id="perfGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#22c55e"/>
+      <stop offset="100%" style="stop-color:#6366f1"/>
+    </linearGradient>
+    <linearGradient id="barBg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#1e1e2e"/>
+      <stop offset="100%" style="stop-color:#1a1a2a"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="800" height="50" fill="#0a0a0f"/>
+
+  <!-- Bar background -->
+  <rect x="180" y="15" width="500" height="20" rx="10" fill="url(#barBg)" stroke="#1e293b" stroke-width="0.5"/>
+
+  <!-- Animated progress fill -->
+  <rect x="182" y="17" width="0" height="16" rx="8" fill="url(#perfGrad)" opacity="0.8">
+    <animate attributeName="width" values="0;496;496" dur="2s" fill="freeze" repeatCount="1"/>
+  </rect>
+
+  <!-- Pulsing end cap -->
+  <circle cx="676" cy="25" r="4" fill="#22c55e" opacity="0">
+    <animate attributeName="opacity" values="0;0;0.8;0.4;0.8" dur="3s" repeatCount="indefinite"/>
+    <animate attributeName="r" values="4;4;4;6;4" dur="3s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Labels -->
+  <text x="70" y="28" text-anchor="middle" font-family="monospace" font-weight="bold" font-size="12" fill="#22c55e">60fps</text>
+  <text x="740" y="28" text-anchor="middle" font-family="monospace" font-size="10" fill="#64748b">5,000 nodes</text>
+</svg>

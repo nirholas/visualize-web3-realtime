@@ -2,7 +2,7 @@
   "name": "@web3viz/agent-bridge",
   "version": "0.1.0",
   "description": "Connect Claude Code, OpenClaw, Hermes, or any AI agent to the Swarming 3D visualization",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "private": true,
   "type": "module",
   "main": "src/index.ts",

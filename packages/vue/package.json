@@ -2,7 +2,7 @@
   "name": "@swarming/vue",
   "version": "0.1.0",
   "description": "Vue 3 wrapper for the swarming visualization engine",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",

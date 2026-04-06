@@ -1,6 +1,6 @@
 # Component API Reference
 
-This document provides a complete reference for the component libraries used in this project: `@web3viz/react-graph` for the 3D visualization and `@web3viz/ui` for the user interface.
+This document provides a complete reference for the component libraries used in this project: `@web3viz/react-graph` for the 3D visualization, `@web3viz/ui` for the user interface, and the feature-level components in `features/`.
 
 ---
 
@@ -10,7 +10,7 @@ This package contains the core 3D visualization components, built with React Thr
 
 ### ForceGraph
 
-The main 3D visualization component. It renders a force-directed graph of nodes and edges.
+The main 3D visualization component. It renders a force-directed graph of hub nodes and agent nodes.
 
 ```tsx
 import { ForceGraph, type GraphHandle } from '@web3viz/react-graph';
@@ -19,35 +19,123 @@ const ref = useRef<GraphHandle>(null);
 
 <ForceGraph
   ref={ref}
-  nodes={nodes}
-  edges={edges}
+  topTokens={topTokens}
+  traderEdges={traderEdges}
   background="#0a0a0f"
   showLabels
+  showGround
 />
 ```
 
 #### Props
 
-A comprehensive list of props for the `ForceGraph` component, including types, defaults, and descriptions.
-
 | Prop | Type | Default | Description |
 |---|---|---|---|
-| `nodes` | `Node[]` | `[]` | The nodes to render in the graph. |
-| `edges` | `Edge[]` | `[]` | The edges connecting the nodes. |
-| `background` | `string` | `'#ffffff'` | The background color of the canvas. |
-| `...` | `...` | `...` | Other props from the original doc... |
+| `topTokens` | `TopToken[]` | `[]` | Hub nodes (top entities by volume, up to 8) |
+| `traderEdges` | `TraderEdge[]` | `[]` | Connections between traders and hubs (up to 5,000) |
+| `height` | `number` | — | Canvas height |
+| `background` | `string` | `'#0a0a0f'` | Scene background color |
+| `groundColor` | `string` | — | Ground plane color |
+| `simulationConfig` | `ForceGraphConfig` | — | Physics parameters (charge, damping, springs, maxAgentNodes) |
+| `showLabels` | `boolean` | `false` | Toggle hub labels (HTML overlays with distance-based culling) |
+| `showGround` | `boolean` | `false` | Toggle ground plane with contact shadows |
+| `fov` | `number` | — | Camera field of view |
+| `cameraPosition` | `[x, y, z]` | — | Initial camera position |
+| `labelStyle` | `CSSProperties` | — | Custom CSS for hub labels |
+| `showShadows` | `boolean` | `false` | Enable contact shadows beneath nodes |
+| `postProcessing` | `PostProcessingProps` | — | Bloom strength/radius, DOF settings |
+| `renderer` | `'auto' \| 'webgpu' \| 'webgl'` | `'auto'` | Renderer selection (WebGPU with WebGL fallback) |
+| `onRendererReady` | `(renderer: string) => void` | — | Callback when renderer is determined |
 
 #### `GraphHandle` (ref methods)
 
-The `GraphHandle` interface provides methods to interact with the graph programmatically.
-
 ```typescript
 interface GraphHandle {
-  animateCameraTo(request: { position: [x, y, z]; lookAt?: [x, y, z]; durationMs?: number; }): Promise<void>;
-  focusNode(nodeId: string, durationMs?: number): Promise<void>;
-  // ... other methods
+  animateCameraTo(position: Vec3, lookAt?: Vec3, durationMs?: number): Promise<void>;
+  focusHub(hubIndex: number): void;
+  getCanvasElement(): HTMLCanvasElement | null;
+  takeSnapshot(): string | null;  // Returns data URL
+  setOrbitEnabled(enabled: boolean): void;
 }
 ```
+
+### PostProcessing
+
+```tsx
+import { PostProcessing } from '@web3viz/react-graph';
+
+<PostProcessing
+  enabled={true}
+  bloomStrength={0.4}
+  bloomRadius={0.3}
+  depthOfFieldEnabled={false}
+  focusDistance={10}
+/>
+```
+
+### SwarmingProvider
+
+React context for the plugin system. Manages provider lifecycle, theme, and renderer hooks.
+
+```tsx
+import { SwarmingProvider, useSwarming, useSwarmingTheme } from '@web3viz/react-graph';
+
+<SwarmingProvider plugins={[ethereumPlugin, solanaPlugin]} autoConnect>
+  <App />
+</SwarmingProvider>
+```
+
+---
+
+## Feature Components
+
+### World Feature (`features/World/`)
+
+| Component | Description |
+|---|---|
+| `ForceGraph` | Main 3D force-directed graph (~1,400 lines). Hub + agent nodes, instanced meshes, bloom edges. |
+| `StatsBar` | Real-time metrics (TPS, volume, transaction count) with animated counters |
+| `TimelineBar` | 120-bucket histogram scrubber with live/scrubbed indicator and play/pause |
+| `LiveFeed` | Scrolling event stream with Framer Motion animations and chain color indicators |
+| `ProviderPanel` | Toggle providers on/off with connection status indicators |
+| `ProtocolFilterSidebar` | Hierarchical category toggles with expandable tree interface |
+| `SharePanel` | Color customization (background, protocol, user) + export options |
+| `EmbedConfigurator` | Generate iframe/script embed snippets |
+| `AddCustomProviderForm` | Form for adding custom data providers at runtime |
+| `FloatingPanel` | Persistent draggable panels |
+
+### Desktop Shell (`features/World/desktop/`)
+
+| Component | Description |
+|---|---|
+| `DesktopShell` | Main window manager with lazy-loaded panels |
+| `Window` | Draggable window frame with title bar controls |
+| `Taskbar` | Bottom taskbar with app icons and indicator lights |
+| `StartMenu` | Grid launcher with 8 available apps |
+| `useWindowManager` | Hook for window state (localStorage persistence, z-index management) |
+| `KeyboardShortcuts` | Keyboard navigation (Escape, arrows, Enter) |
+| `ConnectionToasts` | Provider connection notification toasts |
+
+### AI Chat (`features/World/ai/`)
+
+| Component | Description |
+|---|---|
+| `WorldChat` | Chat interface with streaming responses and action execution |
+| `componentRegistry` | Zod-based action schema registry (5 tools) converted to Anthropic tool definitions |
+
+### Agents Feature (`features/Agents/`)
+
+| Component | Description |
+|---|---|
+| `AgentForceGraph` | 3D agent/task/tool graph (~1,200 lines) with particle trails, reasoning halos, spawn effects |
+| `AgentSidebar` | Agent list with status indicators, tool category toggles, executor state |
+| `TaskInspector` | Full task detail: agent, status, duration, tool calls, sub-agents, reasoning text |
+| `AgentStatsBar` | Active agents, task counts (active/completed), tool call frequency |
+| `AgentTimeline` | Temporal event view with progression visualization |
+| `AgentLiveFeed` | Real-time task/tool call events with status badges |
+| `ExecutorBanner` | Backend health monitoring with reconnection countdown |
+| `AgentLabel` | 3D HTML label tracking agent position |
+| `AgentLoadingScreen` | Loading state overlay |
 
 ---
 

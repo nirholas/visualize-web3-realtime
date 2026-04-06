@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 160" fill="none">
+  <defs>
+    <linearGradient id="tsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3178c6"/>
+      <stop offset="100%" style="stop-color:#235a97"/>
+    </linearGradient>
+    <linearGradient id="reactGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#61dafb"/>
+      <stop offset="100%" style="stop-color:#149eca"/>
+    </linearGradient>
+    <linearGradient id="threeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff"/>
+      <stop offset="100%" style="stop-color:#aaaaaa"/>
+    </linearGradient>
+    <linearGradient id="nextGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff"/>
+      <stop offset="100%" style="stop-color:#888888"/>
+    </linearGradient>
+    <linearGradient id="d3Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f9a03c"/>
+      <stop offset="100%" style="stop-color:#e6772e"/>
+    </linearGradient>
+    <linearGradient id="rustGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#dea584"/>
+      <stop offset="100%" style="stop-color:#b7410e"/>
+    </linearGradient>
+    <linearGradient id="twGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#38bdf8"/>
+      <stop offset="100%" style="stop-color:#0284c7"/>
+    </linearGradient>
+    <linearGradient id="aiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#d97706"/>
+      <stop offset="100%" style="stop-color:#b45309"/>
+    </linearGradient>
+    <filter id="techGlow">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <linearGradient id="connGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6366f1;stop-opacity:0.2"/>
+      <stop offset="50%" style="stop-color:#a855f7;stop-opacity:0.3"/>
+      <stop offset="100%" style="stop-color:#22c55e;stop-opacity:0.2"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="800" height="160" fill="#0a0a0f"/>
+
+  <!-- Connection lines (curved) -->
+  <path d="M100,80 Q200,40 300,80" stroke="url(#connGrad)" stroke-width="0.5" fill="none"/>
+  <path d="M200,80 Q300,120 400,80" stroke="url(#connGrad)" stroke-width="0.5" fill="none"/>
+  <path d="M300,80 Q400,40 500,80" stroke="url(#connGrad)" stroke-width="0.5" fill="none"/>
+  <path d="M400,80 Q500,120 600,80" stroke="url(#connGrad)" stroke-width="0.5" fill="none"/>
+  <path d="M500,80 Q600,40 700,80" stroke="url(#connGrad)" stroke-width="0.5" fill="none"/>
+
+  <!-- Animated data packets on connections -->
+  <circle r="2" fill="#a855f7" opacity="0.7">
+    <animateMotion dur="3s" repeatCount="indefinite" path="M100,80 Q200,40 300,80"/>
+  </circle>
+  <circle r="2" fill="#22c55e" opacity="0.7">
+    <animateMotion dur="2.5s" repeatCount="indefinite" path="M300,80 Q400,40 500,80"/>
+  </circle>
+  <circle r="2" fill="#f59e0b" opacity="0.7">
+    <animateMotion dur="3.5s" repeatCount="indefinite" path="M500,80 Q600,40 700,80"/>
+  </circle>
+
+  <!-- Tech circles with hover glow -->
+  <!-- Next.js -->
+  <g>
+    <circle cx="100" cy="80" r="28" fill="#111" stroke="#333" stroke-width="1" filter="url(#techGlow)"/>
+    <text x="100" y="76" text-anchor="middle" font-family="monospace" font-weight="bold" font-size="11" fill="url(#nextGrad)">Next</text>
+    <text x="100" y="89" text-anchor="middle" font-family="monospace" font-size="8" fill="#666">.js 14</text>
+    <circle cx="100" cy="80" r="28" fill="none" stroke="#ffffff" stroke-width="0.5" opacity="0">
+      <animate attributeName="opacity" values="0;0.15;0" dur="4s" repeatCount="indefinite"/>
+      <animate attributeName="r" values="28;34;28" dur="4s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- React -->
+  <g>
+    <circle cx="200" cy="80" r="28" fill="#111" stroke="#333" stroke-width="1" filter="url(#techGlow)"/>
+    <text x="200" y="83" text-anchor="middle" font-family="monospace" font-weight="bold" font-size="11" fill="url(#reactGrad)">React</text>
+    <circle cx="200" cy="80" r="28" fill="none" stroke="#61dafb" stroke-width="0.5" opacity="0">
+      <animate attributeName="opacity" values="0;0.2;0" dur="3.5s" repeatCount="indefinite"/>
+      <animate attributeName="r" values="28;34;28" dur="3.5s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- Three.js -->
+  <g>
+    <circle cx="300" cy="80" r="28" fill="#111" stroke="#333" stroke-width="1" filter="url(#techGlow)"/>
+    <text x="300" y="76" text-anchor="middle" font-family="monospace" font-weight="bold" font-size="10" fill="url(#threeGrad)">Three</text>
+    <text x="300" y="89" text-anchor="middle" font-family="monospace" font-size="8" fill="#666">.js</text>
+    <circle cx="300" cy="80" r="28" fill="none" stroke="#ffffff" stroke-width="0.5" opacity="0">
+      <animate attributeName="opacity" values="0;0.15;0" dur="5s" repeatCount="indefinite"/>
+      <animate attributeName="r" values="28;34;28" dur="5s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- TypeScript -->
+  <g>
+    <circle cx="400" cy="80" r="28" fill="#111" stroke="#333" stroke-width="1" filter="url(#techGlow)"/>
+    <text x="400" y="83" text-anchor="middle" font-family="monospace" font-weight="bold" font-size="10" fill="url(#tsGrad)">TS</text>
+    <circle cx="400" cy="80" r="28" fill="none" stroke="#3178c6" stroke-width="0.5" opacity="0">
+      <animate attributeName="opacity" values="0;0.2;0" dur="4.5s" repeatCount="indefinite"/>
+      <animate attributeName="r" values="28;34;28" dur="4.5s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- D3 -->
+  <g>
+    <circle cx="500" cy="80" r="28" fill="#111" stroke="#333" stroke-width="1" filter="url(#techGlow)"/>
+    <text x="500" y="83" text-anchor="middle" font-family="monospace" font-weight="bold" font-size="12" fill="url(#d3Grad)">D3</text>
+    <circle cx="500" cy="80" r="28" fill="none" stroke="#f9a03c" stroke-width="0.5" opacity="0">
+      <animate attributeName="opacity" values="0;0.15;0" dur="3.8s" repeatCount="indefinite"/>
+      <animate attributeName="r" values="28;34;28" dur="3.8s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- Rust/WASM -->
+  <g>
+    <circle cx="600" cy="80" r="28" fill="#111" stroke="#333" stroke-width="1" filter="url(#techGlow)"/>
+    <text x="600" y="76" text-anchor="middle" font-family="monospace" font-weight="bold" font-size="10" fill="url(#rustGrad)">Rust</text>
+    <text x="600" y="89" text-anchor="middle" font-family="monospace" font-size="7" fill="#666">WASM</text>
+    <circle cx="600" cy="80" r="28" fill="none" stroke="#dea584" stroke-width="0.5" opacity="0">
+      <animate attributeName="opacity" values="0;0.2;0" dur="4.2s" repeatCount="indefinite"/>
+      <animate attributeName="r" values="28;34;28" dur="4.2s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- Tailwind -->
+  <g>
+    <circle cx="700" cy="80" r="28" fill="#111" stroke="#333" stroke-width="1" filter="url(#techGlow)"/>
+    <text x="700" y="76" text-anchor="middle" font-family="monospace" font-weight="bold" font-size="8" fill="url(#twGrad)">Tail</text>
+    <text x="700" y="89" text-anchor="middle" font-family="monospace" font-size="8" fill="url(#twGrad)">wind</text>
+    <circle cx="700" cy="80" r="28" fill="none" stroke="#38bdf8" stroke-width="0.5" opacity="0">
+      <animate attributeName="opacity" values="0;0.15;0" dur="3.2s" repeatCount="indefinite"/>
+      <animate attributeName="r" values="28;34;28" dur="3.2s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- Label -->
+  <text x="400" y="140" text-anchor="middle" font-family="monospace" font-size="10" fill="#475569" letter-spacing="2">
+    POWERED BY
+  </text>
+</svg>

@@ -228,10 +228,16 @@ The app works without any env vars — PumpFun data streams need no authenticati
 | Command | Description |
 |---------|-------------|
 | `npm run dev` | Dev server with hot reload (port 3100) |
-| `npm run dev:playground` | Dev with mock data (no external deps) |
-| `npm run build` | Production build |
+| `npm run dev:playground` | Standalone demo with mock data |
+| `npm run dev:executor` | Agent executor backend server |
+| `npm run build` | Production build (**do NOT use `turbo run build`**) |
 | `npm run lint` | ESLint checks |
 | `npm run typecheck` | TypeScript type checking |
+| `npm test` | Run all tests (vitest) |
+| `npm run test:watch` | Run tests in watch mode |
+| `npm run test:coverage` | Tests with coverage report |
+| `npm test -- --run packages/core` | Test specific package |
+| `npx tsc --noEmit -p packages/providers/tsconfig.json` | Type-check specific package |
 
 ---
 

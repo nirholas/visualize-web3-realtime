@@ -2,7 +2,7 @@
   "name": "create-swarming-plugin",
   "version": "0.1.0",
   "description": "Scaffold a new swarming plugin project",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "bin": {
     "create-swarming-plugin": "./src/index.ts"
   },

@@ -45,9 +45,13 @@ function App() {
 }
 ```
 
----
+<br/>
 
 ## Features
+
+<p align="center">
+  <img src="docs/assets/svg/network-animation.svg" alt="Network visualization" width="800" />
+</p>
 
 <table>
 <tr>
@@ -120,7 +124,9 @@ function App() {
 </tr>
 </table>
 
----
+<img src="docs/assets/svg/gradient-divider.svg" alt="" width="100%" />
+
+<br/>
 
 ## Supported Chains & Data Sources
 
@@ -143,7 +149,9 @@ The Agent provider detects activity from 15+ AI agent frameworks including Virtu
 
 TVL and metrics for Aave, Uniswap, Compound, MakerDAO, and Lido via DeFi Llama public API.
 
----
+<img src="docs/assets/svg/gradient-divider.svg" alt="" width="100%" />
+
+<br/>
 
 ## Pages & Routes
 
@@ -200,7 +208,9 @@ TVL and metrics for Aave, Uniswap, Compound, MakerDAO, and Lido via DeFi Llama p
 | `/api/agents/cookie` | GET | Proxy to cookie.fun agent rankings API. Cached: 60s ISR + stale-while-revalidate |
 | `/api/thumbnail` | GET | Edge-runtime OG image generation per demo category |
 
----
+<img src="docs/assets/svg/gradient-divider.svg" alt="" width="100%" />
+
+<br/>
 
 ## Architecture
 
@@ -396,9 +406,15 @@ import { SwarmingView } from '@swarming/react-native'
 | [`create-swarming-app`](packages/create-swarming-app/) | CLI scaffolder — `npx create-swarming-app`. |
 | [`create-swarming-plugin`](packages/create-swarming-plugin/) | Plugin project scaffolder. |
 
----
+<img src="docs/assets/svg/gradient-divider.svg" alt="" width="100%" />
+
+<br/>
 
 ## Performance
+
+<p align="center">
+  <img src="docs/assets/svg/performance-bar.svg" alt="60fps at 5000 nodes" width="600" />
+</p>
 
 InstancedMesh (single draw call per node type), SpatialHash grids, and framerate-independent physics.
 
@@ -511,9 +527,15 @@ Copy `.env.example` to `.env.local`. The app works without any env vars — Pump
 | `EXECUTOR_MAX_AGENTS` | No | `5` | Max concurrent agents |
 | `STATE_PATH` | No | `./data/executor.db` | Executor SQLite database path |
 
----
+<img src="docs/assets/svg/gradient-divider.svg" alt="" width="100%" />
+
+<br/>
 
 ## Tech Stack
+
+<p align="center">
+  <img src="docs/assets/svg/tech-stack.svg" alt="Tech stack" width="700" />
+</p>
 
 | Layer | Technology |
 |---|---|
@@ -661,10 +683,8 @@ swarming is open to contributions.
 
 ---
 
-<p align="center">
-  All Rights Reserved · Built by <a href="https://github.com/nirholas">@nirholas</a>
-</p>
+<img src="docs/assets/svg/footer-wave.svg" alt="" width="100%" />
 
 <p align="center">
-  <sub>See your data swarm.</sub>
+  MIT License · Built by <a href="https://github.com/nirholas">@nirholas</a>
 </p>

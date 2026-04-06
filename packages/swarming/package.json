@@ -2,7 +2,7 @@
   "name": "swarming",
   "version": "0.1.0",
   "description": "3D force-directed graph visualization — render thousands of nodes via CDN script tag or ES module",
-  "license": "MIT",
+  "license": "UNLICENSED",
   "main": "./dist/swarming.umd.js",
   "module": "./dist/swarming.mjs",
   "types": "./dist/index.d.ts",
