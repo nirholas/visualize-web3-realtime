@@ -202,14 +202,15 @@ const categories: CategoryConfig[] = [
 
 The UI automatically generates filter controls from the category list. Users can toggle categories on/off, and the `useProviders()` hook filters events accordingly.
 
-### Built-in Categories
+### Built-in Categories (34 total)
 
 | Source | Categories |
 |---|---|
-| PumpFun | launches, agentLaunches, trades, claimsWallet, claimsGithub, claimsFirst |
+| PumpFun (Solana) | launches, agentLaunches, trades, bondingCurve, whales, snipers, claimsWallet, claimsGithub, claimsFirst |
 | Ethereum | ethSwaps, ethTransfers, ethMints |
 | Base | baseSwaps, baseTransfers, baseMints |
 | Agents | agentDeploys, agentInteractions, agentSpawn, agentTask, toolCall, subagentSpawn, reasoning, taskComplete, taskFailed |
+| ERC-8004 | erc8004Mints, erc8004Transfers, erc8004Updates |
 | CEX | cexSpotTrades, cexLiquidations |
 
 ---
