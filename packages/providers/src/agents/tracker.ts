@@ -74,7 +74,7 @@ export class AgentTracker {
   private async fetchAgentRegistries(): Promise<boolean> {
     // Try cookie.fun agent rankings API
     try {
-      const res = await fetch('https://api.cookie.fun/v2/agents/agentsPaged?interval=_7Days&page=1&pageSize=5', {
+      const res = await fetch('/api/agents/cookie?interval=_7Days&page=1&pageSize=5', {
         signal: AbortSignal.timeout(5000),
         headers: { 'Accept': 'application/json' },
       });

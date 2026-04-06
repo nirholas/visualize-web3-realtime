@@ -81,17 +81,30 @@ const FloatingPanel = memo<FloatingPanelProps>(function FloatingPanel({
   disableMinimize = false,
 }) {
   const isDark = useDarkMode();
-  const saved = useRef(loadState(id));
 
-  const [minimized, setMinimized] = useState(saved.current?.minimized ?? defaultMinimized);
-  const [locked, setLocked] = useState(saved.current?.locked ?? true);
+  const [minimized, setMinimized] = useState(defaultMinimized);
+  const [locked, setLocked] = useState(true);
   const [dragging, setDragging] = useState(false);
 
   // Track whether user has ever dragged (if not, keep using anchor CSS)
-  const [hasMoved, setHasMoved] = useState(saved.current != null);
+  const [hasMoved, setHasMoved] = useState(false);
   const [pos, setPos] = useState<{ x: number; y: number }>(
-    saved.current ?? defaultPosition ?? { x: 0, y: 0 },
+    defaultPosition ?? { x: 0, y: 0 },
   );
+
+  // Restore persisted state after mount to avoid hydration mismatch
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+    const saved = loadState(id);
+    if (saved) {
+      setMinimized(saved.minimized);
+      setLocked(saved.locked);
+      setHasMoved(true);
+      setPos({ x: saved.x, y: saved.y });
+    }
+  }, [id]);
 
   const dragStart = useRef<{ px: number; py: number; ox: number; oy: number } | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);

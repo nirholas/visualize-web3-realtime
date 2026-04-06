@@ -29,6 +29,7 @@ export class BinanceLiquidationStream {
     this.wsManager = new WebSocketManager({
       url: 'wss://fstream.binance.com/ws/!forceOrder@arr',
       heartbeatIntervalMs: 0, // Binance sends its own pings
+      maxRetries: 5,
       onStateChange: (state) => {
         this.connected = state === 'connected';
       },

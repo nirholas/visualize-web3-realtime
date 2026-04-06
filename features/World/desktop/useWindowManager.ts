@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { WindowId, WindowState } from './desktopTypes';
 import { APP_MAP } from './desktopConstants';
 
@@ -39,10 +39,9 @@ const ALL_IDS: WindowId[] = [
 ];
 
 function buildInitialState(): Record<WindowId, WindowState> {
-  const persisted = loadPersistedState();
   const state = {} as Record<WindowId, WindowState>;
   for (const id of ALL_IDS) {
-    state[id] = persisted?.[id] ?? defaultState(id);
+    state[id] = defaultState(id);
     // Always start with windows closed on fresh page load
     state[id].isOpen = false;
     state[id].isMinimized = false;
@@ -54,6 +53,24 @@ let nextZ = 100;
 
 export function useWindowManager() {
   const [windows, setWindows] = useState<Record<WindowId, WindowState>>(buildInitialState);
+
+  // Restore persisted positions/sizes after mount to avoid hydration mismatch
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+    const persisted = loadPersistedState();
+    if (!persisted) return;
+    setWindows((prev) => {
+      const next = { ...prev };
+      for (const id of ALL_IDS) {
+        if (persisted[id]) {
+          next[id] = { ...persisted[id], isOpen: false, isMinimized: false };
+        }
+      }
+      return next;
+    });
+  }, []);
 
   const update = useCallback((id: WindowId, patch: Partial<WindowState>) => {
     setWindows((prev) => {

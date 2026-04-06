@@ -13,3 +13,4 @@ packages/*/data/
 *.db-shm
 extracted/
 .tmp-sourcemap-extract/
+read.md

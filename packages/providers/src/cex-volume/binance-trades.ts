@@ -39,6 +39,7 @@ export class BinanceTradeStream {
     this.wsManager = new WebSocketManager({
       url,
       heartbeatIntervalMs: 0, // Binance sends its own pings
+      maxRetries: 5,
       onStateChange: (state) => {
         this.connected = state === 'connected';
       },

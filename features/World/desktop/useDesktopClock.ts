@@ -11,10 +11,12 @@ function formatDate(): string {
 }
 
 export function useDesktopClock() {
-  const [time, setTime] = useState(formatClock);
-  const [date, setDate] = useState(formatDate);
+  const [time, setTime] = useState('');
+  const [date, setDate] = useState('');
 
   useEffect(() => {
+    setTime(formatClock());
+    setDate(formatDate());
     const id = setInterval(() => {
       setTime(formatClock());
       setDate(formatDate());

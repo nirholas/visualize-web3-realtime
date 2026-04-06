@@ -64,9 +64,7 @@ function AgentsPageInner() {
   const [feedVisible, setFeedVisible] = useState(true);
   const [playbackSpeed, setPlaybackSpeed] = useState<1 | 2 | 4>(1);
   const [colorScheme, setColorScheme] = useState<'dark' | 'light'>('dark');
-  const [windowWidth, setWindowWidth] = useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth : 1440
-  );
+  const [windowWidth, setWindowWidth] = useState(1440);
   const [downloading, setDownloading] = useState<boolean>(false);
   const [demoActive, setDemoActive] = useState(true);
   const [reducedMotion, setReducedMotion] = useState(false);

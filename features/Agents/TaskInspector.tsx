@@ -6,7 +6,7 @@
  */
 'use client';
 
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import type { AgentTask, AgentToolCall, AgentIdentity, AgentEvent } from '@web3viz/core';
 import { AgentStatusIndicator } from './AgentStatusIndicator';
 import { TASK_STATUS_COLORS } from './constants';
@@ -90,9 +90,14 @@ export const TaskInspectorPanel = memo<TaskInspectorPanelProps>(
       return toolCalls.filter((tc) => tc.taskId === task.taskId);
     }, [toolCalls, task.taskId]);
 
-    // Responsive: detect mobile/tablet
-    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-    const isTablet = typeof window !== 'undefined' && window.innerWidth >= 768 && window.innerWidth < 1024;
+    // Responsive: detect mobile/tablet (deferred to avoid hydration mismatch)
+    const [isMobile, setIsMobile] = useState(false);
+    const [isTablet, setIsTablet] = useState(false);
+    useEffect(() => {
+      const w = window.innerWidth;
+      setIsMobile(w < 768);
+      setIsTablet(w >= 768 && w < 1024);
+    }, []);
 
     // Panel positioning: full-screen on mobile, bottom sheet on tablet, right slide-in on desktop
     const panelStyle: React.CSSProperties = isMobile
