@@ -50,7 +50,7 @@ export class BondingCurveTracker {
 // Whale Wallet Detection
 // ---------------------------------------------------------------------------
 
-const WHALE_SOL_THRESHOLD = 50;
+const WHALE_SOL_THRESHOLD = 1;
 
 interface WalletProfile {
   address: string;

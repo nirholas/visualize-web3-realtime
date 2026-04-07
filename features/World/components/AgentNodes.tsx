@@ -78,12 +78,17 @@ export const AgentNodes = memo(
           isSearchedAgent = parts.length >= 2 && parts[1].toLowerCase() === searchLower;
         }
 
-        // Subtle shimmer — small position jitter to feel alive without chaos
-        const shimmerPhase = state.clock.getElapsedTime() * 0.3 + i * 2.17;
-        const shimmer = 0.12;
-        const sx = Math.sin(shimmerPhase) * shimmer;
-        const sy = Math.sin(shimmerPhase * 0.5 + i * 1.37) * shimmer;
-        const sz = Math.cos(shimmerPhase * 0.7 + i) * shimmer;
+        // Orbital swarming — agents slowly orbit their hub like bees in a cloud
+        const t = state.clock.getElapsedTime();
+        const uniqueSeed = i * 2.17;
+        const orbitSpeed = 0.15 + (i % 7) * 0.03; // varied orbit speeds
+        const orbitRadius = 0.3 + (i % 5) * 0.12; // varied orbit radii
+        const phase1 = t * orbitSpeed + uniqueSeed;
+        const phase2 = t * orbitSpeed * 0.7 + uniqueSeed * 1.37;
+        const phase3 = t * orbitSpeed * 0.5 + uniqueSeed * 0.83;
+        const sx = Math.sin(phase1) * orbitRadius;
+        const sy = Math.sin(phase2) * orbitRadius * 0.8;
+        const sz = Math.cos(phase3) * orbitRadius;
 
         if (isSearchedAgent) {
           // Searched agent: 3x size with gentle pulse, bright blue
@@ -110,19 +115,18 @@ export const AgentNodes = memo(
               tempColor.copy(dimColor).multiplyScalar(0.35);
             }
           } else {
-            // Color agents by their hub's chain color (desaturated)
-            // Whales get bright teal, snipers get orange
+            // Color agents by action type:
+            // 🟢 green = buy, 🔴 red = sell, ⚫ black = create, 🔵 blue = whale
             if (node.isWhale) {
-              tempColor.set('#38bdf8');
-            } else if (node.isSniper) {
-              tempColor.set('#f97316');
+              tempColor.set('#3b82f6'); // blue for whales
+            } else if (node.lastAction === 'buy') {
+              tempColor.set('#22c55e'); // green for buys
+            } else if (node.lastAction === 'sell') {
+              tempColor.set('#ef4444'); // red for sells
+            } else if (node.lastAction === 'create') {
+              tempColor.set(isDark ? '#1a1a1a' : '#0a0a0a'); // black for creates
             } else {
-              const hub = node.hubTokenAddress ? sim.nodeMap.get(node.hubTokenAddress) : null;
-              if (hub?.color) {
-                tempColor.set(hub.color).multiplyScalar(isDark ? 0.6 : 0.4);
-              } else {
-                tempColor.set(isDark ? PROTOCOL_COLORS.agentDefault : '#2a6090');
-              }
+              tempColor.set(isDark ? '#64748b' : '#94a3b8'); // grey fallback
             }
           }
         }

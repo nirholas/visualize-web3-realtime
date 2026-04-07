@@ -45,6 +45,8 @@ export interface ForceNode extends SimulationNodeDatum3D {
   isWhale?: boolean;
   /** Whether this agent is a detected sniper bot */
   isSniper?: boolean;
+  /** Last action type for coloring: 'buy' | 'sell' | 'create' */
+  lastAction?: 'buy' | 'sell' | 'create';
   /** Bonding curve progress 0–1 (for hub nodes, PumpFun only) */
   bondingCurveProgress?: number;
   /** Whether this hub token has graduated */
@@ -85,13 +87,13 @@ export class ForceGraphSimulation {
     // numDimensions=3 enables full volumetric (spherical) layout
     this.simulation = forceSimulation<ForceNode>([], 3)
       .numDimensions(3)
-      .force('charge', forceManyBody<ForceNode>().strength((d) => (d.type === 'hub' ? -120 : -0.3)))
-      .force('center', forceCenter<ForceNode>(0, 0, 0).strength(0.12))
+      .force('charge', forceManyBody<ForceNode>().strength((d) => (d.type === 'hub' ? -150 : -0.08)))
+      .force('center', forceCenter<ForceNode>(0, 0, 0).strength(0.08))
       .force(
         'collide',
         forceCollide<ForceNode>()
-          .radius((d) => (d.type === 'hub' ? d.radius + 1 : d.radius + 0.05))
-          .strength(0.4),
+          .radius((d) => (d.type === 'hub' ? d.radius + 2 : d.radius + 0.02))
+          .strength(0.2),
       )
       .force(
         'link',
@@ -100,18 +102,18 @@ export class ForceGraphSimulation {
           .distance((d) => {
             const src = d.source as ForceNode;
             const tgt = d.target as ForceNode;
-            if (src.type === 'hub' && tgt.type === 'hub') return 18;
-            return 1.5 + Math.random() * 2;
+            if (src.type === 'hub' && tgt.type === 'hub') return 22;
+            return 3 + Math.random() * 4;
           })
           .strength((d) => {
             const src = d.source as ForceNode;
             const tgt = d.target as ForceNode;
             if (src.type === 'hub' && tgt.type === 'hub') return 0.15;
-            return 0.6;
+            return 0.12;
           }),
       )
-      .alphaDecay(0.008)
-      .velocityDecay(0.5);
+      .alphaDecay(0.003)
+      .velocityDecay(0.35);
   }
 
   update(topTokens: TopToken[], traderEdges: TraderEdge[]) {
@@ -167,10 +169,10 @@ export class ForceGraphSimulation {
       if (added >= budget) break;
 
       const hub = this.nodeMap.get(edge.tokenAddress);
-      // Distribute agents spherically around their hub
+      // Distribute agents in a wide cloud sphere around their hub
       const aPhi = Math.acos(1 - 2 * Math.random());
       const aTheta = Math.random() * Math.PI * 2;
-      const dist = 0.5 + Math.random() * 2.5;
+      const dist = 1.0 + Math.random() * 5.0;
       const node: ForceNode = {
         id: agentId,
         type: 'agent',
@@ -181,6 +183,7 @@ export class ForceGraphSimulation {
         source: edge.source,
         isWhale: edge.isWhale,
         isSniper: edge.isSniper,
+        lastAction: edge.lastAction,
         x: (hub?.x ?? 0) + Math.sin(aPhi) * Math.cos(aTheta) * dist,
         y: (hub?.y ?? 0) + Math.sin(aPhi) * Math.sin(aTheta) * dist,
         z: (hub?.z ?? 0) + Math.cos(aPhi) * dist,

@@ -158,7 +158,7 @@ export const Edges = memo(
     return (
       <lineSegments ref={lineRef}>
         <bufferGeometry />
-        <lineBasicMaterial vertexColors transparent opacity={0.08} toneMapped={false} />
+        <lineBasicMaterial vertexColors transparent opacity={0.18} toneMapped={false} />
       </lineSegments>
     );
   },

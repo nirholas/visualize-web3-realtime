@@ -113,6 +113,16 @@ export class PumpFunProvider implements DataProvider {
       if (meta) {
         token.imageUrl = meta.imageUrl;
         token.description = meta.description;
+        token.twitter = meta.twitter;
+        token.telegram = meta.telegram;
+        token.website = meta.website;
+        token.creator = meta.creator;
+        token.createdTimestamp = meta.createdTimestamp;
+        token.replyCount = meta.replyCount;
+        token.kingOfTheHillTimestamp = meta.kingOfTheHillTimestamp;
+        token.raydiumPool = meta.raydiumPool;
+        token.totalSupply = meta.totalSupply;
+        token.nsfw = meta.nsfw;
         // REST API bonding curve data is more accurate than WS-derived
         if (meta.bondingCurveProgress !== undefined) {
           token.bondingCurveProgress = meta.bondingCurveProgress;
@@ -122,6 +132,7 @@ export class PumpFunProvider implements DataProvider {
         }
         // Enrich with USD market cap
         if (meta.usdMarketCap) {
+          token.usdMarketCap = meta.usdMarketCap;
           token.volumeUsd = meta.usdMarketCap;
         }
       } else {
@@ -258,7 +269,7 @@ export class PumpFunProvider implements DataProvider {
         this.traderAcc.set(traderKey, {
           trader: traderPublicKey, tokenAddress: mint,
           chain: 'solana', trades: 1, volume: initialVolSol, volumeSol: initialVolSol,
-          source: 'pumpfun',
+          source: 'pumpfun', lastAction: 'create',
         });
       }
     }
@@ -326,12 +337,13 @@ export class PumpFunProvider implements DataProvider {
 
     const traderKey = `${traderPublicKey}:${mint}`;
     const existingEdge = this.traderAcc.get(traderKey);
-    if (existingEdge) { existingEdge.trades++; existingEdge.volume += solAmount; existingEdge.volumeSol = (existingEdge.volumeSol ?? 0) + solAmount; }
+    const actionType = txType === 'sell' ? 'sell' as const : 'buy' as const;
+    if (existingEdge) { existingEdge.trades++; existingEdge.volume += solAmount; existingEdge.volumeSol = (existingEdge.volumeSol ?? 0) + solAmount; existingEdge.lastAction = actionType; }
     else {
       this.traderAcc.set(traderKey, {
         trader: traderPublicKey, tokenAddress: mint,
         chain: 'solana', trades: 1, volume: solAmount, volumeSol: solAmount,
-        source: 'pumpfun',
+        source: 'pumpfun', lastAction: actionType,
       });
     }
 

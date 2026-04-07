@@ -28,7 +28,7 @@ export const CHAIN_COLORS: Record<string, string> = {
 };
 
 export const GRAPH_CONFIG = {
-  MAX_HUBS: 8,
+  MAX_HUBS: 6,
   MAX_AGENTS: 5000,
   MAX_LINES: 5000,
   MAX_EDGES: 20000,
@@ -45,6 +45,6 @@ export const GRAPH_CONFIG = {
   IDLE_RADIUS_MIN: 0.15,
   IDLE_RADIUS_MAX: 0.5,
   IDLE_SPREAD: 30,
-  PARTICLE_COUNT: 150,
-  PARTICLE_SPEED: 2.5,
+  PARTICLE_COUNT: 300,
+  PARTICLE_SPEED: 3.5,
 } as const;

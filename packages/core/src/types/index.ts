@@ -93,6 +93,28 @@ export interface TopToken {
   imageUrl?: string;
   /** Token description from metadata */
   description?: string;
+  /** Twitter handle */
+  twitter?: string;
+  /** Telegram group/channel */
+  telegram?: string;
+  /** Website URL */
+  website?: string;
+  /** USD market cap from REST API */
+  usdMarketCap?: number;
+  /** Raydium pool address if graduated */
+  raydiumPool?: string;
+  /** Number of replies/comments on pump.fun */
+  replyCount?: number;
+  /** King of the hill timestamp */
+  kingOfTheHillTimestamp?: number;
+  /** Token creator address */
+  creator?: string;
+  /** Token creation timestamp */
+  createdTimestamp?: number;
+  /** Total token supply */
+  totalSupply?: number;
+  /** Whether flagged NSFW */
+  nsfw?: boolean;
 }
 
 /** An edge between a participant and a hub (for graph visualization) */
@@ -112,6 +134,8 @@ export interface TraderEdge {
   isWhale?: boolean;
   /** Whether this trader has been flagged as a sniper bot */
   isSniper?: boolean;
+  /** Last action type: 'buy' | 'sell' | 'create' */
+  lastAction?: 'buy' | 'sell' | 'create';
 }
 
 /** A claim event (e.g. fee claims, social claims) */
