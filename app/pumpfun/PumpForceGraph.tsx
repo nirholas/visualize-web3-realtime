@@ -127,8 +127,15 @@ class PumpSimulation {
 
     // Sync edges
     this.edges = graphData.links
-      .filter((l) => this.nodeMap.has(l.source) && this.nodeMap.has(l.target))
-      .map((l) => ({ source: l.source, target: l.target }));
+      .filter((l) => {
+        const src = typeof l.source === 'string' ? l.source : l.source.id;
+        const tgt = typeof l.target === 'string' ? l.target : l.target.id;
+        return this.nodeMap.has(src) && this.nodeMap.has(tgt);
+      })
+      .map((l) => ({
+        source: typeof l.source === 'string' ? l.source : l.source.id,
+        target: typeof l.target === 'string' ? l.target : l.target.id,
+      }));
 
     if (changed) {
       this.simulation.nodes(this.nodes);
