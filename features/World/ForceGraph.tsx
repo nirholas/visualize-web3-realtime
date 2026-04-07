@@ -645,7 +645,7 @@ const ForceGraphCanvas = forwardRef<ForceGraphHandle, ForceGraphProps>((props, r
   return (
     <Canvas
       camera={{ position: [0, 0, 50], fov: 45, near: 0.1, far: 1000 }}
-      gl={{ preserveDrawingBuffer: true, antialias: true }}
+      gl={{ preserveDrawingBuffer: true, antialias: false, stencil: false }}
       frameloop="demand"
     >
       <ForceGraph {...props} ref={ref} />

@@ -3,6 +3,7 @@
 import { memo } from 'react';
 import { EffectComposer, SMAA, N8AO, Bloom } from '@react-three/postprocessing';
 import { HalfFloatType } from 'three';
+import { useThree } from '@react-three/fiber';
 
 export interface PostProcessingProps {
   /** Enable/disable the entire pipeline */
@@ -21,7 +22,10 @@ const PostProcessing = memo<PostProcessingProps>(({
   bloomThreshold = 0.6,
   aoIntensity = 0.8,
 }) => {
-  if (!enabled) return null;
+  const gl = useThree((s) => s.gl);
+
+  // Bail out if disabled or WebGL context is lost
+  if (!enabled || gl.getContext().isContextLost()) return null;
 
   return (
     <EffectComposer multisampling={0} depthBuffer stencilBuffer={false} frameBufferType={HalfFloatType}>

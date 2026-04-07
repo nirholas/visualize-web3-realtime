@@ -7,12 +7,15 @@
 </p>
 
 <p align="center">
-  <strong>GPU-accelerated real-time 3D network visualization for Web3 and AI agents.<br/>Built with Next.js 14, React Three Fiber, and D3-force. 5,000+ nodes at 60fps.</strong>
+  <strong>5,000 nodes. 60fps. One draw call.</strong><br/>
+  <sub>GPU-accelerated force-directed graph engine for real-time data streams.<br/>Onchain transactions, AI agent orchestration, infrastructure telemetry — any event source, rendered as particles in 3D space.</sub>
 </p>
 
 <p align="center">
   <a href="https://swarming.dev/world"><strong>Live Demo</strong></a> · <a href="docs/"><strong>Documentation</strong></a> · <a href="https://swarming.dev/demos"><strong>Demos</strong></a> · <a href="https://swarming.dev/benchmarks"><strong>Benchmarks</strong></a>
 </p>
+
+> Conventional graph libraries render each node as an individual DOM element or canvas draw — $O(n)$ draw calls per frame. swarming uses GPU-instanced rendering: a single `InstancedMesh` call submits all node geometry in one batch, while a `SpatialHash` grid resolves proximity queries in $O(1)$ amortized time. The result is 5,000+ live-streaming nodes at 60fps in a standard browser, with force-directed physics running per-frame.
 
 <img src="docs/assets/svg/gradient-divider.svg" alt="" width="100%" />
 
@@ -40,6 +43,26 @@ function App() {
 }
 ```
 
+Or scaffold a full project:
+
+```bash
+npx create-swarming-app my-viz       # React + swarming, ready to go
+npx create-swarming-plugin my-plugin  # Plugin scaffold with hot reload
+```
+
+### What You Get
+
+```
+localhost:3100/
+├── /world           Force-directed 3D graph — live Solana/ETH/Base streams, desktop shell, AI chat
+├── /agents          Agent orchestration graph — task DAGs, tool calls, reasoning traces
+├── /embed           Embeddable widget — iframe or <script> tag, URL-parameterized
+├── /demos/*         6 simulation scenarios (GitHub activity, K8s pods, API traffic, agents, social, IoT)
+├── /playground      Live editor — modify graph parameters, observe results in real time
+├── /docs            Full reference documentation
+└── /plugins         Extensible plugin registry — data sources, renderers, themes
+```
+
 <br/>
 
 ## Features
@@ -52,69 +75,69 @@ function App() {
 <tr>
 <td width="33%" align="center">
 <img src="docs/assets/feature-performance.gif" alt="60fps performance" width="240" /><br />
-<strong>60fps @ 5,000 nodes</strong><br />
-<sub>InstancedMesh rendering with spatial hashing for O(1) lookups</sub>
+<strong>GPU-instanced rendering</strong><br />
+<sub>Single draw call for 5,000 nodes via InstancedMesh. SpatialHash grid for O(1) proximity queries.</sub>
 </td>
 <td width="33%" align="center">
 <img src="docs/assets/feature-websocket.gif" alt="Any data source" width="240" /><br />
-<strong>Real-time Data Providers</strong><br />
-<sub>Built-in provider system for WebSockets, REST, or any custom data stream</sub>
+<strong>Streaming data providers</strong><br />
+<sub>WebSocket, REST, SSE, or custom callback. Event buffering with backpressure handling.</sub>
 </td>
 <td width="33%" align="center">
 <img src="docs/assets/feature-physics.gif" alt="Force-directed physics" width="240" /><br />
-<strong>Force-directed 3D physics</strong><br />
-<sub>d3-force-3d with framerate-independent damping and configurable springs</sub>
+<strong>Force-directed simulation</strong><br />
+<sub>d3-force-3d with framerate-independent damping, configurable charge/spring constants, Barnes-Hut optimization.</sub>
 </td>
 </tr>
 <tr>
 <td width="33%" align="center">
 <img src="docs/assets/feature-interaction.gif" alt="Mouse interaction" width="240" /><br />
-<strong>Rich interaction</strong><br />
-<sub>Hover, click, drag, orbit, zoom. Mouse-repulsion physics. Camera fly-to.</sub>
+<strong>Interaction model</strong><br />
+<sub>GPU raycasting for hover/click. Mouse-repulsion force field. Inertial camera with fly-to interpolation.</sub>
 </td>
 <td width="33%" align="center">
 <img src="docs/assets/feature-themes.gif" alt="Themes" width="240" /><br />
-<strong>Theming & Design System</strong><br />
-<sub>Full component library with dark/light presets and CSS custom properties</sub>
+<strong>Design system</strong><br />
+<sub>Token-based theming with dark/light presets. CSS custom properties. Full component library.</sub>
 </td>
 <td width="33%" align="center">
 <img src="docs/assets/feature-export.gif" alt="Export & share" width="240" /><br />
-<strong>Export & share</strong><br />
-<sub>Screenshot with metadata overlay, share URLs, and embeddable widget</sub>
+<strong>Capture & export</strong><br />
+<sub>WebGL canvas snapshot with metadata overlay. Share URLs with encoded state. Embeddable widget.</sub>
 </td>
 </tr>
 <tr>
 <td width="33%" align="center">
 <img src="docs/assets/feature-ai.gif" alt="AI chat assistant" width="240" /><br />
-<strong>AI chat assistant</strong><br />
-<sub>Natural language graph control via Claude Sonnet with tool-use integration</sub>
+<strong>AI scene control</strong><br />
+<sub>Natural language graph manipulation via Claude Sonnet tool-use. 5 scene tools.</sub>
 </td>
 <td width="33%" align="center">
 <img src="docs/assets/feature-agents.gif" alt="Agent monitoring" width="240" /><br />
-<strong>Agent monitoring</strong><br />
-<sub>3D visualization of AI agent orchestration, tasks, tool calls, and reasoning</sub>
+<strong>Agent orchestration</strong><br />
+<sub>Task DAG visualization. Tool call tracing. Sub-agent spawning. Reasoning state rendering.</sub>
 </td>
 <td width="33%" align="center">
 <img src="docs/assets/feature-wasm.gif" alt="WASM physics" width="240" /><br />
-<strong>WASM physics engine</strong><br />
-<sub>Rust Barnes-Hut simulation compiled to WebAssembly — 3-5x faster than JS</sub>
+<strong>WASM Barnes-Hut</strong><br />
+<sub>Rust-compiled N-body simulation via WebAssembly. 3-5x throughput vs JavaScript d3-force.</sub>
 </td>
 </tr>
 <tr>
 <td width="33%" align="center">
 <img src="docs/assets/feature-collab.gif" alt="Desktop shell" width="240" /><br />
-<strong>Desktop shell UI</strong><br />
-<sub>Windows 95-style interface — draggable windows, taskbar, start menu, keyboard shortcuts</sub>
+<strong>Desktop shell</strong><br />
+<sub>Windowed UI with taskbar, start menu, z-ordering. State persistence via localStorage.</sub>
 </td>
 <td width="33%" align="center">
 <img src="docs/assets/feature-editor.gif" alt="Scrollytelling" width="240" /><br />
-<strong>Scrollytelling & landing</strong><br />
-<sub>Scroll-driven animations, editorial engine, 3D shader scenes, floating particles</sub>
+<strong>Scroll-driven narrative</strong><br />
+<sub>GLSL shader scenes, particle systems, timeline-synchronized animation keyframes.</sub>
 </td>
 <td width="33%" align="center">
 <img src="docs/assets/feature-multiframework.gif" alt="Multi-framework" width="240" /><br />
 <strong>Multi-framework</strong><br />
-<sub>React, Vue, Svelte, React Native, vanilla JS, and CDN embed</sub>
+<sub>React, Vue, Svelte, React Native, vanilla JS, CDN. Same engine, different bindings.</sub>
 </td>
 </tr>
 </table>
@@ -198,7 +221,7 @@ TVL and metrics for Aave, Uniswap, Compound, MakerDAO, and Lido via DeFi Llama p
 
 | Endpoint | Method | Description |
 |---|---|---|
-| `/api/world-chat` | POST | Claude Sonnet chat with 5 scene-manipulation tools. Rate-limited: 20 req/60s per IP |
+| `/api/world-chat` | POST | Groq (Llama 3.3 70B) chat with 5 scene-manipulation tools. Rate-limited: 20 req/60s per IP |
 | `/api/executor` | GET/POST | Proxy to executor backend. Whitelisted paths: /api/status, /api/tasks, /api/agents. Rate-limited: 30 req/60s per IP |
 | `/api/agents/cookie` | GET | Proxy to cookie.fun agent rankings API. Cached: 60s ISR + stale-while-revalidate |
 | `/api/thumbnail` | GET | Edge-runtime OG image generation per demo category |
@@ -209,29 +232,33 @@ TVL and metrics for Aave, Uniswap, Compound, MakerDAO, and Lido via DeFi Llama p
 
 ## Architecture
 
+The system is organized as a data pipeline: event sources emit typed messages into a provider layer that buffers and merges them, then the rendering layer consumes the unified stream and updates GPU buffers directly — bypassing React's reconciliation cycle for graph mutations.
+
 ```
 ┌────────────────────────────────────────────────────────────────────┐
 │                        Browser / Client                            │
 │                                                                    │
-│  Data Sources (WebSocket/REST)                                     │
+│  Event Sources (WebSocket/REST)                                    │
 │  ├── PumpFun (Solana)    ├── Ethereum (RPC)   ├── Binance (CEX)   │
 │  ├── Base (RPC)          ├── cookie.fun (REST) ├── Custom streams  │
 │  └── Agent (meta)        └── Mock (synthetic)                      │
 │         │                                                          │
 │         ▼                                                          │
-│  ┌──────────────────────────────────────────────────────┐          │
-│  │  useProviders() — buffers, merges, filters events    │          │
-│  └──────────────┬───────────────────────────────────────┘          │
+│  ┌──────────────────────────────────────────────────────────┐      │
+│  │  useProviders() — event buffering, merge, filtering      │      │
+│  │  BoundedMap/BoundedSet — LRU-evicting caches             │      │
+│  └──────────────┬───────────────────────────────────────────┘      │
 │                 │                                                   │
 │    ┌────────────┼────────────┬──────────────┐                      │
 │    ▼            ▼            ▼              ▼                      │
 │  ForceGraph  StatsBar    LiveFeed     DesktopShell                 │
-│  (3D R3F)    (metrics)   (events)    (windows UI)                  │
+│  (R3F +      (derived    (event log)  (windowed UI)                │
+│   InstancedMesh) metrics)                                          │
 │                                                                    │
-│  ┌─────────────────────────────────────────────┐                   │
-│  │  Desktop Shell: Taskbar, Start Menu, 8 apps │                   │
-│  │  AI Chat, Share, Embed, Filters, Sources... │                   │
-│  └─────────────────────────────────────────────┘                   │
+│  ┌─────────────────────────────────────────────────────────┐       │
+│  │  GPU Pipeline: InstancedMesh → SpatialHash →            │       │
+│  │  BufferGeometry → PostProcessing (SMAA/N8AO/Bloom)      │       │
+│  └─────────────────────────────────────────────────────────┘       │
 └────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -421,26 +448,26 @@ import { SwarmingView } from '@swarming/react-native'
   <img src="docs/assets/svg/performance-bar.svg" alt="60fps at 5000 nodes" width="600" />
 </p>
 
-InstancedMesh (single draw call per node type), SpatialHash grids, and framerate-independent physics.
+Rendering uses `InstancedMesh` (single draw call per node type), `SpatialHash` grids for $O(1)$ amortized proximity lookups, and framerate-independent Verlet integration for deterministic physics regardless of display refresh rate.
 
 | | swarming | d3-force (SVG) | sigma.js | cytoscape |
 |---|---|---|---|---|
 | **1,000 nodes** | 60 fps | 45 fps | 55 fps | 40 fps |
 | **5,000 nodes** | 60 fps | 12 fps | 30 fps | 8 fps |
 | **10,000 nodes** | 45 fps | 3 fps | 15 fps | crash |
-| **Rendering** | WebGL 3D | SVG / Canvas | WebGL 2D | Canvas 2D |
-| **Streaming data** | Built-in | DIY | DIY | DIY |
-| **React native** | Yes (R3F) | Wrapper | Wrapper | Wrapper |
+| **Rendering** | WebGL 3D (instanced) | SVG / Canvas | WebGL 2D | Canvas 2D |
+| **Streaming data** | Native provider system | Manual | Manual | Manual |
+| **Physics engine** | d3-force-3d + WASM Barnes-Hut | d3-force (JS) | Custom (JS) | Cola.js |
 
-### Rendering Budget (per frame at 60fps)
+### Per-Frame Budget (16.6ms at 60fps)
 
-| Operation | Budget | Technique |
+| Stage | Time | Technique |
 |---|---|---|
-| Node rendering | ~2ms | InstancedMesh (1 draw call for 5000 nodes) |
-| Proximity lines | ~1ms | SpatialHash grid queries + BufferGeometry |
-| Physics update | ~1ms | d3-force tick + damping |
-| Post-processing | ~3ms | SMAA + N8AO + Bloom (configurable) |
-| React overhead | ~1ms | Minimal — graph updates bypass React state |
+| Geometry submission | ~2ms | `InstancedMesh` — 1 draw call for $n$ nodes, matrix updates via `Float32Array` |
+| Proximity resolution | ~1ms | `SpatialHash` grid queries + `BufferGeometry` line generation |
+| Force simulation | ~1ms | d3-force-3d tick with velocity damping ($\alpha$ decay) |
+| Post-processing | ~3ms | SMAA anti-aliasing + N8AO ambient occlusion + selective bloom (configurable) |
+| React reconciliation | ~1ms | Graph mutations bypass React state — direct buffer writes |
 
 <img src="docs/assets/svg/gradient-divider.svg" alt="" width="100%" />
 
@@ -525,7 +552,7 @@ Copy `.env.example` to `.env.local`. The app works without any env vars — Pump
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `ANTHROPIC_API_KEY` | No | — | Claude API key for `/world` AI chat |
+| `GROQ_API_KEY` | No | — | Groq API key for `/world` AI chat |
 | `API_SECRET` | No | — | API key for protected routes (/api/executor, /api/world-chat) |
 | `NEXT_PUBLIC_SOLANA_WS_URL` | No | — | Solana RPC WebSocket |
 | `NEXT_PUBLIC_ETH_WS_URL` | No | `wss://ethereum-rpc.publicnode.com` | Ethereum RPC WebSocket |
@@ -691,22 +718,38 @@ tasks/                        # 41 project task files
 
 <br/>
 
+## When to Use swarming (and When Not To)
+
+| Scenario | Recommended | Rationale |
+|----------|-------------|----------|
+| Real-time streaming data (WebSocket, SSE) | **Yes** | Provider layer handles connection lifecycle, backpressure, and event merging natively |
+| Graphs with 1,000–10,000+ nodes at 60fps | **Yes** | GPU-instanced rendering — $O(1)$ draw calls regardless of node count |
+| AI agent orchestration visualization | **Yes** | Purpose-built task DAG renderer with tool call tracing and reasoning state |
+| Onchain activity across multiple L1/L2 chains | **Yes** | Pre-built providers for Solana, Ethereum, Base with automatic event categorization |
+| Static graphs under 100 nodes | **No** | D3, sigma.js, or vis.js are simpler — swarming's GPU pipeline is unnecessary overhead |
+| 2D flowcharts or directed diagrams | **No** | Use Mermaid, Graphviz, or ReactFlow — swarming is optimized for force-directed 3D |
+| Headless / server-side graph computation | **No** | Requires WebGL context — browser-only |
+| Mobile-first without WebGL | **Partial** | React Native wrapper available; WebGL support varies across mobile GPUs |
+
 ## Community
 
-swarming is open to contributions.
+swarming is open to contributions. Areas where contributions have the highest impact:
 
-**High-impact areas:**
-- New data providers (Arbitrum, Polygon, Bitcoin Ordinals, non-blockchain sources)
-- Performance (WebGPU compute shaders, Web Worker offloading)
-- Framework wrappers (Vue, Svelte, React Native improvements)
-- Mobile/touch interaction and responsive layouts
-- Accessibility (keyboard navigation, screen reader, high contrast)
-- Documentation and examples
-- Tests for core utilities and providers
+- **New data providers** — Arbitrum, Polygon, Bitcoin Ordinals, or any non-blockchain event source
+- **GPU compute** — WebGPU compute shaders for force simulation, Web Worker offloading
+- **Framework bindings** — Vue, Svelte, React Native wrapper improvements
+- **Accessibility** — keyboard navigation, screen reader support, high-contrast themes
+- **Testing** — unit and integration tests for core simulation and provider modules
+
+The most valuable contribution is a **worked example**: run swarming on your own data, document the result, and submit it to the [Showcase Gallery](https://swarming.dev/showcase).
 
 <a href="CONTRIBUTING.md">Contributing Guide</a> · <a href="https://swarming.dev/showcase">Showcase Gallery</a>
 
 <img src="docs/assets/svg/footer-wave.svg" alt="" width="100%" />
+
+<p align="center">
+  <a href="https://star-history.com/#nirholas/visualize-web3-realtime&Date"><img src="https://api.star-history.com/svg?repos=nirholas/visualize-web3-realtime&type=Date" alt="Star History Chart" width="600" /></a>
+</p>
 
 <p align="center">
   MIT License · Built by <a href="https://github.com/nirholas">@nirholas</a>

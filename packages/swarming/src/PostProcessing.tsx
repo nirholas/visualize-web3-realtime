@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { useThree } from '@react-three/fiber';
 
 interface PostProcessingProps {
   enabled: boolean;
@@ -14,7 +15,10 @@ interface PostProcessingProps {
  */
 const PostProcessing = memo<PostProcessingProps>(
   ({ enabled, bloomIntensity, bloomThreshold }) => {
-    if (!enabled) return null;
+    const gl = useThree((s) => s.gl);
+
+    // Bail out if disabled or WebGL context is lost
+    if (!enabled || gl.getContext().isContextLost()) return null;
 
     // Attempt dynamic require — bundlers will tree-shake if postprocessing is not installed
     try {

@@ -69,7 +69,7 @@ cp .env.example .env.local
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `PORT` | No | `3100` | Server port (production) |
-| `ANTHROPIC_API_KEY` | No | — | Claude API key for `/world` AI chat and `/api/world-chat` endpoint |
+| `GROQ_API_KEY` | No | — | Groq API key for `/world` AI chat and `/api/world-chat` endpoint |
 | `API_SECRET` | No | — | API key for protected routes (/api/executor, /api/world-chat). Clients send via `x-api-key` header. |
 | `NEXT_PUBLIC_SOLANA_WS_URL` | No | — | Solana RPC WebSocket (e.g. Helius, Alchemy) |
 | `NEXT_PUBLIC_ETH_WS_URL` | No | `wss://ethereum-rpc.publicnode.com` | Ethereum RPC WebSocket |
@@ -98,7 +98,7 @@ The `/world` route works fully out of the box — it connects to:
 - **Solana Mainnet RPC** (public endpoint) for claim events
 - **Binance public WebSocket** (unauthenticated) for CEX volume data
 
-No API keys needed for the core visualization experience. The AI chat requires `ANTHROPIC_API_KEY`.
+No API keys needed for the core visualization experience. The AI chat requires `GROQ_API_KEY`.
 
 ---
 

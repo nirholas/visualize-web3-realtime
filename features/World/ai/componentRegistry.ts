@@ -70,7 +70,7 @@ export type ComponentRegistry = typeof componentRegistry;
 export type ComponentName = keyof ComponentRegistry;
 
 /**
- * Generate Anthropic-compatible tool definitions from the component registry.
+ * Generate OpenAI-compatible tool definitions from the component registry.
  * Uses Zod v4's built-in toJSONSchema for schema conversion.
  */
 export function getToolDefinitions() {

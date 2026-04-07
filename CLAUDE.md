@@ -27,7 +27,7 @@ npx tsc --noEmit -p packages/providers/tsconfig.json
 ```
 app/                    # Next.js App Router (pages, API routes)
   api/executor/         # Proxy to executor backend
-  api/world-chat/       # Claude Sonnet chat endpoint
+  api/world-chat/       # Groq (Llama 3.3 70B) chat endpoint
 features/
   World/                # 3D visualization — ForceGraph, StatsBar, Timeline, etc.
     desktop/            # Desktop shell UI (taskbar, windows)

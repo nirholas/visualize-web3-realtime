@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import Groq from 'groq-sdk';
 import Anthropic from '@anthropic-ai/sdk';
 import { getToolDefinitions } from '@/features/World/ai/componentRegistry';
 
@@ -30,22 +31,35 @@ function isRateLimited(ip: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Anthropic client — reads ANTHROPIC_API_KEY from env at request time
+// AI provider selection — prefers Groq (free tier), falls back to Anthropic
 // ---------------------------------------------------------------------------
 
-function getClient(): Anthropic {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    throw new Error('ANTHROPIC_API_KEY is not set');
-  }
-  return new Anthropic({ apiKey });
+type Provider = 'groq' | 'anthropic';
+
+function getProvider(): Provider {
+  if (process.env.GROQ_API_KEY) return 'groq';
+  if (process.env.ANTHROPIC_API_KEY) return 'anthropic';
+  throw new Error('No AI API key configured. Set GROQ_API_KEY or ANTHROPIC_API_KEY.');
 }
 
 // ---------------------------------------------------------------------------
 // Tool definitions from the component registry
 // ---------------------------------------------------------------------------
 
-const tools: Anthropic.Messages.Tool[] = getToolDefinitions().map((t) => ({
+const toolDefs = getToolDefinitions();
+
+// OpenAI-compatible format (used by Groq)
+const groqTools: Groq.Chat.CompletionCreateParams.Tool[] = toolDefs.map((t) => ({
+  type: 'function' as const,
+  function: {
+    name: t.name,
+    description: t.description,
+    parameters: t.input_schema as Record<string, unknown>,
+  },
+}));
+
+// Anthropic format
+const anthropicTools: Anthropic.Messages.Tool[] = toolDefs.map((t) => ({
   name: t.name,
   description: t.description,
   input_schema: t.input_schema as Anthropic.Messages.Tool['input_schema'],
@@ -189,31 +203,60 @@ You can discuss agent activity, verification proofs, and protocol health.
 Always respond with a brief text message in addition to any tool calls.`;
 
   try {
-    const client = getClient();
-
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages: sanitizedMessages.map((m) => ({
-        role: m.role,
-        content: m.content,
-      })),
-      tools,
-    });
-
-    // Parse tool use from response
+    const provider = getProvider();
     const actions: Array<{ type: string; params: unknown }> = [];
     let textMessage = '';
 
-    for (const block of response.content) {
-      if (block.type === 'text') {
-        textMessage += block.text;
-      } else if (block.type === 'tool_use') {
-        actions.push({
-          type: block.name,
-          params: block.input,
-        });
+    if (provider === 'groq') {
+      const client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+      const response = await client.chat.completions.create({
+        model: 'llama-3.3-70b-versatile',
+        max_tokens: 1024,
+        messages: [
+          { role: 'system' as const, content: systemPrompt },
+          ...sanitizedMessages.map((m) => ({
+            role: m.role as 'user' | 'assistant',
+            content: m.content,
+          })),
+        ],
+        tools: groqTools,
+      });
+
+      const choice = response.choices[0];
+      textMessage = choice?.message?.content ?? '';
+
+      if (choice?.message?.tool_calls) {
+        for (const tc of choice.message.tool_calls) {
+          if (tc.type === 'function') {
+            actions.push({
+              type: tc.function.name,
+              params: JSON.parse(tc.function.arguments),
+            });
+          }
+        }
+      }
+    } else {
+      const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+      const response = await client.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: sanitizedMessages.map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
+        tools: anthropicTools,
+      });
+
+      for (const block of response.content) {
+        if (block.type === 'text') {
+          textMessage += block.text;
+        } else if (block.type === 'tool_use') {
+          actions.push({
+            type: block.name,
+            params: block.input,
+          });
+        }
       }
     }
 
@@ -228,9 +271,9 @@ Always respond with a brief text message in addition to any tool calls.`;
     const message = err instanceof Error ? err.message : 'Unknown error';
 
     // Don't leak API key details
-    if (message.includes('ANTHROPIC_API_KEY')) {
+    if (message.includes('API_KEY') || message.includes('No AI API key')) {
       return NextResponse.json(
-        { error: 'AI service not configured. Set ANTHROPIC_API_KEY in environment.' },
+        { error: 'AI service not configured. Set GROQ_API_KEY or ANTHROPIC_API_KEY in environment.' },
         { status: 503 },
       );
     }

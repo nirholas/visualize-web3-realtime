@@ -177,11 +177,11 @@ Complete reference for every page, API route, and special file in the Next.js Ap
 
 ## API Routes (4 routes)
 
-### `POST /api/world-chat` — Claude Chat
+### `POST /api/world-chat` — Groq Chat
 
 - **File:** `app/api/world-chat/route.ts`
 - **Description:** Chat endpoint powered by Claude Sonnet (`claude-sonnet-4-6`) via the Anthropic SDK. Per-IP rate limiting (20 requests per 60 seconds, max 10,000 IPs tracked).
-- **Env:** Requires `ANTHROPIC_API_KEY`
+- **Env:** Requires `GROQ_API_KEY`
 - **Validation:** Max 50 messages, max 4,000 chars per message, non-empty strings, context value sanitization
 - **Tools:** `sceneColorUpdate`, `cameraFocus`, `dataFilter`, `agentSummary`, `tradeVisualization`
 - **Request body:** `{ messages: [{ role, content }], context: { stats, hubCount, agentMetrics? } }`
@@ -300,7 +300,7 @@ Complete reference for every page, API route, and special file in the Next.js Ap
 /demos/ai-agents            → AI agent swarm
 /demos/social               → Social network graph
 /demos/iot                  → IoT sensor network
-/api/world-chat             → Claude chat API (POST)
+/api/world-chat             → Groq chat API (POST)
 /api/executor               → Executor proxy API (GET/POST)
 /api/agents/cookie          → Cookie.fun agent rankings (GET)
 /api/thumbnail              → OG image generation (GET, Edge)

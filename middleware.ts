@@ -46,8 +46,9 @@ export function middleware(request: NextRequest) {
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      // Next.js needs inline scripts & styles for hydration
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      // Next.js needs inline scripts & styles for hydration;
+      // blob: is required for Web Worker importScripts() (e.g. Three.js / R3F / WASM workers)
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
