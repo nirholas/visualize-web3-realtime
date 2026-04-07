@@ -202,7 +202,8 @@ cp .env.example .env.local
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | **AI** | | | |
-| `GROQ_API_KEY` | No | — | Groq API key for `/world` AI chat |
+| `GROQ_API_KEY` | No | — | Groq API key for `/world` AI chat (preferred, free tier) |
+| `ANTHROPIC_API_KEY` | No | — | Anthropic API key for `/world` AI chat (fallback) |
 | **Blockchain Providers** | | | |
 | `NEXT_PUBLIC_SOLANA_WS_URL` | No | — | Solana RPC WebSocket (e.g. Helius, Alchemy) |
 | `NEXT_PUBLIC_ETH_WS_URL` | No | `wss://ethereum-rpc.publicnode.com` | Ethereum RPC WebSocket |

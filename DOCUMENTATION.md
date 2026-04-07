@@ -284,7 +284,8 @@ Only `app/` and `features/` are scanned for classes. The `packages/` directory u
 | Variable | Default | Purpose |
 |---|---|---|
 | **AI** | | |
-| `GROQ_API_KEY` | *(empty)* | Required for `/world` AI chat (Groq — Llama 3.3 70B) |
+| `GROQ_API_KEY` | *(empty)* | Groq API key for `/world` AI chat (preferred, free tier) |
+| `ANTHROPIC_API_KEY` | *(empty)* | Anthropic API key for `/world` AI chat (fallback) |
 | **Blockchain Providers** | | |
 | `NEXT_PUBLIC_SOLANA_WS_URL` | *(empty)* | Solana RPC WebSocket URL (e.g. Helius, Alchemy) |
 | `NEXT_PUBLIC_ETH_WS_URL` | `wss://ethereum-rpc.publicnode.com` | Ethereum RPC WebSocket URL |

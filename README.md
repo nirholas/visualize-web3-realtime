@@ -221,7 +221,7 @@ TVL and metrics for Aave, Uniswap, Compound, MakerDAO, and Lido via DeFi Llama p
 
 | Endpoint | Method | Description |
 |---|---|---|
-| `/api/world-chat` | POST | Groq (Llama 3.3 70B) chat with 5 scene-manipulation tools. Rate-limited: 20 req/60s per IP |
+| `/api/world-chat` | POST | AI chat with 5 scene-manipulation tools (Groq default, Anthropic fallback). Rate-limited: 20 req/60s per IP |
 | `/api/executor` | GET/POST | Proxy to executor backend. Whitelisted paths: /api/status, /api/tasks, /api/agents. Rate-limited: 30 req/60s per IP |
 | `/api/agents/cookie` | GET | Proxy to cookie.fun agent rankings API. Cached: 60s ISR + stale-while-revalidate |
 | `/api/thumbnail` | GET | Edge-runtime OG image generation per demo category |
@@ -552,7 +552,8 @@ Copy `.env.example` to `.env.local`. The app works without any env vars — Pump
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `GROQ_API_KEY` | No | — | Groq API key for `/world` AI chat |
+| `GROQ_API_KEY` | No | — | Groq API key for `/world` AI chat (preferred, free tier) |
+| `ANTHROPIC_API_KEY` | No | — | Anthropic API key for `/world` AI chat (fallback) |
 | `API_SECRET` | No | — | API key for protected routes (/api/executor, /api/world-chat) |
 | `NEXT_PUBLIC_SOLANA_WS_URL` | No | — | Solana RPC WebSocket |
 | `NEXT_PUBLIC_ETH_WS_URL` | No | `wss://ethereum-rpc.publicnode.com` | Ethereum RPC WebSocket |
