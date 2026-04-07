@@ -11,8 +11,6 @@ const HUB_BUYS = 'hub:buys';
 const HUB_SELLS = 'hub:sells';
 const HUB_CREATES = 'hub:creates';
 const HUB_WHALES = 'hub:whales';
-const HUB_GITHUB = 'hub:github_claims';
-const HUB_SOCIAL = 'hub:social_claims';
 
 // ---------------------------------------------------------------------------
 // Demo tickers & config
@@ -93,8 +91,8 @@ export function useDemoData(): GraphData {
           timestamp: now,
         });
         linkBuffer.current.push({ source: id, target: targetHub });
-      } else if (roll < 0.85) {
-        // ~30% — sell trade
+      } else {
+        // ~45% — sell trade
         const id = `demo-sell-${now}-${++_seq}`;
         const sol = randomSol();
         const targetHub = sol > 1 ? HUB_WHALES : HUB_SELLS;
@@ -106,28 +104,6 @@ export function useDemoData(): GraphData {
           timestamp: now,
         });
         linkBuffer.current.push({ source: id, target: targetHub });
-      } else if (roll < 0.925) {
-        // ~7.5% — github fee claim
-        const id = `demo-github-${now}-${++_seq}`;
-        nodeBuffer.current.push({
-          id,
-          type: 'trade',
-          isBuy: true,
-          solAmount: Math.random() * 0.5,
-          timestamp: now,
-        });
-        linkBuffer.current.push({ source: id, target: HUB_GITHUB });
-      } else {
-        // ~7.5% — social claim
-        const id = `demo-social-${now}-${++_seq}`;
-        nodeBuffer.current.push({
-          id,
-          type: 'trade',
-          isBuy: true,
-          solAmount: Math.random() * 0.3,
-          timestamp: now,
-        });
-        linkBuffer.current.push({ source: id, target: HUB_SOCIAL });
       }
     }, EMIT_INTERVAL_MS);
 

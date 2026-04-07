@@ -26,9 +26,7 @@ export type HubCategory =
   | 'buys'
   | 'sells'
   | 'creates'
-  | 'whales'
-  | 'github_claims'
-  | 'social_claims';
+  | 'whales';
 
 export interface PumpLink {
   source: string | PumpNode;
@@ -60,8 +58,6 @@ export const HUB_NODES: HubDef[] = [
   { id: 'hub:sells', category: 'sells', label: 'SELLS' },
   { id: 'hub:creates', category: 'creates', label: 'COIN CREATIONS' },
   { id: 'hub:whales', category: 'whales', label: 'WHALES >1 SOL' },
-  { id: 'hub:github_claims', category: 'github_claims', label: 'GITHUB FEE CLAIMS' },
-  { id: 'hub:social_claims', category: 'social_claims', label: 'SOCIAL CLAIMS' },
 ];
 
 /** Set of all hub IDs (including central) for fast lookup */

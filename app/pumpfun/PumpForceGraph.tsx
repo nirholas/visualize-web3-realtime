@@ -71,7 +71,7 @@ const DARK_THEME: ThemeColors = {
   central: new THREE.Color('#a855f7'),
   buy: new THREE.Color('#4ade80'),
   sell: new THREE.Color('#f87171'),
-  token: new THREE.Color('#facc15'),
+  token: new THREE.Color('#222222'), // black/dark for creates
   labelBg: '#1a1a1a',
   labelText: '#ffffff',
   labelShadow: '0 2px 12px rgba(0,0,0,0.5)',
@@ -86,7 +86,7 @@ const LIGHT_THEME: ThemeColors = {
   central: new THREE.Color('#7c3aed'),
   buy: new THREE.Color('#16a34a'),
   sell: new THREE.Color('#dc2626'),
-  token: new THREE.Color('#ca8a04'),
+  token: new THREE.Color('#111111'), // black for creates
   labelBg: '#ffffff',
   labelText: '#111111',
   labelShadow: '0 2px 12px rgba(0,0,0,0.15)',
@@ -97,12 +97,10 @@ const LIGHT_THEME: ThemeColors = {
 // Hub-specific colors per theme
 function hubColor(hubId: string, dark: boolean): THREE.Color {
   const colors: Record<string, [string, string]> = {
-    'hub:buys':          ['#4ade80', '#16a34a'],
-    'hub:sells':         ['#f87171', '#dc2626'],
-    'hub:creates':       ['#facc15', '#ca8a04'],
-    'hub:whales':        ['#3b82f6', '#2563eb'],
-    'hub:github_claims': ['#a855f7', '#7c3aed'],
-    'hub:social_claims': ['#f472b6', '#db2777'],
+    'hub:buys':    ['#4ade80', '#16a34a'], // green
+    'hub:sells':   ['#f87171', '#dc2626'], // red
+    'hub:creates': ['#555555', '#333333'], // dark/black
+    'hub:whales':  ['#3b82f6', '#2563eb'], // blue
   };
   const pair = colors[hubId];
   return new THREE.Color(pair ? pair[dark ? 0 : 1] : (dark ? '#22d3ee' : '#0891b2'));

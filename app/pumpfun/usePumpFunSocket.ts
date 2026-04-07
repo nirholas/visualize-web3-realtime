@@ -9,6 +9,9 @@ const MAX_ACTIVE_TRADES = 400;
 // Whale threshold in SOL
 const WHALE_THRESHOLD_SOL = 1;
 
+// Max tokens to track trades for (prevents flooding)
+const MAX_SUBSCRIBED_TOKENS = 50;
+
 // Hub IDs that trades route to
 const HUB_BUYS = 'hub:buys';
 const HUB_SELLS = 'hub:sells';
@@ -37,6 +40,8 @@ export function usePumpFunSocket() {
   const masterDataRef = useRef<GraphData>({ nodes: [], links: [] });
   const bufferRef = useRef<GraphData>({ nodes: [], links: [] });
   const wsRef = useRef<WebSocket | null>(null);
+  // Track subscribed token mints (ordered by subscription time)
+  const subscribedMintsRef = useRef<string[]>([]);
 
   // --- WEBSOCKET CONNECTION & MESSAGE PARSING ---
   useEffect(() => {
@@ -47,10 +52,31 @@ export function usePumpFunSocket() {
       console.log('[PumpPortal] Connected');
       // Subscribe to new token creations
       ws.send(JSON.stringify({ method: 'subscribeNewToken' }));
-      // Subscribe to ALL token trades (buys + sells + creates + migrations)
-      // keys: ['all'] is required to get all trades, not just specific mints
-      ws.send(JSON.stringify({ method: 'subscribeTokenTrade', keys: ['all'] }));
-      console.log('[PumpPortal] Subscribed to new tokens + all trades');
+      // Subscribe to migration events
+      ws.send(JSON.stringify({ method: 'subscribeMigration' }));
+      // NOTE: PumpPortal requires specific mint addresses for trade subscriptions.
+      // We dynamically subscribe to trades for each new token as it's created.
+      console.log('[PumpPortal] Subscribed to new tokens + migrations (trades will be subscribed per-token)');
+    };
+
+    /** Subscribe to trades for a specific token mint */
+    const subscribeToTokenTrades = (mint: string) => {
+      if (ws.readyState !== WebSocket.OPEN) return;
+
+      const subs = subscribedMintsRef.current;
+
+      // Already subscribed
+      if (subs.includes(mint)) return;
+
+      // If at capacity, unsubscribe the oldest token
+      if (subs.length >= MAX_SUBSCRIBED_TOKENS) {
+        const oldest = subs.shift()!;
+        ws.send(JSON.stringify({ method: 'unsubscribeTokenTrade', keys: [oldest] }));
+      }
+
+      // Subscribe to this token's trades
+      ws.send(JSON.stringify({ method: 'subscribeTokenTrade', keys: [mint] }));
+      subs.push(mint);
     };
 
     ws.onmessage = (event) => {
@@ -96,6 +122,9 @@ export function usePumpFunSocket() {
           };
           bufferRef.current.nodes.push(newNode);
           bufferRef.current.links.push({ source: nodeId, target: hubTarget });
+
+          // Dynamically subscribe to trades for this newly created token
+          subscribeToTokenTrades(mintId);
         } else {
           // Buy or sell trade particle
           const tradeId = msg.signature || `trade-${mintId}-${now}-${Math.random().toString(36).slice(2, 6)}`;
@@ -115,10 +144,14 @@ export function usePumpFunSocket() {
       }
     };
 
-    ws.onclose = () => console.log('[PumpPortal] Disconnected');
+    ws.onclose = () => {
+      console.log('[PumpPortal] Disconnected');
+      subscribedMintsRef.current = [];
+    };
     ws.onerror = (e) => console.error('[PumpPortal] Error:', e);
 
     return () => {
+      subscribedMintsRef.current = [];
       if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
         ws.close();
       }
