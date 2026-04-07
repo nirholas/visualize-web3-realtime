@@ -53,6 +53,10 @@ class PumpSimulation {
   private simulation: ReturnType<typeof forceSimulation<SimNode>>;
   private nodeMap = new Map<string, SimNode>();
 
+  private nodeId(nodeRef: string | PumpNode): string {
+    return typeof nodeRef === 'string' ? nodeRef : nodeRef.id;
+  }
+
   constructor() {
     this.simulation = forceSimulation<SimNode>([], 3)
       .numDimensions(3)
@@ -128,13 +132,13 @@ class PumpSimulation {
     // Sync edges
     this.edges = graphData.links
       .filter((l) => {
-        const src = typeof l.source === 'string' ? l.source : l.source.id;
-        const tgt = typeof l.target === 'string' ? l.target : l.target.id;
+        const src = this.nodeId(l.source);
+        const tgt = this.nodeId(l.target);
         return this.nodeMap.has(src) && this.nodeMap.has(tgt);
       })
       .map((l) => ({
-        source: typeof l.source === 'string' ? l.source : l.source.id,
-        target: typeof l.target === 'string' ? l.target : l.target.id,
+        source: this.nodeId(l.source),
+        target: this.nodeId(l.target),
       }));
 
     if (changed) {
