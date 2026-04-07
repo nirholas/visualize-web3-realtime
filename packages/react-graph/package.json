@@ -2,7 +2,7 @@
   "name": "@web3viz/react-graph",
   "version": "0.1.0",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "description": "React Three Fiber force-directed graph visualization for Web3 data",
   "main": "./src/index.ts",
   "types": "./src/index.ts",

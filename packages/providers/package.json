@@ -2,7 +2,7 @@
   "name": "@web3viz/providers",
   "version": "0.1.0",
   "private": true,
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "description": "Data provider implementations for Web3 visualizations (PumpFun, Mock, etc.)",
   "main": "./src/index.ts",
   "types": "./src/index.ts",

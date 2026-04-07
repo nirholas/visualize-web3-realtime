@@ -7,13 +7,6 @@
 </p>
 
 <p align="center">
-  <a href="https://www.npmjs.com/package/@web3viz/core"><img src="https://img.shields.io/npm/v/@web3viz/core?style=flat-square&color=6366f1" alt="npm version" /></a>
-  <a href="https://bundlephobia.com/package/@web3viz/react-graph"><img src="https://img.shields.io/bundlephobia/minzip/@web3viz/react-graph?style=flat-square&color=22c55e&label=bundle" alt="bundle size" /></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-All%20Rights%20Reserved-blue?style=flat-square" alt="license" /></a>
-  <a href="https://github.com/nirholas/visualize-web3-realtime/stargazers"><img src="https://img.shields.io/github/stars/nirholas/visualize-web3-realtime?style=flat-square&color=f59e0b" alt="stars" /></a>
-</p>
-
-<p align="center">
   <strong>GPU-accelerated real-time 3D network visualization for Web3 and AI agents.<br/>Built with Next.js 14, React Three Fiber, and D3-force. 5,000+ nodes at 60fps.</strong>
 </p>
 

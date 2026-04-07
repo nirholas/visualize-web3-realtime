@@ -2,7 +2,7 @@
   "name": "swarming-physics",
   "version": "0.1.0",
   "description": "WASM Barnes-Hut force simulation for swarming — 3-5x faster than d3-force-3d",
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "main": "./pkg/swarming_physics.js",
   "types": "./pkg/swarming_physics.d.ts",
   "files": [

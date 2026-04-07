@@ -2,7 +2,7 @@
   "name": "@swarming/react-native",
   "version": "0.1.0",
   "description": "React Native component for swarming force-directed graph visualization",
-  "license": "UNLICENSED",
+  "license": "Apache-2.0",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {
