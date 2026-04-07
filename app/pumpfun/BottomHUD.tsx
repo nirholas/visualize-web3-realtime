@@ -28,26 +28,35 @@ function useFlash(value: number): boolean {
 
 interface BottomHUDProps {
   metrics: GraphMetrics;
+  darkMode?: boolean;
 }
 
-export function BottomHUD({ metrics }: BottomHUDProps) {
+export function BottomHUD({ metrics, darkMode = true }: BottomHUDProps) {
   const tokensFlash = useFlash(metrics.activeTokens);
   const volumeFlash = useFlash(Math.round(metrics.totalVolume));
   const swapsFlash = useFlash(metrics.liveSwaps);
+
+  const bg = darkMode
+    ? 'bg-white/10 border-white/20 shadow-black/30'
+    : 'bg-black/5 border-black/10 shadow-black/10';
+  const text = darkMode ? 'text-white/90' : 'text-black/80';
+  const muted = darkMode ? 'text-white/50' : 'text-black/40';
+  const divider = darkMode ? 'bg-white/20' : 'bg-black/15';
 
   return (
     <div className="absolute bottom-8 left-1/2 -translate-x-1/2 pointer-events-auto z-20">
       <div
         className={
-          'flex items-center gap-6 px-8 py-3 rounded-full ' +
-          'bg-white/10 backdrop-blur-md border border-white/20 ' +
-          'text-white/90 text-sm font-medium tracking-wide ' +
-          'shadow-lg shadow-black/30 transition-shadow duration-500'
+          `flex items-center gap-6 px-8 py-3 rounded-full ` +
+          `backdrop-blur-md border ` +
+          `text-sm font-medium tracking-wide ` +
+          `transition-all duration-300 ` +
+          `${bg} ${text}`
         }
       >
         {/* Active Tokens */}
         <span className="flex items-center gap-2">
-          <span className="text-base" aria-hidden="true">◉</span>
+          <span className="text-base" aria-hidden="true">&#9673;</span>
           <span
             className={
               'tabular-nums transition-colors duration-300 ' +
@@ -56,15 +65,15 @@ export function BottomHUD({ metrics }: BottomHUDProps) {
           >
             {metrics.activeTokens}
           </span>
-          <span className="text-white/50">Agents</span>
+          <span className={muted}>Agents</span>
         </span>
 
-        <span className="w-px h-4 bg-white/20" aria-hidden="true" />
+        <span className={`w-px h-4 ${divider}`} aria-hidden="true" />
 
         {/* Volume */}
         <span className="flex items-center gap-2">
-          <span className="text-base" aria-hidden="true">◈</span>
-          <span className="text-white/50">Volume</span>
+          <span className="text-base" aria-hidden="true">&#9672;</span>
+          <span className={muted}>Volume</span>
           <span
             className={
               'tabular-nums transition-colors duration-300 ' +
@@ -75,11 +84,11 @@ export function BottomHUD({ metrics }: BottomHUDProps) {
           </span>
         </span>
 
-        <span className="w-px h-4 bg-white/20" aria-hidden="true" />
+        <span className={`w-px h-4 ${divider}`} aria-hidden="true" />
 
         {/* Live Swaps */}
         <span className="flex items-center gap-2">
-          <span className="text-base" aria-hidden="true">⬡</span>
+          <span className="text-base" aria-hidden="true">&#11041;</span>
           <span
             className={
               'tabular-nums transition-colors duration-300 ' +
@@ -88,7 +97,7 @@ export function BottomHUD({ metrics }: BottomHUDProps) {
           >
             {metrics.liveSwaps}
           </span>
-          <span className="text-white/50">Transactions</span>
+          <span className={muted}>Transactions</span>
         </span>
       </div>
     </div>

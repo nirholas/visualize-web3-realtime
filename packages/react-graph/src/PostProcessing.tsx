@@ -1,7 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import { EffectComposer, SMAA, N8AO, Bloom } from '@react-three/postprocessing';
+import { EffectComposer, SMAA, Bloom } from '@react-three/postprocessing';
 import { HalfFloatType } from 'three';
 import { useThree } from '@react-three/fiber';
 
@@ -12,39 +12,31 @@ export interface PostProcessingProps {
   bloomIntensity?: number;
   /** Bloom luminance threshold — only pixels brighter than this glow */
   bloomThreshold?: number;
-  /** SSAO intensity (0 = off) */
-  aoIntensity?: number;
 }
 
+/**
+ * Cyberpunk Neural Network post-processing:
+ * - Strong UnrealBloom-style glow via low threshold + high intensity
+ * - White MeshBasicMaterial nodes (value 1.0) always exceed the threshold
+ * - Colored particles with HDR output (>1.0) also bloom beautifully
+ * - No ambient occlusion (pitch-black scene doesn't benefit from it)
+ */
 const PostProcessing = memo<PostProcessingProps>(({
   enabled = true,
-  bloomIntensity = 1.5,
-  bloomThreshold = 0.6,
-  aoIntensity = 0.8,
+  bloomIntensity = 2.0,
+  bloomThreshold = 0.2,
 }) => {
   const gl = useThree((s) => s.gl);
 
-  // Bail out if disabled or WebGL context is lost
   if (!enabled || gl.getContext().isContextLost()) return null;
 
   return (
     <EffectComposer multisampling={0} stencilBuffer={false} frameBufferType={HalfFloatType}>
-      {/* SMAA replaces hardware MSAA — better quality, compatible with post-processing */}
       <SMAA />
-
-      {/* N8AO is a high-performance SSAO implementation optimized for R3F */}
-      <N8AO
-        halfRes
-        aoRadius={0.5}
-        intensity={aoIntensity}
-        distanceFalloff={0.5}
-      />
-
-      {/* Selective bloom — only emissive materials with toneMapped={false} exceed threshold */}
       <Bloom
         intensity={bloomIntensity}
         luminanceThreshold={bloomThreshold}
-        luminanceSmoothing={0.2}
+        luminanceSmoothing={0.4}
         mipmapBlur
       />
     </EffectComposer>

@@ -4,7 +4,10 @@ import { PumpNode, PumpLink, GraphData } from './types';
 const SOCKET_URL = 'wss://pumpportal.fun/api/data';
 const FLUSH_INTERVAL_MS = 1500;
 const GC_THRESHOLD_MS = 45 * 1000; // 45 seconds
-const MAX_ACTIVE_TRADES = 300;
+const MAX_ACTIVE_TRADES = 400;
+
+// Whale threshold in SOL
+const WHALE_THRESHOLD_SOL = 1;
 
 // Hub IDs that trades route to
 const HUB_BUYS = 'hub:buys';
@@ -12,12 +15,20 @@ const HUB_SELLS = 'hub:sells';
 const HUB_CREATES = 'hub:creates';
 const HUB_WHALES = 'hub:whales';
 
-/** Determine which hub(s) a trade should link to */
-function routeToHub(txType: string, solAmount: number): string {
-  if (txType === 'create') return HUB_CREATES;
-  // Whales get their own hub (>1 SOL)
-  if (solAmount > 1) return HUB_WHALES;
-  if (txType === 'buy') return HUB_BUYS;
+/**
+ * Normalize SOL amount from PumpPortal.
+ * PumpPortal is inconsistent — sometimes sends lamports (>1e6), sometimes SOL.
+ */
+function normalizeSol(raw: number | undefined): number {
+  if (raw === undefined || raw === null) return 0;
+  return raw > 1e6 ? raw / 1e9 : raw;
+}
+
+/** Determine which hub a trade should link to */
+function routeToHub(type: string, solAmount: number): string {
+  if (type === 'create') return HUB_CREATES;
+  if (solAmount >= WHALE_THRESHOLD_SOL) return HUB_WHALES;
+  if (type === 'buy') return HUB_BUYS;
   return HUB_SELLS;
 }
 
@@ -33,63 +44,84 @@ export function usePumpFunSocket() {
     wsRef.current = ws;
 
     ws.onopen = () => {
-      console.log('🟢 PumpPortal WebSocket Connected');
+      console.log('[PumpPortal] Connected');
+      // Subscribe to new token creations
       ws.send(JSON.stringify({ method: 'subscribeNewToken' }));
-      ws.send(JSON.stringify({ method: 'subscribeTokenTrade' }));
+      // Subscribe to ALL token trades (buys + sells + creates + migrations)
+      // keys: ['all'] is required to get all trades, not just specific mints
+      ws.send(JSON.stringify({ method: 'subscribeTokenTrade', keys: ['all'] }));
+      console.log('[PumpPortal] Subscribed to new tokens + all trades');
     };
 
     ws.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data);
+        const msg = JSON.parse(event.data);
         const now = Date.now();
 
-        const mintId = data.mint || data.tokenMint;
+        const mintId = msg.mint || msg.tokenMint;
         if (!mintId) return;
 
-        const txType: string = data.txType ?? '';
-        const solAmount: number = data.solAmount ?? 0;
-        const hubTarget = routeToHub(txType, solAmount);
+        // Normalize SOL amount
+        const solAmount = normalizeSol(msg.solAmount);
 
-        if (txType === 'create') {
-          // Coin creation → particle linked to COIN CREATIONS hub
-          const nodeId = `create-${mintId}-${now}`;
+        // Determine event type:
+        // - subscribeTokenTrade messages have txType: 'buy' | 'sell' | 'create' | 'migrate'
+        // - subscribeNewToken messages have NO txType but have mint + name
+        const txType = (msg.txType || '').toLowerCase();
+        let eventType: string;
+
+        if (txType === 'buy' || txType === 'sell' || txType === 'create' || txType === 'migrate') {
+          eventType = txType;
+        } else if (msg.mint && (msg.name || msg.symbol)) {
+          // subscribeNewToken event (no txType field)
+          eventType = 'create';
+        } else {
+          return; // Unknown event
+        }
+
+        // Skip migrations for now (no dedicated hub)
+        if (eventType === 'migrate') return;
+
+        const hubTarget = routeToHub(eventType, solAmount);
+
+        if (eventType === 'create') {
+          // Coin creation particle
+          const nodeId = `create-${mintId}-${now}-${Math.random().toString(36).slice(2, 6)}`;
           const newNode: PumpNode = {
             id: nodeId,
             type: 'token',
-            ticker: data.symbol || 'NEW',
-            timestamp: now,
-          };
-          const newLink: PumpLink = {
-            source: nodeId,
-            target: hubTarget,
-          };
-          bufferRef.current.nodes.push(newNode);
-          bufferRef.current.links.push(newLink);
-        } else if (txType === 'buy' || txType === 'sell') {
-          const tradeId = data.signature || `${mintId}-${now}-${Math.random()}`;
-          const newTrade: PumpNode = {
-            id: tradeId,
-            type: 'trade',
-            isBuy: txType === 'buy',
+            ticker: msg.symbol || msg.name || 'NEW',
             solAmount,
             timestamp: now,
           };
-          const newLink: PumpLink = {
-            source: tradeId,
-            target: hubTarget,
+          bufferRef.current.nodes.push(newNode);
+          bufferRef.current.links.push({ source: nodeId, target: hubTarget });
+        } else {
+          // Buy or sell trade particle
+          const tradeId = msg.signature || `trade-${mintId}-${now}-${Math.random().toString(36).slice(2, 6)}`;
+          const newTrade: PumpNode = {
+            id: tradeId,
+            type: 'trade',
+            isBuy: eventType === 'buy',
+            solAmount,
+            ticker: msg.symbol || msg.name,
+            timestamp: now,
           };
           bufferRef.current.nodes.push(newTrade);
-          bufferRef.current.links.push(newLink);
+          bufferRef.current.links.push({ source: tradeId, target: hubTarget });
         }
       } catch (err) {
-        console.error('WebSocket parsing error:', err);
+        console.error('[PumpPortal] Parse error:', err);
       }
     };
 
-    ws.onclose = () => console.log('🔴 PumpPortal WebSocket Disconnected');
+    ws.onclose = () => console.log('[PumpPortal] Disconnected');
+    ws.onerror = (e) => console.error('[PumpPortal] Error:', e);
 
     return () => {
-      if (ws.readyState === WebSocket.OPEN) ws.close();
+      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+        ws.close();
+      }
     };
   }, []);
 

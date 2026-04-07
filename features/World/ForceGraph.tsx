@@ -1,8 +1,8 @@
 'use client';
 
-import React, { forwardRef, memo, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import React, { forwardRef, memo, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Environment, CameraControls } from '@react-three/drei';
+import { CameraControls } from '@react-three/drei';
 import CameraControlsImpl from 'camera-controls';
 import * as THREE from 'three';
 import {
@@ -11,6 +11,7 @@ import {
   forceManyBody,
   forceCenter,
   forceCollide,
+  forceRadial,
   type SimulationNodeDatum3D,
 } from 'd3-force-3d';
 import type { SimulationLinkDatum } from 'd3-force';
@@ -71,6 +72,8 @@ const {
   IDLE_RADIUS_MIN,
   IDLE_RADIUS_MAX,
   IDLE_SPREAD,
+  AUTO_ROTATE_SPEED,
+  AUTO_ROTATE_IDLE_DELAY,
 } = GRAPH_CONFIG;
 
 // ---------------------------------------------------------------------------
@@ -87,13 +90,21 @@ export class ForceGraphSimulation {
     // numDimensions=3 enables full volumetric (spherical) layout
     this.simulation = forceSimulation<ForceNode>([], 3)
       .numDimensions(3)
-      .force('charge', forceManyBody<ForceNode>().strength((d) => (d.type === 'hub' ? -150 : -0.08)))
-      .force('center', forceCenter<ForceNode>(0, 0, 0).strength(0.08))
+      .force('charge', forceManyBody<ForceNode>().strength((d) => (d.type === 'hub' ? -300 : -2)))
+      .force('center', forceCenter<ForceNode>(0, 0, 0).strength(0.03))
+      // Radial force pulls nodes toward a sphere — prevents flat pancake layout
+      .force(
+        'radial',
+        forceRadial<ForceNode>(
+          (d) => (d.type === 'hub' ? 25 : 12),
+          0, 0, 0,
+        ).strength(0.05),
+      )
       .force(
         'collide',
         forceCollide<ForceNode>()
           .radius((d) => (d.type === 'hub' ? d.radius + 2 : d.radius + 0.02))
-          .strength(0.2),
+          .strength(0.3),
       )
       .force(
         'link',
@@ -102,14 +113,14 @@ export class ForceGraphSimulation {
           .distance((d) => {
             const src = d.source as ForceNode;
             const tgt = d.target as ForceNode;
-            if (src.type === 'hub' && tgt.type === 'hub') return 22;
-            return 3 + Math.random() * 4;
+            if (src.type === 'hub' && tgt.type === 'hub') return 30;
+            return 4 + Math.random() * 5;
           })
           .strength((d) => {
             const src = d.source as ForceNode;
             const tgt = d.target as ForceNode;
-            if (src.type === 'hub' && tgt.type === 'hub') return 0.15;
-            return 0.12;
+            if (src.type === 'hub' && tgt.type === 'hub') return 0.12;
+            return 0.15;
           }),
       )
       .alphaDecay(0.003)
@@ -137,7 +148,7 @@ export class ForceGraphSimulation {
         // Distribute hubs on a sphere using spherical coordinates
         const phi = Math.acos(1 - (2 * (i + 0.5)) / Math.max(topTokens.length, 1));
         const theta = Math.PI * (1 + Math.sqrt(5)) * i; // golden angle
-        const dist = 10 + Math.random() * 4;
+        const dist = 18 + Math.random() * 8;
         const node: ForceNode = {
           id: t.tokenAddress,
           type: 'hub',
@@ -249,15 +260,63 @@ export class ForceGraphSimulation {
 // Three.js sub-components
 // ---------------------------------------------------------------------------
 
-/** Scene background color controller */
-const SceneBackground = memo<{ color: string }>(({ color }) => {
+/** Scene background — pitch black for cyberpunk aesthetic */
+const SceneBackground = memo<{ color?: string }>(({ color }) => {
   const { scene } = useThree();
   useEffect(() => {
-    scene.background = new THREE.Color(color);
+    scene.background = new THREE.Color(color ?? '#000000');
   }, [color, scene]);
   return null;
 });
 SceneBackground.displayName = 'SceneBackground';
+
+// ---------------------------------------------------------------------------
+// Auto-rotation camera — slow cinematic orbit with idle resume
+// ---------------------------------------------------------------------------
+
+const AutoRotateCamera = memo<{ controlsRef: React.RefObject<CameraControlsImpl> }>(
+  ({ controlsRef }) => {
+    const lastInteraction = useRef(0);
+    const { gl } = useThree();
+
+    // Track user interaction to pause auto-rotation
+    const onInteract = useCallback(() => {
+      lastInteraction.current = performance.now() / 1000;
+    }, []);
+
+    useEffect(() => {
+      const canvas = gl.domElement;
+      canvas.addEventListener('pointerdown', onInteract);
+      canvas.addEventListener('wheel', onInteract);
+      return () => {
+        canvas.removeEventListener('pointerdown', onInteract);
+        canvas.removeEventListener('wheel', onInteract);
+      };
+    }, [gl, onInteract]);
+
+    useFrame((state, delta) => {
+      const ctrl = controlsRef.current;
+      if (!ctrl) return;
+
+      const now = state.clock.getElapsedTime();
+      const timeSinceInteraction = now - lastInteraction.current;
+
+      // Resume auto-rotation after idle delay
+      if (timeSinceInteraction > AUTO_ROTATE_IDLE_DELAY || lastInteraction.current === 0) {
+        // Slow azimuth rotation
+        ctrl.azimuthAngle += AUTO_ROTATE_SPEED * delta;
+        // Gentle polar drift — oscillate up/down to reveal depth
+        const drift = Math.sin(now * 0.15) * 0.003;
+        ctrl.polarAngle += drift;
+        // Clamp polar angle to prevent camera flipping
+        ctrl.polarAngle = Math.max(0.3, Math.min(Math.PI - 0.3, ctrl.polarAngle));
+      }
+    });
+
+    return null;
+  },
+);
+AutoRotateCamera.displayName = 'AutoRotateCamera';
 
 // ---------------------------------------------------------------------------
 // Idle ambient scene — gentle drifting orbs when no data is active
@@ -297,11 +356,8 @@ const IdleAmbientScene = memo(() => {
   const geometry = useMemo(() => new THREE.SphereGeometry(1, 16, 16), []);
   const material = useMemo(
     () =>
-      new THREE.MeshStandardMaterial({
-        roughness: 0.4,
-        metalness: 0.0,
-        emissive: new THREE.Color('#60a5fa'),
-        emissiveIntensity: 1.2,
+      new THREE.MeshBasicMaterial({
+        color: '#ffffff',
         transparent: true,
         opacity: 0.7,
         toneMapped: false,
@@ -318,17 +374,14 @@ const IdleAmbientScene = memo(() => {
 
     for (let i = 0; i < nodes.length; i++) {
       const n = nodes[i];
-      // Drift
       n.x += n.vx * delta * 60;
       n.z += n.vz * delta * 60;
-      // Soft boundary: gently pull back toward center
       const dist = Math.sqrt(n.x * n.x + n.z * n.z);
       if (dist > IDLE_SPREAD) {
         const pull = 0.001 * (dist - IDLE_SPREAD);
         n.vx -= (n.x / dist) * pull;
         n.vz -= (n.z / dist) * pull;
       }
-      // Damping
       n.vx *= 0.998;
       n.vz *= 0.998;
 
@@ -347,8 +400,7 @@ const IdleAmbientScene = memo(() => {
 
   return (
     <>
-      <Environment preset="studio" environmentIntensity={0.4} background={false} />
-      <directionalLight position={[20, 40, 20]} intensity={0.3} />
+      <SceneBackground />
       <instancedMesh ref={meshRef} args={[geometry, material, IDLE_NODE_COUNT]} frustumCulled={false} />
     </>
   );
@@ -419,11 +471,8 @@ const NetworkScene = memo<{
 
     return (
       <>
-        {shareColors && <SceneBackground color={shareColors.background} />}
-
-        <Environment preset="studio" environmentIntensity={0.6} background={false} />
-        <directionalLight position={[20, 40, 20]} intensity={0.4} />
-        <directionalLight position={[-20, 30, -30]} intensity={0.15} color="#a78bfa" />
+        {/* Pitch-black background — shareColors override still supported */}
+        <SceneBackground color={shareColors?.background} />
 
         <Edges
           sim={sim}
@@ -632,11 +681,13 @@ const ForceGraph = forwardRef<ForceGraphHandle, ForceGraphProps>(
         <CameraControls
           ref={cameraControlsRef}
           minDistance={5}
-          maxDistance={120}
+          maxDistance={200}
           truckSpeed={0}
           mouseButtons={{ left: 1, middle: 0, right: 2, wheel: 8 }}
           touches={{ one: 32, two: 1024, three: 0 }}
+          dollySpeed={0.5}
         />
+        <AutoRotateCamera controlsRef={cameraControlsRef} />
         <PostProcessing />
       </>
     );
@@ -647,9 +698,10 @@ ForceGraph.displayName = 'ForceGraph';
 const ForceGraphCanvas = forwardRef<ForceGraphHandle, ForceGraphProps>((props, ref) => {
   return (
     <Canvas
-      camera={{ position: [0, 0, 50], fov: 45, near: 0.1, far: 1000 }}
-      gl={{ preserveDrawingBuffer: true, antialias: false, stencil: false }}
-      frameloop="demand"
+      camera={{ position: [30, 25, 50], fov: 50, near: 0.1, far: 1000 }}
+      style={{ background: '#000000' }}
+      gl={{ preserveDrawingBuffer: true, antialias: false, stencil: false, alpha: false }}
+      frameloop="always"
     >
       <ForceGraph {...props} ref={ref} />
     </Canvas>

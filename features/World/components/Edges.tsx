@@ -1,27 +1,28 @@
 'use client';
 
-import React, { memo, useEffect, useMemo, useRef } from 'react';
+import React, { memo, useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import type { ForceGraphSimulation, ForceNode } from '../ForceGraph';
 import { GRAPH_CONFIG } from '../constants';
 
-const { MAX_EDGES, EDGE_HIGHLIGHT_R, EDGE_HIGHLIGHT_G, EDGE_HIGHLIGHT_B } = GRAPH_CONFIG;
+const { MAX_EDGES } = GRAPH_CONFIG;
 
-/** Batch-rendered edges via LineSegments */
+// Dark grey for the cyberpunk neural network aesthetic
+const EDGE_GREY = 0.133; // #222222
+
+/** Batch-rendered edges — very faint dark grey lines showing underlying structure */
 export const Edges = memo(
   ({
     sim,
     activeProtocol,
     highlightedHubId,
     highlightedAddress,
-    isDark = true,
   }: {
     sim: ForceGraphSimulation;
     activeProtocol?: string | null;
     highlightedHubId?: string | null;
-    /** When set, only the edge from this agent address is highlighted (not all hub edges) */
     highlightedAddress?: string | null;
     isDark?: boolean;
   }) => {
@@ -29,7 +30,6 @@ export const Edges = memo(
     const posAttr = useRef<THREE.Float32BufferAttribute | null>(null);
     const colorAttr = useRef<THREE.Float32BufferAttribute | null>(null);
     const maxEdges = MAX_EDGES;
-    const edgeColor = useMemo(() => new THREE.Color(), []);
 
     useEffect(() => {
       const geo = new THREE.BufferGeometry();
@@ -72,9 +72,7 @@ export const Edges = memo(
         pA.array[idx + 4] = tgt.y ?? 0;
         pA.array[idx + 5] = tgt.z ?? 0;
 
-        const isHubEdge = src.type === 'hub' && tgt.type === 'hub';
-
-        // When a specific address is searched, only highlight that agent's edge
+        // When a specific address is searched, slightly brighten that agent's edge
         let isHighlightEdge: boolean;
         if (highlightedAddress) {
           const searchLower = highlightedAddress.toLowerCase();
@@ -94,59 +92,32 @@ export const Edges = memo(
         }
 
         if (isHighlightEdge) {
-          // Bright values > 1.0 trigger selective bloom via toneMapped={false}
-          cA.array[idx] = EDGE_HIGHLIGHT_R;
-          cA.array[idx + 1] = EDGE_HIGHLIGHT_G;
-          cA.array[idx + 2] = EDGE_HIGHLIGHT_B;
-          cA.array[idx + 3] = EDGE_HIGHLIGHT_R;
-          cA.array[idx + 4] = EDGE_HIGHLIGHT_G;
-          cA.array[idx + 5] = EDGE_HIGHLIGHT_B;
-        } else if (!isHubEdge && (src.isWhale || tgt.isWhale)) {
-          // Whale trader edges: bright teal
-          cA.array[idx] = 0.22;
-          cA.array[idx + 1] = 0.74;
-          cA.array[idx + 2] = 0.97;
-          cA.array[idx + 3] = 0.22;
-          cA.array[idx + 4] = 0.74;
-          cA.array[idx + 5] = 0.97;
-        } else if (!isHubEdge && (src.isSniper || tgt.isSniper)) {
-          // Sniper bot edges: bright orange
-          cA.array[idx] = 0.98;
-          cA.array[idx + 1] = 0.45;
-          cA.array[idx + 2] = 0.09;
-          cA.array[idx + 3] = 0.98;
-          cA.array[idx + 4] = 0.45;
-          cA.array[idx + 5] = 0.09;
+          // Slightly brighter grey for highlighted edges
+          const hl = 0.35;
+          cA.array[idx] = hl;
+          cA.array[idx + 1] = hl;
+          cA.array[idx + 2] = hl;
+          cA.array[idx + 3] = hl;
+          cA.array[idx + 4] = hl;
+          cA.array[idx + 5] = hl;
+        } else if (activeProtocol) {
+          const srcRelated = src.id === activeProtocol || src.hubTokenAddress === activeProtocol;
+          const tgtRelated = tgt.id === activeProtocol || tgt.hubTokenAddress === activeProtocol;
+          const g = srcRelated || tgtRelated ? EDGE_GREY : 0.05;
+          cA.array[idx] = g;
+          cA.array[idx + 1] = g;
+          cA.array[idx + 2] = g;
+          cA.array[idx + 3] = g;
+          cA.array[idx + 4] = g;
+          cA.array[idx + 5] = g;
         } else {
-          // Derive color from the hub node's chain color
-          const hubNode = src.type === 'hub' ? src : tgt.type === 'hub' ? tgt : null;
-          let attenuation: number;
-
-          if (activeProtocol) {
-            const srcRelated = src.id === activeProtocol || src.hubTokenAddress === activeProtocol;
-            const tgtRelated = tgt.id === activeProtocol || tgt.hubTokenAddress === activeProtocol;
-            attenuation = srcRelated || tgtRelated ? (isHubEdge ? 0.55 : 0.4) : 0.08;
-          } else {
-            attenuation = isDark ? (isHubEdge ? 0.6 : 0.4) : isHubEdge ? 0.35 : 0.25;
-          }
-
-          if (hubNode && hubNode.color) {
-            edgeColor.set(hubNode.color);
-            cA.array[idx] = edgeColor.r * attenuation;
-            cA.array[idx + 1] = edgeColor.g * attenuation;
-            cA.array[idx + 2] = edgeColor.b * attenuation;
-            cA.array[idx + 3] = edgeColor.r * attenuation;
-            cA.array[idx + 4] = edgeColor.g * attenuation;
-            cA.array[idx + 5] = edgeColor.b * attenuation;
-          } else {
-            const gray = attenuation;
-            cA.array[idx] = gray;
-            cA.array[idx + 1] = gray;
-            cA.array[idx + 2] = gray;
-            cA.array[idx + 3] = gray;
-            cA.array[idx + 4] = gray;
-            cA.array[idx + 5] = gray;
-          }
+          // Default: uniform dark grey (#222222)
+          cA.array[idx] = EDGE_GREY;
+          cA.array[idx + 1] = EDGE_GREY;
+          cA.array[idx + 2] = EDGE_GREY;
+          cA.array[idx + 3] = EDGE_GREY;
+          cA.array[idx + 4] = EDGE_GREY;
+          cA.array[idx + 5] = EDGE_GREY;
         }
       }
 
@@ -158,7 +129,7 @@ export const Edges = memo(
     return (
       <lineSegments ref={lineRef}>
         <bufferGeometry />
-        <lineBasicMaterial vertexColors transparent opacity={0.18} toneMapped={false} />
+        <lineBasicMaterial vertexColors transparent opacity={0.4} toneMapped={false} />
       </lineSegments>
     );
   },
