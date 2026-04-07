@@ -26,3 +26,6 @@ export interface GraphData {
   nodes: PumpNode[];
   links: PumpLink[];
 }
+
+/** @deprecated Use GraphData — kept for backward compatibility */
+export type PumpGraphData = GraphData;

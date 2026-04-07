@@ -1,207 +1,148 @@
-'use client';
+import { useState, useEffect, useRef } from 'react';
+import { PumpNode, PumpLink, GraphData } from './types';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import type { PumpGraphData, PumpLink, PumpNode } from './types';
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-const WS_URL = 'wss://pumpportal.fun/api/data';
-/** How often (ms) the buffer is flushed into React state */
+const SOCKET_URL = 'wss://pumpportal.fun/api/data';
 const FLUSH_INTERVAL_MS = 1500;
-/** Nodes older than this (ms) are garbage-collected on each flush */
-const NODE_TTL_MS = 60_000;
-/** Reconnect delay after an unclean close */
-const RECONNECT_DELAY_MS = 3_000;
+const GC_THRESHOLD_MS = 45 * 1000; // 45 seconds
+const MAX_ACTIVE_TOKENS = 15;
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-let _tradeSeq = 0;
-function tradeId(): string {
-  return `t-${Date.now()}-${++_tradeSeq}`;
-}
-
-/**
- * Validate that a raw WS payload is a plain object with expected fields.
- * Prevents prototype-pollution and garbage data from entering the graph.
- */
-function isPlainObject(v: unknown): v is Record<string, unknown> {
-  return v !== null && typeof v === 'object' && !Array.isArray(v);
-}
-
-// ---------------------------------------------------------------------------
-// Hook
-// ---------------------------------------------------------------------------
-
-export function usePumpFunSocket(): {
-  graphData: PumpGraphData;
-  connected: boolean;
-} {
-  const [graphData, setGraphData] = useState<PumpGraphData>({
-    nodes: [],
-    links: [],
-  });
-  const [connected, setConnected] = useState(false);
-
-  // Mutable buffers — written by the WS handler, consumed by the flush timer
-  const nodeBuffer = useRef<PumpNode[]>([]);
-  const linkBuffer = useRef<PumpLink[]>([]);
-
-  // Refs to persist across renders without re-triggering effects
+export function usePumpFunSocket() {
+  // The state that React actually uses to render the graph
+  const [graphData, setGraphData] = useState<GraphData>({ nodes: [], links: [] });
+  
+  // Master state kept in a ref to avoid stale closures in the setInterval loop
+  const masterDataRef = useRef<GraphData>({ nodes: [], links: [] });
+  
+  // The high-speed temporary buffer
+  const bufferRef = useRef<GraphData>({ nodes: [], links: [] });
+  
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const flushTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const unmounted = useRef(false);
 
-  // ------------------------------------------------------------------
-  // flush(): merge buffers into React state & garbage-collect old nodes
-  // ------------------------------------------------------------------
-  const flush = useCallback(() => {
-    const newNodes = nodeBuffer.current;
-    const newLinks = linkBuffer.current;
-
-    if (newNodes.length === 0 && newLinks.length === 0) return;
-
-    // Drain buffers
-    nodeBuffer.current = [];
-    linkBuffer.current = [];
-
-    setGraphData((prev) => {
-      const cutoff = Date.now() - NODE_TTL_MS;
-
-      // Merge previous + new, then GC in one pass
-      const allNodes = [...prev.nodes, ...newNodes];
-      const kept = new Set<string>();
-      const nodes: PumpNode[] = [];
-
-      for (const n of allNodes) {
-        if (n.timestamp >= cutoff) {
-          kept.add(n.id);
-          nodes.push(n);
-        }
-      }
-
-      // Keep only links whose endpoints both survived GC
-      const links = [...prev.links, ...newLinks].filter(
-        (l) => kept.has(l.source) && kept.has(l.target),
-      );
-
-      return { nodes, links };
-    });
-  }, []);
-
-  // ------------------------------------------------------------------
-  // connect(): establish WebSocket & wire handlers
-  // ------------------------------------------------------------------
-  const connect = useCallback(() => {
-    if (unmounted.current) return;
-
-    const ws = new WebSocket(WS_URL);
+  // --- WEBSOCKET CONNECTION & MESSAGE PARSING ---
+  useEffect(() => {
+    const ws = new WebSocket(SOCKET_URL);
     wsRef.current = ws;
 
     ws.onopen = () => {
-      if (unmounted.current) {
-        ws.close();
-        return;
-      }
-      setConnected(true);
+      console.log('🟢 PumpPortal WebSocket Connected');
       ws.send(JSON.stringify({ method: 'subscribeNewToken' }));
-      ws.send(
-        JSON.stringify({ method: 'subscribeTokenTrade', keys: ['allTrades'] }),
-      );
+      ws.send(JSON.stringify({ method: 'subscribeTokenTrade' }));
     };
 
-    ws.onmessage = (event: MessageEvent) => {
+    ws.onmessage = (event) => {
       try {
-        const raw: unknown = JSON.parse(event.data as string);
-        if (!isPlainObject(raw)) return;
+        const data = JSON.parse(event.data);
+        const now = Date.now();
 
-        // --- Token creation ---
-        if (raw.txType === undefined && raw.mint && raw.name) {
-          const node: PumpNode = {
-            id: raw.mint as string,
+        // Pumpportal payloads use 'mint' or 'tokenMint' as the unique token ID
+        const mintId = data.mint || data.tokenMint;
+        if (!mintId) return;
+
+        // Handle Token Launch
+        if (data.txType === 'create') {
+          const newToken: PumpNode = {
+            id: mintId,
             type: 'token',
-            ticker: (raw.symbol as string) || undefined,
-            timestamp: Date.now(),
+            ticker: data.symbol || 'UNKNOWN',
+            timestamp: now,
           };
-          nodeBuffer.current.push(node);
-          return;
-        }
-
-        // --- Trade event ---
-        if (raw.txType === 'buy' || raw.txType === 'sell') {
-          const mint = raw.mint as string | undefined;
-          if (!mint) return;
-
-          const id = tradeId();
-          const solAmount = typeof raw.solAmount === 'number'
-            ? raw.solAmount / 1e9
-            : 0;
-
-          const node: PumpNode = {
-            id,
+          bufferRef.current.nodes.push(newToken);
+        } 
+        // Handle Trades (Swarm Particles)
+        else if (data.txType === 'buy' || data.txType === 'sell') {
+          const tradeId = data.signature || `${mintId}-${now}-${Math.random()}`;
+          
+          const newTrade: PumpNode = {
+            id: tradeId,
             type: 'trade',
-            isBuy: raw.txType === 'buy',
-            solAmount,
-            timestamp: Date.now(),
+            isBuy: data.txType === 'buy',
+            solAmount: data.solAmount || 0,
+            timestamp: now,
+          };
+          
+          const newLink: PumpLink = {
+            source: tradeId,
+            target: mintId, // Point the particle to the token
           };
 
-          const link: PumpLink = {
-            source: id,
-            target: mint,
-          };
+          bufferRef.current.nodes.push(newTrade);
+          bufferRef.current.links.push(newLink);
 
-          nodeBuffer.current.push(node);
-          linkBuffer.current.push(link);
+          // Touch the parent token's timestamp so it doesn't get garbage collected
+          const activeToken = masterDataRef.current.nodes.find(n => n.id === mintId && n.type === 'token');
+          if (activeToken) activeToken.timestamp = now;
         }
-      } catch {
-        // Ignore malformed payloads
+      } catch (err) {
+        console.error('WebSocket parsing error:', err);
       }
     };
 
-    ws.onclose = () => {
-      setConnected(false);
-      wsRef.current = null;
+    ws.onclose = () => console.log('🔴 PumpPortal WebSocket Disconnected');
 
-      if (!unmounted.current) {
-        reconnectTimer.current = setTimeout(connect, RECONNECT_DELAY_MS);
-      }
-    };
-
-    ws.onerror = () => {
-      // onerror is always followed by onclose — let onclose handle reconnect
-      ws.close();
+    return () => {
+      if (ws.readyState === WebSocket.OPEN) ws.close();
     };
   }, []);
 
-  // ------------------------------------------------------------------
-  // Lifecycle
-  // ------------------------------------------------------------------
+  // --- THE FLUSH & GARBAGE COLLECTOR LOOP ---
   useEffect(() => {
-    unmounted.current = false;
+    const tick = setInterval(() => {
+      let currentNodes = [...masterDataRef.current.nodes];
+      let currentLinks = [...masterDataRef.current.links];
+      
+      const bufferedNodes = bufferRef.current.nodes;
+      const bufferedLinks = bufferRef.current.links;
+      
+      // 1. Drain the buffer into the master array
+      if (bufferedNodes.length > 0) currentNodes = currentNodes.concat(bufferedNodes);
+      if (bufferedLinks.length > 0) currentLinks = currentLinks.concat(bufferedLinks);
+      
+      // Reset the buffer instantly so it can catch new messages
+      bufferRef.current = { nodes: [], links: [] };
 
-    connect();
+      const now = Date.now();
+      
+      // 2. Identify active tokens (Time-To-Live Check)
+      const aliveTokens = currentNodes.filter(node => 
+        node.type === 'token' && (now - node.timestamp) < GC_THRESHOLD_MS
+      );
 
-    flushTimer.current = setInterval(flush, FLUSH_INTERVAL_MS);
+      // 3. Enforce Hard Cap (Sort by newest, slice top 15)
+      aliveTokens.sort((a, b) => b.timestamp - a.timestamp);
+      const cappedTokens = aliveTokens.slice(0, MAX_ACTIVE_TOKENS);
+      const activeTokenIds = new Set(cappedTokens.map(t => t.id));
 
-    return () => {
-      unmounted.current = true;
+      // 4. Cascading Deletion (Remove links & trades belonging to dead tokens)
+      const activeLinks = currentLinks.filter(link => {
+        // D3 physics mutates strings into objects, so we handle both
+        const targetId = typeof link.target === 'object' ? (link.target as PumpNode).id : link.target;
+        return activeTokenIds.has(targetId);
+      });
 
-      if (reconnectTimer.current) {
-        clearTimeout(reconnectTimer.current);
-        reconnectTimer.current = null;
-      }
-      if (flushTimer.current) {
-        clearInterval(flushTimer.current);
-        flushTimer.current = null;
-      }
-      wsRef.current?.close();
-      wsRef.current = null;
-    };
-  }, [connect, flush]);
+      const activeTradeIds = new Set(activeLinks.map(link => 
+        typeof link.source === 'object' ? (link.source as PumpNode).id : link.source
+      ));
 
-  return { graphData, connected };
+      const activeTrades = currentNodes.filter(node => 
+        node.type === 'trade' && activeTradeIds.has(node.id)
+      );
+
+      // 5. Finalize state and trigger ONE React render
+      masterDataRef.current = {
+        nodes: [...cappedTokens, ...activeTrades],
+        links: activeLinks
+      };
+
+      // D3 modifies arrays in place, so we map new arrays to force React to notice the update
+      setGraphData({
+        nodes: [...masterDataRef.current.nodes],
+        links: [...masterDataRef.current.links]
+      });
+
+    }, FLUSH_INTERVAL_MS);
+
+    return () => clearInterval(tick);
+  }, []);
+
+  return graphData;
 }

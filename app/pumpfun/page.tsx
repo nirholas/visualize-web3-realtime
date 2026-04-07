@@ -7,13 +7,16 @@ import { useGraphMetrics } from './useGraphMetrics';
 import { BottomHUD } from './BottomHUD';
 import { TokenFeed } from './TokenFeed';
 
-// Lazy-load the 2D canvas graph to avoid SSR issues with d3-force
-const PumpFunGraph = dynamic(() => import('./PumpFunGraph'), {
-  ssr: false,
-  loading: () => (
-    <div style={{ width: '100%', height: '100%', background: '#0a0a0f' }} />
-  ),
-});
+// Lazy-load the 3D force graph to avoid SSR issues with Three.js / WebGL
+const PumpFunGraph = dynamic(
+  () => import('./PumpFunGraph').then((m) => m.PumpFunGraph),
+  {
+    ssr: false,
+    loading: () => (
+      <div style={{ width: '100%', height: '100%', background: '#030303' }} />
+    ),
+  },
+);
 
 export default function PumpFunPage() {
   const { graphData, connected } = usePumpFunSocket();
@@ -29,7 +32,7 @@ export default function PumpFunPage() {
   );
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-[#050505]">
+    <div className="relative h-screen w-screen overflow-hidden bg-[#030303]">
       {/* 3D canvas — fixed at z-index 0 */}
       <div className="absolute inset-0 z-0">
         <PumpFunGraph graphData={graphData} />
