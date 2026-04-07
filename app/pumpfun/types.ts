@@ -1,13 +1,17 @@
 export interface PumpNode {
   id: string;
-  type: 'token' | 'trade';
+  type: 'token' | 'trade' | 'hub' | 'central';
   timestamp: number;
   // Optional token properties
   ticker?: string;
   // Optional trade properties
   isBuy?: boolean;
   solAmount?: number;
-  
+  // Hub / central label
+  label?: string;
+  // Hub category (used to route trades)
+  category?: HubCategory;
+
   // D3 internal properties (injected at runtime by force-graph)
   x?: number;
   y?: number;
@@ -16,6 +20,15 @@ export interface PumpNode {
   vy?: number;
   vz?: number;
 }
+
+/** Categories for the pre-populated hub nodes */
+export type HubCategory =
+  | 'buys'
+  | 'sells'
+  | 'creates'
+  | 'whales'
+  | 'github_claims'
+  | 'social_claims';
 
 export interface PumpLink {
   source: string | PumpNode;
@@ -29,3 +42,27 @@ export interface GraphData {
 
 /** @deprecated Use GraphData — kept for backward compatibility */
 export type PumpGraphData = GraphData;
+
+// ---------------------------------------------------------------------------
+// Hub definitions — always present on the graph
+// ---------------------------------------------------------------------------
+
+export const HUB_CENTRAL_ID = 'hub:pumpfun';
+
+export interface HubDef {
+  id: string;
+  category: HubCategory;
+  label: string;
+}
+
+export const HUB_NODES: HubDef[] = [
+  { id: 'hub:buys', category: 'buys', label: 'BUYS' },
+  { id: 'hub:sells', category: 'sells', label: 'SELLS' },
+  { id: 'hub:creates', category: 'creates', label: 'COIN CREATIONS' },
+  { id: 'hub:whales', category: 'whales', label: 'WHALES >1 SOL' },
+  { id: 'hub:github_claims', category: 'github_claims', label: 'GITHUB FEE CLAIMS' },
+  { id: 'hub:social_claims', category: 'social_claims', label: 'SOCIAL CLAIMS' },
+];
+
+/** Set of all hub IDs (including central) for fast lookup */
+export const HUB_IDS = new Set([HUB_CENTRAL_ID, ...HUB_NODES.map((h) => h.id)]);

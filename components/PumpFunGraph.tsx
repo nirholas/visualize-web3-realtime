@@ -34,7 +34,7 @@ export default function PumpFunGraph() {
   const recentTokens = useMemo(
     () =>
       graphData.nodes
-        .filter((n) => n.type === 'token')
+        .filter((n) => n.type === 'token' && n.ticker)
         .sort((a, b) => b.timestamp - a.timestamp)
         .slice(0, 5),
     [graphData],

@@ -4,6 +4,17 @@ import { useEffect, useRef, useState } from 'react';
 import type { GraphData, PumpLink, PumpNode } from './types';
 
 // ---------------------------------------------------------------------------
+// Hub IDs
+// ---------------------------------------------------------------------------
+
+const HUB_BUYS = 'hub:buys';
+const HUB_SELLS = 'hub:sells';
+const HUB_CREATES = 'hub:creates';
+const HUB_WHALES = 'hub:whales';
+const HUB_GITHUB = 'hub:github_claims';
+const HUB_SOCIAL = 'hub:social_claims';
+
+// ---------------------------------------------------------------------------
 // Demo tickers & config
 // ---------------------------------------------------------------------------
 
@@ -18,6 +29,8 @@ const EMIT_INTERVAL_MS = 800;
 const NODE_TTL_MS = 30_000;
 /** Flush demo buffer into React state at this interval */
 const FLUSH_INTERVAL_MS = 1_000;
+/** Max active particle nodes */
+const MAX_PARTICLES = 300;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -30,7 +43,6 @@ function pick<T>(arr: T[]): T {
 }
 
 function randomSol(): number {
-  // Biased toward small trades with occasional whales
   const base = Math.random() * 2;
   return Math.random() > 0.92 ? base * 50 : base;
 }
@@ -43,10 +55,6 @@ function linkId(endpoint: string | PumpNode): string {
 // Hook
 // ---------------------------------------------------------------------------
 
-/**
- * Generates synthetic PumpFun-style graph data for demo / offline use.
- * Produces a stream of token launches and trade events with realistic timing.
- */
 export function useDemoData(): GraphData {
   const [graphData, setGraphData] = useState<GraphData>({
     nodes: [],
@@ -55,43 +63,74 @@ export function useDemoData(): GraphData {
 
   const nodeBuffer = useRef<PumpNode[]>([]);
   const linkBuffer = useRef<PumpLink[]>([]);
-  // Track live token mints so trades can reference them
-  const liveMints = useRef<string[]>([]);
 
   useEffect(() => {
-    // --- Emit synthetic events ---
     const emitTimer = setInterval(() => {
       const now = Date.now();
+      const roll = Math.random();
 
-      // ~30 % chance of a new token launch, otherwise a trade
-      if (Math.random() < 0.3 || liveMints.current.length === 0) {
-        const mint = `demo-${now}-${++_seq}`;
+      if (roll < 0.2) {
+        // ~20% — new coin creation
+        const id = `demo-create-${now}-${++_seq}`;
         const ticker = pick(DEMO_TICKERS);
-        liveMints.current.push(mint);
-        // Cap the live mint list so old entries rotate out
-        if (liveMints.current.length > 20) liveMints.current.shift();
-
         nodeBuffer.current.push({
-          id: mint,
+          id,
           type: 'token',
           ticker,
           timestamp: now,
         });
-      } else {
-        const mint = pick(liveMints.current);
-        const id = `dt-${now}-${++_seq}`;
+        linkBuffer.current.push({ source: id, target: HUB_CREATES });
+      } else if (roll < 0.55) {
+        // ~35% — buy trade
+        const id = `demo-buy-${now}-${++_seq}`;
+        const sol = randomSol();
+        const targetHub = sol > 1 ? HUB_WHALES : HUB_BUYS;
         nodeBuffer.current.push({
           id,
           type: 'trade',
-          isBuy: Math.random() > 0.35,
-          solAmount: randomSol(),
+          isBuy: true,
+          solAmount: sol,
           timestamp: now,
         });
-        linkBuffer.current.push({ source: id, target: mint });
+        linkBuffer.current.push({ source: id, target: targetHub });
+      } else if (roll < 0.85) {
+        // ~30% — sell trade
+        const id = `demo-sell-${now}-${++_seq}`;
+        const sol = randomSol();
+        const targetHub = sol > 1 ? HUB_WHALES : HUB_SELLS;
+        nodeBuffer.current.push({
+          id,
+          type: 'trade',
+          isBuy: false,
+          solAmount: sol,
+          timestamp: now,
+        });
+        linkBuffer.current.push({ source: id, target: targetHub });
+      } else if (roll < 0.925) {
+        // ~7.5% — github fee claim
+        const id = `demo-github-${now}-${++_seq}`;
+        nodeBuffer.current.push({
+          id,
+          type: 'trade',
+          isBuy: true,
+          solAmount: Math.random() * 0.5,
+          timestamp: now,
+        });
+        linkBuffer.current.push({ source: id, target: HUB_GITHUB });
+      } else {
+        // ~7.5% — social claim
+        const id = `demo-social-${now}-${++_seq}`;
+        nodeBuffer.current.push({
+          id,
+          type: 'trade',
+          isBuy: true,
+          solAmount: Math.random() * 0.3,
+          timestamp: now,
+        });
+        linkBuffer.current.push({ source: id, target: HUB_SOCIAL });
       }
     }, EMIT_INTERVAL_MS);
 
-    // --- Flush into React state & GC ---
     const flushTimer = setInterval(() => {
       const newNodes = nodeBuffer.current;
       const newLinks = linkBuffer.current;
@@ -106,15 +145,19 @@ export function useDemoData(): GraphData {
         const kept = new Set<string>();
         const nodes: PumpNode[] = [];
 
-        for (const n of allNodes) {
-          if (n.timestamp >= cutoff) {
-            kept.add(n.id);
-            nodes.push(n);
-          }
+        // Keep recent nodes, enforce cap
+        const sorted = allNodes
+          .filter((n) => n.timestamp >= cutoff)
+          .sort((a, b) => b.timestamp - a.timestamp)
+          .slice(0, MAX_PARTICLES);
+
+        for (const n of sorted) {
+          kept.add(n.id);
+          nodes.push(n);
         }
 
         const links = [...prev.links, ...newLinks].filter(
-          (l) => kept.has(linkId(l.source)) && kept.has(linkId(l.target)),
+          (l) => kept.has(linkId(l.source)),
         );
 
         return { nodes, links };

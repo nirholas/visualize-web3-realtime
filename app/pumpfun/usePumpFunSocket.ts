@@ -4,18 +4,27 @@ import { PumpNode, PumpLink, GraphData } from './types';
 const SOCKET_URL = 'wss://pumpportal.fun/api/data';
 const FLUSH_INTERVAL_MS = 1500;
 const GC_THRESHOLD_MS = 45 * 1000; // 45 seconds
-const MAX_ACTIVE_TOKENS = 15;
+const MAX_ACTIVE_TRADES = 300;
+
+// Hub IDs that trades route to
+const HUB_BUYS = 'hub:buys';
+const HUB_SELLS = 'hub:sells';
+const HUB_CREATES = 'hub:creates';
+const HUB_WHALES = 'hub:whales';
+
+/** Determine which hub(s) a trade should link to */
+function routeToHub(txType: string, solAmount: number): string {
+  if (txType === 'create') return HUB_CREATES;
+  // Whales get their own hub (>1 SOL)
+  if (solAmount > 1) return HUB_WHALES;
+  if (txType === 'buy') return HUB_BUYS;
+  return HUB_SELLS;
+}
 
 export function usePumpFunSocket() {
-  // The state that React actually uses to render the graph
   const [graphData, setGraphData] = useState<GraphData>({ nodes: [], links: [] });
-  
-  // Master state kept in a ref to avoid stale closures in the setInterval loop
   const masterDataRef = useRef<GraphData>({ nodes: [], links: [] });
-  
-  // The high-speed temporary buffer
   const bufferRef = useRef<GraphData>({ nodes: [], links: [] });
-  
   const wsRef = useRef<WebSocket | null>(null);
 
   // --- WEBSOCKET CONNECTION & MESSAGE PARSING ---
@@ -34,43 +43,43 @@ export function usePumpFunSocket() {
         const data = JSON.parse(event.data);
         const now = Date.now();
 
-        // Pumpportal payloads use 'mint' or 'tokenMint' as the unique token ID
         const mintId = data.mint || data.tokenMint;
         if (!mintId) return;
 
-        // Handle Token Launch
-        if (data.txType === 'create') {
-          const newToken: PumpNode = {
-            id: mintId,
+        const txType: string = data.txType ?? '';
+        const solAmount: number = data.solAmount ?? 0;
+        const hubTarget = routeToHub(txType, solAmount);
+
+        if (txType === 'create') {
+          // Coin creation → particle linked to COIN CREATIONS hub
+          const nodeId = `create-${mintId}-${now}`;
+          const newNode: PumpNode = {
+            id: nodeId,
             type: 'token',
-            ticker: data.symbol || 'UNKNOWN',
+            ticker: data.symbol || 'NEW',
             timestamp: now,
           };
-          bufferRef.current.nodes.push(newToken);
-        } 
-        // Handle Trades (Swarm Particles)
-        else if (data.txType === 'buy' || data.txType === 'sell') {
+          const newLink: PumpLink = {
+            source: nodeId,
+            target: hubTarget,
+          };
+          bufferRef.current.nodes.push(newNode);
+          bufferRef.current.links.push(newLink);
+        } else if (txType === 'buy' || txType === 'sell') {
           const tradeId = data.signature || `${mintId}-${now}-${Math.random()}`;
-          
           const newTrade: PumpNode = {
             id: tradeId,
             type: 'trade',
-            isBuy: data.txType === 'buy',
-            solAmount: data.solAmount || 0,
+            isBuy: txType === 'buy',
+            solAmount,
             timestamp: now,
           };
-          
           const newLink: PumpLink = {
             source: tradeId,
-            target: mintId, // Point the particle to the token
+            target: hubTarget,
           };
-
           bufferRef.current.nodes.push(newTrade);
           bufferRef.current.links.push(newLink);
-
-          // Touch the parent token's timestamp so it doesn't get garbage collected
-          const activeToken = masterDataRef.current.nodes.find(n => n.id === mintId && n.type === 'token');
-          if (activeToken) activeToken.timestamp = now;
         }
       } catch (err) {
         console.error('WebSocket parsing error:', err);
@@ -89,56 +98,45 @@ export function usePumpFunSocket() {
     const tick = setInterval(() => {
       let currentNodes = [...masterDataRef.current.nodes];
       let currentLinks = [...masterDataRef.current.links];
-      
+
       const bufferedNodes = bufferRef.current.nodes;
       const bufferedLinks = bufferRef.current.links;
-      
-      // 1. Drain the buffer into the master array
+
       if (bufferedNodes.length > 0) currentNodes = currentNodes.concat(bufferedNodes);
       if (bufferedLinks.length > 0) currentLinks = currentLinks.concat(bufferedLinks);
-      
-      // Reset the buffer instantly so it can catch new messages
+
       bufferRef.current = { nodes: [], links: [] };
 
       const now = Date.now();
-      
-      // 2. Identify active tokens (Time-To-Live Check)
-      const aliveTokens = currentNodes.filter(node => 
-        node.type === 'token' && (now - node.timestamp) < GC_THRESHOLD_MS
+
+      // GC: remove nodes older than threshold
+      const alive = currentNodes.filter(
+        (node) => now - node.timestamp < GC_THRESHOLD_MS,
       );
 
-      // 3. Enforce Hard Cap (Sort by newest, slice top 15)
-      aliveTokens.sort((a, b) => b.timestamp - a.timestamp);
-      const cappedTokens = aliveTokens.slice(0, MAX_ACTIVE_TOKENS);
-      const activeTokenIds = new Set(cappedTokens.map(t => t.id));
+      // Hard cap: keep most recent trades
+      alive.sort((a, b) => b.timestamp - a.timestamp);
+      const capped = alive.slice(0, MAX_ACTIVE_TRADES);
+      const activeIds = new Set(capped.map((n) => n.id));
 
-      // 4. Cascading Deletion (Remove links & trades belonging to dead tokens)
-      const activeLinks = currentLinks.filter(link => {
-        // D3 physics mutates strings into objects, so we handle both
-        const targetId = typeof link.target === 'object' ? (link.target as PumpNode).id : link.target;
-        return activeTokenIds.has(targetId);
+      // Clean up orphaned links
+      const activeLinks = currentLinks.filter((link) => {
+        const srcId =
+          typeof link.source === 'object'
+            ? (link.source as PumpNode).id
+            : link.source;
+        return activeIds.has(srcId);
       });
 
-      const activeTradeIds = new Set(activeLinks.map(link => 
-        typeof link.source === 'object' ? (link.source as PumpNode).id : link.source
-      ));
-
-      const activeTrades = currentNodes.filter(node => 
-        node.type === 'trade' && activeTradeIds.has(node.id)
-      );
-
-      // 5. Finalize state and trigger ONE React render
       masterDataRef.current = {
-        nodes: [...cappedTokens, ...activeTrades],
-        links: activeLinks
+        nodes: capped,
+        links: activeLinks,
       };
 
-      // D3 modifies arrays in place, so we map new arrays to force React to notice the update
       setGraphData({
         nodes: [...masterDataRef.current.nodes],
-        links: [...masterDataRef.current.links]
+        links: [...masterDataRef.current.links],
       });
-
     }, FLUSH_INTERVAL_MS);
 
     return () => clearInterval(tick);
