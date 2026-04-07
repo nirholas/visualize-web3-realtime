@@ -47,9 +47,10 @@ function getProvider(): Provider {
 // ---------------------------------------------------------------------------
 
 const toolDefs = getToolDefinitions();
+type GroqCreateParams = Parameters<Groq['chat']['completions']['create']>[0];
 
 // OpenAI-compatible format (used by Groq)
-const groqTools: Groq.Chat.Completions.ChatCompletionTool[] = toolDefs.map((t) => ({
+const groqTools: NonNullable<GroqCreateParams['tools']> = toolDefs.map((t) => ({
   type: 'function' as const,
   function: {
     name: t.name,
