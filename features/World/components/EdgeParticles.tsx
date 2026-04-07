@@ -120,12 +120,18 @@ export const EdgeParticles = memo(({ sim, isDark = true }: { sim: ForceGraphSimu
       tempObj.updateMatrix();
       mesh.setMatrixAt(i, tempObj.matrix);
 
-      // Color from the hub node's chain color
-      const hubNode = src.type === 'hub' ? src : tgt.type === 'hub' ? tgt : null;
-      if (hubNode?.color) {
-        tempColor.set(hubNode.color);
+      // Color particles by action type of the agent node
+      const agentNode = src.type === 'agent' ? src : tgt.type === 'agent' ? tgt : null;
+      if (agentNode?.isWhale) {
+        tempColor.set('#3b82f6'); // blue for whales
+      } else if (agentNode?.lastAction === 'buy') {
+        tempColor.set('#22c55e'); // green for buys
+      } else if (agentNode?.lastAction === 'sell') {
+        tempColor.set('#ef4444'); // red for sells
+      } else if (agentNode?.lastAction === 'create') {
+        tempColor.set(isDark ? '#1a1a1a' : '#0a0a0a'); // black for creates
       } else {
-        tempColor.set(isDark ? '#7dd3fc' : '#3b82f6');
+        tempColor.set(isDark ? '#64748b' : '#94a3b8'); // grey fallback
       }
       mesh.setColorAt(i, tempColor);
     }
