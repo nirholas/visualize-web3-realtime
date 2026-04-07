@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { PumpGraphData } from './types';
+import type { GraphData } from './types';
 
 export interface GraphMetrics {
   activeTokens: number;
@@ -11,7 +11,7 @@ export interface GraphMetrics {
  * Derives real-time metrics from the current PumpFun graph state.
  * Recalculates whenever graphData changes (i.e. when nodes are added or GC'd).
  */
-export function useGraphMetrics(graphData: PumpGraphData): GraphMetrics {
+export function useGraphMetrics(graphData: GraphData): GraphMetrics {
   return useMemo(() => {
     let activeTokens = 0;
     let liveSwaps = 0;

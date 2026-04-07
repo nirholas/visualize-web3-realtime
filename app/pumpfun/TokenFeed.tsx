@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import type { PumpNode } from './types';
 
 interface TokenFeedProps {
@@ -8,6 +9,13 @@ interface TokenFeedProps {
 }
 
 export function TokenFeed({ tokens }: TokenFeedProps) {
+  // Tick every second so relative timestamps stay fresh
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => tick((n) => n + 1), 1_000);
+    return () => clearInterval(id);
+  }, []);
+
   if (tokens.length === 0) return null;
 
   return (
@@ -23,15 +31,20 @@ export function TokenFeed({ tokens }: TokenFeedProps) {
           Live Token Feed
         </h3>
 
-        {tokens.map((token) => (
+        {tokens.map((token, i) => (
           <div
             key={token.id}
             className={
               'flex items-center gap-2 px-3 py-2 rounded-lg ' +
-              'bg-white/5 hover:bg-white/10 transition-colors'
+              'bg-white/5 hover:bg-white/10 transition-colors ' +
+              'animate-[fadeSlideIn_0.3s_ease-out_both]'
             }
+            style={{ animationDelay: `${i * 60}ms` }}
           >
-            <span className="text-xs text-emerald-400" aria-hidden="true">●</span>
+            <span className="relative flex h-2 w-2" aria-hidden="true">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+            </span>
             <span className="font-mono text-xs text-white/80 truncate">
               New Launch:{' '}
               <span className="text-emerald-300 font-semibold">

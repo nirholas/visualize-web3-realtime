@@ -1,22 +1,6 @@
-'use client';
+// Re-export from the canonical location in app/pumpfun/
+export { default, default as PumpFunGraph } from '@/app/pumpfun/PumpFunGraph';
 
-import React, { forwardRef, memo, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
-import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Environment, CameraControls } from '@react-three/drei';
-import CameraControlsImpl from 'camera-controls';
-import * as THREE from 'three';
-import {
-  forceSimulation,
-  forceLink,
-  forceManyBody,
-  forceCenter,
-  forceCollide,
-  type SimulationNodeDatum3D,
-} from 'd3-force-3d';
-import type { SimulationLinkDatum } from 'd3-force';
-import { PostProcessing } from '@web3viz/react-graph';
-
-import type { PumpFunNode, PumpFunLink, PumpFunGraphData } from '@/hooks/usePumpFunSocket';
 
 // ---------------------------------------------------------------------------
 // Constants
