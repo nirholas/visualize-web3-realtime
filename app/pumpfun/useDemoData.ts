@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { PumpGraphData, PumpLink, PumpNode } from './types';
+import type { GraphData, PumpLink, PumpNode } from './types';
 
 // ---------------------------------------------------------------------------
 // Demo tickers & config
@@ -35,6 +35,10 @@ function randomSol(): number {
   return Math.random() > 0.92 ? base * 50 : base;
 }
 
+function linkId(endpoint: string | PumpNode): string {
+  return typeof endpoint === 'string' ? endpoint : endpoint.id;
+}
+
 // ---------------------------------------------------------------------------
 // Hook
 // ---------------------------------------------------------------------------
@@ -43,11 +47,8 @@ function randomSol(): number {
  * Generates synthetic PumpFun-style graph data for demo / offline use.
  * Produces a stream of token launches and trade events with realistic timing.
  */
-export function useDemoData(): {
-  graphData: PumpGraphData;
-  connected: boolean;
-} {
-  const [graphData, setGraphData] = useState<PumpGraphData>({
+export function useDemoData(): GraphData {
+  const [graphData, setGraphData] = useState<GraphData>({
     nodes: [],
     links: [],
   });
@@ -113,7 +114,7 @@ export function useDemoData(): {
         }
 
         const links = [...prev.links, ...newLinks].filter(
-          (l) => kept.has(l.source) && kept.has(l.target),
+          (l) => kept.has(linkId(l.source)) && kept.has(linkId(l.target)),
         );
 
         return { nodes, links };
@@ -126,6 +127,5 @@ export function useDemoData(): {
     };
   }, []);
 
-  // Demo mode always reports as "connected"
-  return { graphData, connected: true };
+  return graphData;
 }

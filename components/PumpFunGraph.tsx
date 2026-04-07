@@ -8,27 +8,27 @@ import { BottomHUD } from '@/app/pumpfun/BottomHUD';
 import { TokenFeed } from '@/app/pumpfun/TokenFeed';
 import { PumpForceGraph } from '@/app/pumpfun/PumpForceGraph';
 
-/** Seconds to wait for WebSocket before falling back to demo data */
-const WS_TIMEOUT_S = 5;
+/** Seconds to wait for live data before falling back to demo */
+const FALLBACK_TIMEOUT_MS = 5_000;
 
 export default function PumpFunGraph() {
-  const live = usePumpFunSocket();
-  const demo = useDemoData();
+  const liveData = usePumpFunSocket();
+  const demoData = useDemoData();
 
-  // Fall back to demo data if WebSocket hasn't connected after timeout
+  // Fall back to demo data if no live nodes arrive after timeout
   const [useDemo, setUseDemo] = useState(false);
   useEffect(() => {
-    if (live.connected) {
+    if (liveData.nodes.length > 0) {
       setUseDemo(false);
       return;
     }
     const id = setTimeout(() => {
-      if (!live.connected) setUseDemo(true);
-    }, WS_TIMEOUT_S * 1000);
+      if (liveData.nodes.length === 0) setUseDemo(true);
+    }, FALLBACK_TIMEOUT_MS);
     return () => clearTimeout(id);
-  }, [live.connected]);
+  }, [liveData.nodes.length]);
 
-  const { graphData, connected } = useDemo ? demo : live;
+  const graphData = useDemo ? demoData : liveData;
   const metrics = useGraphMetrics(graphData);
 
   const recentTokens = useMemo(
@@ -39,6 +39,8 @@ export default function PumpFunGraph() {
         .slice(0, 5),
     [graphData],
   );
+
+  const isLive = !useDemo && graphData.nodes.length > 0;
 
   return (
     <>
@@ -53,10 +55,10 @@ export default function PumpFunGraph() {
         <div className="pointer-events-auto absolute left-4 top-4 flex items-center gap-2 rounded-full bg-black/60 px-3 py-1.5 text-xs text-white/70 backdrop-blur">
           <span
             className={`inline-block h-2 w-2 rounded-full ${
-              connected ? 'bg-green-400' : 'bg-red-500'
+              graphData.nodes.length > 0 ? 'bg-green-400' : 'bg-red-500'
             }`}
           />
-          {connected ? (useDemo ? 'Demo' : 'Live') : 'Connecting…'}
+          {isLive ? 'Live' : useDemo ? 'Demo' : 'Connecting…'}
         </div>
 
         {/* Node / link count (dev HUD) */}
