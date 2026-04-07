@@ -1728,6 +1728,7 @@ export const PumpDesktopShell = memo<PumpDesktopShellProps>((props) => {
   const {
     metrics,
     recentTokens,
+    recentTrades = [],
     isLive,
     darkMode,
     onToggleTheme,
@@ -1749,7 +1750,7 @@ export const PumpDesktopShell = memo<PumpDesktopShellProps>((props) => {
     stats: { title: 'Stats', iconKey: 'stats' },
     trades: { title: 'Trades', iconKey: 'trades' },
     dashboard: { title: 'Dashboard', iconKey: 'dashboard' },
-    vanity: { title: 'Vanity', iconKey: 'vanity' },
+    vanity: { title: 'Vanity Gen', iconKey: 'vanity' },
   };
 
   const renderContent = useCallback(
@@ -1757,6 +1758,17 @@ export const PumpDesktopShell = memo<PumpDesktopShellProps>((props) => {
       switch (id) {
         case 'tokenfeed':
           return <TokenFeedContent tokens={recentTokens} />;
+        case 'trades':
+          return <TradesFeedContent trades={recentTrades} metrics={metrics} />;
+        case 'dashboard':
+          return (
+            <DashboardContent
+              metrics={metrics}
+              recentTokens={recentTokens}
+              recentTrades={recentTrades}
+              isLive={isLive}
+            />
+          );
         case 'stats':
           return (
             <StatsContent
@@ -1765,11 +1777,13 @@ export const PumpDesktopShell = memo<PumpDesktopShellProps>((props) => {
               linkCount={linkCount}
             />
           );
+        case 'vanity':
+          return <VanityContent />;
         default:
           return null;
       }
     },
-    [recentTokens, metrics, nodeCount, linkCount],
+    [recentTokens, recentTrades, metrics, isLive, nodeCount, linkCount],
   );
 
   return (
