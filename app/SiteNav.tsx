@@ -15,6 +15,7 @@ const NAV_LINKS: { href: string; label: string }[] = [
   { href: '/plugins', label: 'Plugins' },
   { href: '/playground', label: 'Playground' },
   { href: '/benchmarks', label: 'Benchmarks' },
+  { href: '/pumpfun', label: 'PumpFun Live' },
 ];
 
 export const SiteNav = memo(function SiteNav() {
