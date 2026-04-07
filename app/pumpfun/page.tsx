@@ -32,12 +32,7 @@ export default function PumpFunPage() {
     <div className="relative h-screen w-screen overflow-hidden bg-[#050505]">
       {/* 3D canvas — fixed at z-index 0 */}
       <div className="absolute inset-0 z-0">
-        {/* Epic 2 will mount the PumpFunGraph force graph here */}
-        <div className="flex h-full w-full items-center justify-center">
-          <p className="text-sm text-white/20">
-            3D canvas will render here
-          </p>
-        </div>
+        <PumpFunGraph graphData={graphData} />
       </div>
 
       {/* HUD Overlay — pointer-events-none so clicks pass through to canvas */}

@@ -28,7 +28,7 @@ const PostProcessing = memo<PostProcessingProps>(({
   if (!enabled || gl.getContext().isContextLost()) return null;
 
   return (
-    <EffectComposer multisampling={0} depthBuffer stencilBuffer={false} frameBufferType={HalfFloatType}>
+    <EffectComposer multisampling={0} stencilBuffer={false} frameBufferType={HalfFloatType}>
       {/* SMAA replaces hardware MSAA — better quality, compatible with post-processing */}
       <SMAA />
 
