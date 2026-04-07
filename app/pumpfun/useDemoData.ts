@@ -21,6 +21,20 @@ const DEMO_TICKERS = [
   'SMOG', 'JITO', 'TNSR', 'KMNO', 'DRIFT', 'ZEUS', 'PARCL',
 ];
 
+const DEMO_NAMES: Record<string, string> = {
+  WIF: 'dogwifhat', BONK: 'Bonk', POPCAT: 'Popcat', MEW: 'cat in a dogs world',
+  BOME: 'BOOK OF MEME', SLERF: 'Slerf', MYRO: 'Myro', WEN: 'Wen',
+  SMOG: 'Smog', JITO: 'Jito', TNSR: 'Tensor', KMNO: 'Kamino',
+  DRIFT: 'Drift Protocol', ZEUS: 'Zeus Network', PARCL: 'Parcl',
+};
+
+function randomMint(): string {
+  const chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+  let out = '';
+  for (let i = 0; i < 44; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
+
 /** Interval between synthetic events (ms) */
 const EMIT_INTERVAL_MS = 800;
 /** Nodes older than this are garbage-collected */
@@ -75,6 +89,10 @@ export function useDemoData(): GraphData {
           id,
           type: 'token',
           ticker,
+          name: DEMO_NAMES[ticker] || ticker,
+          mint: randomMint(),
+          marketCapSol: Math.random() * 50,
+          category: 'creates',
           timestamp: now,
         });
         linkBuffer.current.push({ source: id, target: HUB_CREATES });
@@ -83,11 +101,15 @@ export function useDemoData(): GraphData {
         const id = `demo-buy-${now}-${++_seq}`;
         const sol = randomSol();
         const targetHub = sol > 1 ? HUB_WHALES : HUB_BUYS;
+        const ticker = pick(DEMO_TICKERS);
         nodeBuffer.current.push({
           id,
           type: 'trade',
           isBuy: true,
           solAmount: sol,
+          ticker,
+          mint: randomMint(),
+          category: sol > 1 ? 'whales' : 'buys',
           timestamp: now,
         });
         linkBuffer.current.push({ source: id, target: targetHub });
@@ -96,11 +118,15 @@ export function useDemoData(): GraphData {
         const id = `demo-sell-${now}-${++_seq}`;
         const sol = randomSol();
         const targetHub = sol > 1 ? HUB_WHALES : HUB_SELLS;
+        const ticker = pick(DEMO_TICKERS);
         nodeBuffer.current.push({
           id,
           type: 'trade',
           isBuy: false,
           solAmount: sol,
+          ticker,
+          mint: randomMint(),
+          category: sol > 1 ? 'whales' : 'sells',
           timestamp: now,
         });
         linkBuffer.current.push({ source: id, target: targetHub });

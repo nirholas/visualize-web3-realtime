@@ -68,6 +68,15 @@ export default function PumpFunGraph() {
     [graphData],
   );
 
+  const recentTrades = useMemo(
+    () =>
+      graphData.nodes
+        .filter((n) => n.type === 'trade')
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(0, 50),
+    [graphData],
+  );
+
   const isLive = !useDemo && graphData.nodes.length > 0;
 
   return (
@@ -81,6 +90,7 @@ export default function PumpFunGraph() {
       <PumpDesktopShell
         metrics={metrics}
         recentTokens={recentTokens}
+        recentTrades={recentTrades}
         isLive={isLive}
         darkMode={darkMode}
         onToggleTheme={toggleTheme}

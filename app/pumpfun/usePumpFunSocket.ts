@@ -109,6 +109,11 @@ export function usePumpFunSocket() {
         if (eventType === 'migrate') return;
 
         const hubTarget = routeToHub(eventType, solAmount);
+        // Determine category for particle coloring
+        const category = eventType === 'create' ? 'creates' as const
+          : solAmount >= WHALE_THRESHOLD_SOL ? 'whales' as const
+          : eventType === 'buy' ? 'buys' as const
+          : 'sells' as const;
 
         if (eventType === 'create') {
           // Coin creation particle
@@ -117,7 +122,13 @@ export function usePumpFunSocket() {
             id: nodeId,
             type: 'token',
             ticker: msg.symbol || msg.name || 'NEW',
+            name: msg.name || undefined,
+            mint: mintId,
+            creator: msg.traderPublicKey || msg.creator || undefined,
+            marketCapSol: msg.marketCapSol != null ? Number(msg.marketCapSol) : undefined,
+            signature: msg.signature || undefined,
             solAmount,
+            category,
             timestamp: now,
           };
           bufferRef.current.nodes.push(newNode);
@@ -134,6 +145,9 @@ export function usePumpFunSocket() {
             isBuy: eventType === 'buy',
             solAmount,
             ticker: msg.symbol || msg.name,
+            mint: mintId,
+            signature: msg.signature || undefined,
+            category,
             timestamp: now,
           };
           bufferRef.current.nodes.push(newTrade);

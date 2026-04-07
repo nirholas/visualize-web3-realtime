@@ -7,6 +7,9 @@ import {
   LiveFeedIcon,
   StatsIcon,
   StartMenuIcon,
+  TimelineIcon,
+  SourcesIcon,
+  ShareIcon,
 } from '@/features/World/desktop/AppIcons';
 import type { GraphMetrics } from '../useGraphMetrics';
 import type { PumpNode } from '../types';
@@ -15,7 +18,7 @@ import type { PumpNode } from '../types';
 /*  Types & Constants                                                  */
 /* ================================================================== */
 
-type PumpWindowId = 'tokenfeed' | 'stats';
+type PumpWindowId = 'tokenfeed' | 'stats' | 'trades' | 'dashboard' | 'vanity';
 
 interface PumpWindowState {
   id: PumpWindowId;
@@ -41,10 +44,28 @@ const PUMP_APPS: PumpAppDef[] = [
     id: 'tokenfeed',
     label: 'Token Feed',
     iconKey: 'tokenfeed',
-    defaultSize: { width: 300, height: 380 },
+    defaultSize: { width: 340, height: 420 },
     defaultPosition: { x: 60, y: 80 },
     pinned: true,
     description: 'Live token launches',
+  },
+  {
+    id: 'trades',
+    label: 'Trades',
+    iconKey: 'trades',
+    defaultSize: { width: 380, height: 420 },
+    defaultPosition: { x: 420, y: 80 },
+    pinned: true,
+    description: 'Live buy/sell feed',
+  },
+  {
+    id: 'dashboard',
+    label: 'Dashboard',
+    iconKey: 'dashboard',
+    defaultSize: { width: 440, height: 260 },
+    defaultPosition: { x: 200, y: 260 },
+    pinned: false,
+    description: 'Overview stats & analytics',
   },
   {
     id: 'stats',
@@ -52,8 +73,17 @@ const PUMP_APPS: PumpAppDef[] = [
     iconKey: 'stats',
     defaultSize: { width: 500, height: 140 },
     defaultPosition: { x: 250, y: 100 },
-    pinned: true,
+    pinned: false,
     description: 'Volume & metrics',
+  },
+  {
+    id: 'vanity',
+    label: 'Vanity Gen',
+    iconKey: 'vanity',
+    defaultSize: { width: 320, height: 280 },
+    defaultPosition: { x: 500, y: 200 },
+    pinned: false,
+    description: 'Vanity address generator',
   },
 ];
 
@@ -61,11 +91,14 @@ const PUMP_APP_MAP = Object.fromEntries(
   PUMP_APPS.map((a) => [a.id, a]),
 ) as Record<PumpWindowId, PumpAppDef>;
 
-const ALL_PUMP_IDS: PumpWindowId[] = ['tokenfeed', 'stats'];
+const ALL_PUMP_IDS: PumpWindowId[] = ['tokenfeed', 'trades', 'dashboard', 'stats', 'vanity'];
 
 const ICON_MAP: Record<string, React.FC> = {
   tokenfeed: LiveFeedIcon,
+  trades: TimelineIcon,
+  dashboard: SourcesIcon,
   stats: StatsIcon,
+  vanity: ShareIcon,
 };
 
 function getPumpIcon(key: string): React.FC {
@@ -1052,6 +1085,11 @@ function formatAge(timestamp: number): string {
   return `${Math.floor(minutes / 60)}h`;
 }
 
+function shortenMint(mint: string): string {
+  if (mint.length <= 10) return mint;
+  return `${mint.slice(0, 4)}…${mint.slice(-4)}`;
+}
+
 const TokenFeedContent = memo<{ tokens: PumpNode[] }>(({ tokens }) => {
   const [, tick] = useState(0);
   useEffect(() => {
@@ -1097,6 +1135,7 @@ const TokenFeedContent = memo<{ tokens: PumpNode[] }>(({ tokens }) => {
               display: 'inline-flex',
               width: 8,
               height: 8,
+              flexShrink: 0,
             }}
           >
             <span
@@ -1121,28 +1160,65 @@ const TokenFeedContent = memo<{ tokens: PumpNode[] }>(({ tokens }) => {
               }}
             />
           </span>
-          <span
+          <div
             style={{
               fontFamily: "'IBM Plex Mono', monospace",
               fontSize: 11,
               color: 'rgba(255,255,255,0.8)',
               overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
               flex: 1,
+              minWidth: 0,
             }}
           >
-            New Launch:{' '}
-            <span style={{ color: '#4ade80', fontWeight: 600 }}>
-              ${token.ticker ?? 'UNKNOWN'}
-            </span>
-          </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span
+                style={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {token.name ? (
+                  <>
+                    {token.name}{' '}
+                    <span style={{ color: '#4ade80', fontWeight: 600 }}>
+                      ${token.ticker ?? 'UNKNOWN'}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    New Launch:{' '}
+                    <span style={{ color: '#4ade80', fontWeight: 600 }}>
+                      ${token.ticker ?? 'UNKNOWN'}
+                    </span>
+                  </>
+                )}
+              </span>
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                gap: 8,
+                fontSize: 9,
+                color: 'rgba(255,255,255,0.35)',
+                marginTop: 2,
+              }}
+            >
+              {token.mint && <span>{shortenMint(token.mint)}</span>}
+              {token.marketCapSol != null && (
+                <span style={{ color: '#facc15' }}>
+                  {token.marketCapSol.toFixed(1)} SOL
+                </span>
+              )}
+            </div>
+          </div>
           <span
             style={{
               fontSize: 10,
               color: 'rgba(255,255,255,0.3)',
               fontFamily: "'IBM Plex Mono', monospace",
               fontVariantNumeric: 'tabular-nums',
+              flexShrink: 0,
             }}
           >
             {formatAge(token.timestamp)}
@@ -1153,6 +1229,409 @@ const TokenFeedContent = memo<{ tokens: PumpNode[] }>(({ tokens }) => {
   );
 });
 TokenFeedContent.displayName = 'TokenFeedContent';
+
+/* ================================================================== */
+/*  Window Content: Trades Feed                                        */
+/* ================================================================== */
+
+const TradesFeedContent = memo<{ trades: PumpNode[]; metrics: GraphMetrics }>(
+  ({ trades, metrics }) => {
+    const [, tick] = useState(0);
+    useEffect(() => {
+      const id = setInterval(() => tick((n) => n + 1), 1_000);
+      return () => clearInterval(id);
+    }, []);
+
+    const buys = trades.filter((t) => t.isBuy === true);
+    const sells = trades.filter((t) => t.isBuy === false);
+    const whales = trades.filter(
+      (t) => t.solAmount != null && t.solAmount >= 1,
+    );
+    const volume = trades.reduce((s, t) => s + (t.solAmount ?? 0), 0);
+
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          fontFamily: "'IBM Plex Mono', monospace",
+          height: '100%',
+        }}
+      >
+        {/* Stats bar */}
+        <div
+          style={{
+            display: 'flex',
+            gap: 12,
+            padding: '8px 12px',
+            fontSize: 9,
+            borderBottom: '1px solid rgba(255,255,255,0.06)',
+            color: 'rgba(255,255,255,0.5)',
+            flexWrap: 'wrap',
+          }}
+        >
+          <span>
+            <span style={{ color: '#4ade80' }}>▲</span> {buys.length}
+          </span>
+          <span>
+            <span style={{ color: '#f87171' }}>▼</span> {sells.length}
+          </span>
+          <span>🐋 {whales.length}</span>
+          <span style={{ color: '#facc15' }}>{volume.toFixed(1)} SOL</span>
+        </div>
+        {/* Trade rows */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 1,
+            padding: 6,
+          }}
+        >
+          {trades.length === 0 ? (
+            <div
+              style={{
+                padding: 16,
+                color: '#64748b',
+                fontSize: 11,
+                textAlign: 'center',
+              }}
+            >
+              Waiting for trades...
+            </div>
+          ) : (
+            trades.slice(0, 40).map((t, i) => {
+              const isBuy = t.isBuy === true;
+              const isWhale =
+                t.solAmount != null && t.solAmount >= 1;
+              const dotColor = isBuy ? '#4ade80' : '#f87171';
+              return (
+                <div
+                  key={t.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '5px 8px',
+                    borderRadius: 6,
+                    background: 'rgba(255,255,255,0.03)',
+                    animation: 'winOpen 0.25s ease-out both',
+                    animationDelay: `${i * 30}ms`,
+                    fontSize: 10,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      background: dotColor,
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span
+                    style={{ color: dotColor, fontWeight: 600, minWidth: 28 }}
+                  >
+                    {isBuy ? 'BUY' : 'SELL'}
+                  </span>
+                  <span
+                    style={{
+                      color: 'rgba(255,255,255,0.7)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      flex: 1,
+                    }}
+                  >
+                    ${t.ticker ?? '???'}
+                  </span>
+                  {t.solAmount != null && (
+                    <span
+                      style={{
+                        color: 'rgba(255,255,255,0.5)',
+                        fontVariantNumeric: 'tabular-nums',
+                      }}
+                    >
+                      {t.solAmount.toFixed(2)} SOL
+                    </span>
+                  )}
+                  {isWhale && (
+                    <span style={{ fontSize: 11 }} title="Whale trade">
+                      🐋
+                    </span>
+                  )}
+                  <span
+                    style={{
+                      color: 'rgba(255,255,255,0.25)',
+                      fontVariantNumeric: 'tabular-nums',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {formatAge(t.timestamp)}
+                  </span>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    );
+  },
+);
+TradesFeedContent.displayName = 'TradesFeedContent';
+
+/* ================================================================== */
+/*  Window Content: Dashboard                                          */
+/* ================================================================== */
+
+const DashboardContent = memo<{
+  metrics: GraphMetrics;
+  recentTokens: PumpNode[];
+  recentTrades: PumpNode[];
+  isLive: boolean;
+}>(({ metrics, recentTokens, recentTrades, isLive }) => {
+  const whaleCount = recentTrades.filter(
+    (t) => t.solAmount != null && t.solAmount >= 1,
+  ).length;
+  const buyCount = recentTrades.filter((t) => t.isBuy === true).length;
+  const sellCount = recentTrades.filter((t) => t.isBuy === false).length;
+
+  const cards: { label: string; value: string; color: string }[] = [
+    {
+      label: 'Status',
+      value: isLive ? '● LIVE' : '○ DEMO',
+      color: isLive ? '#4ade80' : '#facc15',
+    },
+    {
+      label: 'Launches',
+      value: String(metrics.activeTokens),
+      color: '#38bdf8',
+    },
+    {
+      label: 'Volume',
+      value: `${formatVolume(metrics.totalVolume)} SOL`,
+      color: '#facc15',
+    },
+    {
+      label: 'Swaps',
+      value: String(metrics.liveSwaps),
+      color: '#c084fc',
+    },
+    {
+      label: 'Buys / Sells',
+      value: `${buyCount} / ${sellCount}`,
+      color: '#4ade80',
+    },
+    {
+      label: 'Whales',
+      value: String(whaleCount),
+      color: '#fb923c',
+    },
+  ];
+
+  return (
+    <div
+      style={{
+        padding: 12,
+        fontFamily: "'IBM Plex Mono', monospace",
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 10,
+      }}
+    >
+      {/* Stat cards grid */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 8,
+        }}
+      >
+        {cards.map((c) => (
+          <div
+            key={c.label}
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              borderRadius: 8,
+              padding: '10px 12px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 4,
+            }}
+          >
+            <span
+              style={{
+                fontSize: 8,
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                color: '#64748b',
+              }}
+            >
+              {c.label}
+            </span>
+            <span
+              style={{
+                fontSize: 14,
+                fontWeight: 600,
+                color: c.color,
+                fontVariantNumeric: 'tabular-nums',
+              }}
+            >
+              {c.value}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Recent tokens mini list */}
+      <div
+        style={{
+          borderTop: '1px solid rgba(255,255,255,0.06)',
+          paddingTop: 8,
+        }}
+      >
+        <span
+          style={{
+            fontSize: 8,
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            color: '#64748b',
+          }}
+        >
+          Latest Launches
+        </span>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2,
+            marginTop: 4,
+          }}
+        >
+          {recentTokens.slice(0, 3).map((t) => (
+            <div
+              key={t.id}
+              style={{
+                fontSize: 10,
+                color: 'rgba(255,255,255,0.6)',
+                display: 'flex',
+                gap: 6,
+              }}
+            >
+              <span style={{ color: '#4ade80', fontWeight: 600 }}>
+                ${t.ticker ?? '???'}
+              </span>
+              {t.name && (
+                <span
+                  style={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {t.name}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+});
+DashboardContent.displayName = 'DashboardContent';
+
+/* ================================================================== */
+/*  Window Content: Vanity Generator                                   */
+/* ================================================================== */
+
+const VanityContent = memo(() => (
+  <div
+    style={{
+      padding: 16,
+      fontFamily: "'IBM Plex Mono', monospace",
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 12,
+    }}
+  >
+    <div
+      style={{
+        background: 'rgba(255,255,255,0.04)',
+        borderRadius: 8,
+        padding: 12,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 8,
+      }}
+    >
+      <span
+        style={{
+          fontSize: 12,
+          fontWeight: 600,
+          color: '#e2e8f0',
+        }}
+      >
+        Vanity Address Generator
+      </span>
+      <span
+        style={{
+          fontSize: 10,
+          color: '#94a3b8',
+          lineHeight: 1.5,
+        }}
+      >
+        Generate Solana keypairs with custom prefix or suffix patterns.
+        Runs client-side using Web Crypto.
+      </span>
+    </div>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 6,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 9,
+          textTransform: 'uppercase',
+          letterSpacing: '0.1em',
+          color: '#64748b',
+        }}
+      >
+        Example Patterns
+      </div>
+      {['pump...', 'SOL...', '...moon'].map((p) => (
+        <div
+          key={p}
+          style={{
+            background: 'rgba(255,255,255,0.03)',
+            borderRadius: 6,
+            padding: '6px 10px',
+            fontSize: 11,
+            color: '#c084fc',
+            fontFamily: "'IBM Plex Mono', monospace",
+          }}
+        >
+          {p}
+        </div>
+      ))}
+    </div>
+    <span
+      style={{
+        fontSize: 9,
+        color: '#64748b',
+        textAlign: 'center',
+      }}
+    >
+      Full vanity generator coming soon
+    </span>
+  </div>
+));
+VanityContent.displayName = 'VanityContent';
 
 /* ================================================================== */
 /*  Window Content: Stats HUD                                          */
@@ -1237,6 +1716,7 @@ StatCell.displayName = 'StatCell';
 export interface PumpDesktopShellProps {
   metrics: GraphMetrics;
   recentTokens: PumpNode[];
+  recentTrades?: PumpNode[];
   isLive: boolean;
   darkMode: boolean;
   onToggleTheme: () => void;
@@ -1267,6 +1747,9 @@ export const PumpDesktopShell = memo<PumpDesktopShellProps>((props) => {
   const windowMeta: Record<PumpWindowId, { title: string; iconKey: string }> = {
     tokenfeed: { title: 'Token Feed', iconKey: 'tokenfeed' },
     stats: { title: 'Stats', iconKey: 'stats' },
+    trades: { title: 'Trades', iconKey: 'trades' },
+    dashboard: { title: 'Dashboard', iconKey: 'dashboard' },
+    vanity: { title: 'Vanity', iconKey: 'vanity' },
   };
 
   const renderContent = useCallback(

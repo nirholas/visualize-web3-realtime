@@ -34,6 +34,7 @@ interface SimNode extends SimulationNodeDatum3D {
   isBuy?: boolean;
   solAmount?: number;
   label?: string;
+  category?: string;
   timestamp: number;
   fx?: number | null;
   fy?: number | null;
@@ -53,10 +54,13 @@ interface ThemeColors {
   background: THREE.Color;
   edge: THREE.Color;
   edgeOpacity: number;
-  central: THREE.Color;
-  buy: THREE.Color;
-  sell: THREE.Color;
-  token: THREE.Color;
+  hub: THREE.Color;         // monochrome for all hub/central nodes
+  hubGlow: THREE.Color;     // glow color for hub nodes
+  // Particle swarm colors (by category)
+  buy: THREE.Color;         // green
+  sell: THREE.Color;        // red
+  create: THREE.Color;      // black/dark
+  whale: THREE.Color;       // blue
   labelBg: string;
   labelText: string;
   labelShadow: string;
@@ -68,10 +72,12 @@ const DARK_THEME: ThemeColors = {
   background: new THREE.Color('#050505'),
   edge: new THREE.Color('#ffffff'),
   edgeOpacity: 0.25,
-  central: new THREE.Color('#a855f7'),
-  buy: new THREE.Color('#4ade80'),
-  sell: new THREE.Color('#f87171'),
-  token: new THREE.Color('#222222'), // black/dark for creates
+  hub: new THREE.Color('#cccccc'),       // monochrome light grey
+  hubGlow: new THREE.Color('#999999'),
+  buy: new THREE.Color('#4ade80'),       // green
+  sell: new THREE.Color('#f87171'),      // red
+  create: new THREE.Color('#666666'),    // dark grey (visible on dark bg)
+  whale: new THREE.Color('#3b82f6'),     // blue
   labelBg: '#1a1a1a',
   labelText: '#ffffff',
   labelShadow: '0 2px 12px rgba(0,0,0,0.5)',
@@ -83,10 +89,12 @@ const LIGHT_THEME: ThemeColors = {
   background: new THREE.Color('#f8f9fa'),
   edge: new THREE.Color('#000000'),
   edgeOpacity: 0.18,
-  central: new THREE.Color('#7c3aed'),
-  buy: new THREE.Color('#16a34a'),
-  sell: new THREE.Color('#dc2626'),
-  token: new THREE.Color('#111111'), // black for creates
+  hub: new THREE.Color('#444444'),       // monochrome dark grey
+  hubGlow: new THREE.Color('#666666'),
+  buy: new THREE.Color('#16a34a'),       // green
+  sell: new THREE.Color('#dc2626'),      // red
+  create: new THREE.Color('#222222'),    // black
+  whale: new THREE.Color('#2563eb'),     // blue
   labelBg: '#ffffff',
   labelText: '#111111',
   labelShadow: '0 2px 12px rgba(0,0,0,0.15)',
@@ -94,16 +102,15 @@ const LIGHT_THEME: ThemeColors = {
   directionalIntensity: 0.8,
 };
 
-// Hub-specific colors per theme
-function hubColor(hubId: string, dark: boolean): THREE.Color {
-  const colors: Record<string, [string, string]> = {
-    'hub:buys':    ['#4ade80', '#16a34a'], // green
-    'hub:sells':   ['#f87171', '#dc2626'], // red
-    'hub:creates': ['#555555', '#333333'], // dark/black
-    'hub:whales':  ['#3b82f6', '#2563eb'], // blue
-  };
-  const pair = colors[hubId];
-  return new THREE.Color(pair ? pair[dark ? 0 : 1] : (dark ? '#22d3ee' : '#0891b2'));
+// Helper: particle color by category
+function particleColor(category: string | undefined, isBuy: boolean | undefined, theme: ThemeColors): THREE.Color {
+  switch (category) {
+    case 'creates': return theme.create;
+    case 'whales':  return theme.whale;
+    case 'buys':    return theme.buy;
+    case 'sells':   return theme.sell;
+    default:        return isBuy ? theme.buy : theme.sell;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -245,6 +252,7 @@ class PumpSimulation {
           isBuy: n.isBuy,
           solAmount: n.solAmount,
           label: n.label,
+          category: n.category,
           timestamp: n.timestamp,
           x: baseX + (Math.random() - 0.5) * 30,
           y: (Math.random() - 0.5) * 20,
@@ -381,12 +389,12 @@ const CentralOrb = memo<{ sim: PumpSimulation; theme: ThemeColors }>(
     // Update material colors when theme changes
     useEffect(() => {
       if (matRef.current) {
-        matRef.current.color.copy(theme.central);
-        matRef.current.emissive.copy(theme.central);
+        matRef.current.color.copy(theme.hub);
+        matRef.current.emissive.copy(theme.hub);
       }
       if (glowMatRef.current) {
-        glowMatRef.current.color.copy(theme.central);
-        glowMatRef.current.emissive.copy(theme.central);
+        glowMatRef.current.color.copy(theme.hubGlow);
+        glowMatRef.current.emissive.copy(theme.hubGlow);
       }
     }, [theme]);
 
@@ -412,8 +420,8 @@ const CentralOrb = memo<{ sim: PumpSimulation; theme: ThemeColors }>(
           <icosahedronGeometry args={[1, 3]} />
           <meshStandardMaterial
             ref={matRef}
-            color={theme.central}
-            emissive={theme.central}
+            color={theme.hub}
+            emissive={theme.hub}
             emissiveIntensity={1.0}
             roughness={0.15}
             metalness={0.3}
@@ -424,8 +432,8 @@ const CentralOrb = memo<{ sim: PumpSimulation; theme: ThemeColors }>(
           <icosahedronGeometry args={[1, 3]} />
           <meshStandardMaterial
             ref={glowMatRef}
-            color={theme.central}
-            emissive={theme.central}
+            color={theme.hubGlow}
+            emissive={theme.hubGlow}
             emissiveIntensity={0.4}
             transparent
             opacity={0.12}
@@ -455,20 +463,19 @@ const HubNodes = memo<{ sim: PumpSimulation; darkMode: boolean; theme: ThemeColo
 
     const [, forceUpdate] = React.useState(0);
 
-    // Update materials when theme changes
+    // Update materials when theme changes — all hubs monochrome
     useEffect(() => {
-      HUB_NODES.forEach((hub, i) => {
-        const color = hubColor(hub.id, darkMode);
+      HUB_NODES.forEach((_hub, i) => {
         if (matRefs.current[i]) {
-          matRefs.current[i]!.color.copy(color);
-          matRefs.current[i]!.emissive.copy(color);
+          matRefs.current[i]!.color.copy(theme.hub);
+          matRefs.current[i]!.emissive.copy(theme.hub);
         }
         if (glowMatRefs.current[i]) {
-          glowMatRefs.current[i]!.color.copy(color);
-          glowMatRefs.current[i]!.emissive.copy(color);
+          glowMatRefs.current[i]!.color.copy(theme.hubGlow);
+          glowMatRefs.current[i]!.emissive.copy(theme.hubGlow);
         }
       });
-    }, [darkMode]);
+    }, [darkMode, theme]);
 
     useFrame(({ clock }) => {
       let posChanged = false;
@@ -513,29 +520,28 @@ const HubNodes = memo<{ sim: PumpSimulation; darkMode: boolean; theme: ThemeColo
     return (
       <group ref={groupRef}>
         {HUB_NODES.map((hub, i) => {
-          const color = hubColor(hub.id, darkMode);
           return (
             <React.Fragment key={hub.id}>
-              {/* Main hub sphere */}
+              {/* Main hub sphere — monochrome */}
               <mesh ref={(el) => { meshRefs.current[i] = el; }}>
                 <icosahedronGeometry args={[1, 2]} />
                 <meshStandardMaterial
                   ref={(el) => { matRefs.current[i] = el; }}
-                  color={color}
-                  emissive={color}
+                  color={theme.hub}
+                  emissive={theme.hub}
                   emissiveIntensity={0.9}
                   roughness={0.2}
                   metalness={0.1}
                   toneMapped={false}
                 />
               </mesh>
-              {/* Glow halo */}
+              {/* Glow halo — monochrome */}
               <mesh ref={(el) => { glowRefs.current[i] = el; }}>
                 <icosahedronGeometry args={[1, 2]} />
                 <meshStandardMaterial
                   ref={(el) => { glowMatRefs.current[i] = el; }}
-                  color={color}
-                  emissive={color}
+                  color={theme.hubGlow}
+                  emissive={theme.hubGlow}
                   emissiveIntensity={0.3}
                   transparent
                   opacity={0.1}
@@ -590,12 +596,13 @@ const ParticleNodes = memo<{ sim: PumpSimulation; theme: ThemeColors }>(
 
         if (node.type === 'token') {
           tempObj.scale.setScalar(1.5);
-          tempColor.copy(theme.token);
         } else {
           const size = 0.3 + Math.min((node.solAmount ?? 0) * 0.15, 1.2);
           tempObj.scale.setScalar(size);
-          tempColor.copy(node.isBuy ? theme.buy : theme.sell);
         }
+
+        // Color by category: buys=green, sells=red, creates=dark, whales=blue
+        tempColor.copy(particleColor(node.category, node.isBuy, theme));
 
         tempObj.updateMatrix();
         mesh.setMatrixAt(idx, tempObj.matrix);

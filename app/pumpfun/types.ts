@@ -4,6 +4,11 @@ export interface PumpNode {
   timestamp: number;
   // Optional token properties
   ticker?: string;
+  name?: string;
+  mint?: string;
+  creator?: string;
+  marketCapSol?: number;
+  signature?: string;
   // Optional trade properties
   isBuy?: boolean;
   solAmount?: number;
