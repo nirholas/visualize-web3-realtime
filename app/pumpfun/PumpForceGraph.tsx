@@ -276,7 +276,8 @@ const Edges = memo<{ sim: PumpSimulation }>(({ sim }) => {
     }
 
     geo.setDrawRange(0, idx / 3);
-    (geo.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true;
+    const posAttr = geo.getAttribute('position') as THREE.BufferAttribute | undefined;
+    if (posAttr) posAttr.needsUpdate = true;
   });
 
   return (
