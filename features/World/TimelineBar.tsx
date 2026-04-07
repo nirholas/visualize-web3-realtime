@@ -189,17 +189,12 @@ const TimelineBar = memo<TimelineBarProps>(
         style={{
           alignItems: 'center',
           background: isDark ? 'rgba(14, 14, 22, 0.95)' : '#ffffff',
-          borderBottom: isDark ? '1px solid rgba(255,255,255,0.06)' : '1px solid #e8e8e8',
           boxShadow: isDark ? '0 1px 4px rgba(0,0,0,0.3)' : '0 1px 4px rgba(0,0,0,0.06)',
           display: 'flex',
           gap: 12,
           height: BAR_HEIGHT,
-          left: 0,
           padding: '0 16px',
-          position: 'fixed',
-          right: 0,
-          top: 0,
-          zIndex: 50,
+          width: '100%',
         }}
       >
         {/* Left: Logo + App Name + Info */}
