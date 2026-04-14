@@ -1,4 +1,4 @@
-<p align="center">
+<p align="center"> 
   <img src="docs/assets/svg/header-banner.svg" alt="swarming" width="800" />
 </p>
 
