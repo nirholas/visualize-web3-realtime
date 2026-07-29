@@ -753,5 +753,5 @@ The most valuable contribution is a **worked example**: run swarming on your own
 </p>
 
 <p align="center">
-  MIT License · Built by <a href="https://github.com/nirholas">@nirholas</a>
+  Copyright 2026 nirholas · See <a href="LICENSE">LICENSE</a> for terms · Built by <a href="https://github.com/nirholas">@nirholas</a>
 </p>
