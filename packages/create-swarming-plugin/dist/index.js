@@ -1,20 +1,13 @@
-// ============================================================================
-// create-swarming-plugin - Plugin scaffolder
-// The executable shebang is injected by the tsup banner at build time.
-//
-// Usage: npx create-swarming-plugin my-plugin
-// ============================================================================
+#!/usr/bin/env node
 
-import { mkdirSync, writeFileSync, existsSync } from 'node:fs';
-import { join, resolve } from 'node:path';
-
-const PLUGIN_TYPES = ['source', 'theme', 'renderer'] as const;
-
+// src/index.ts
+import { mkdirSync, writeFileSync, existsSync } from "fs";
+import { join, resolve } from "path";
+var PLUGIN_TYPES = ["source", "theme", "renderer"];
 function main() {
   const args = process.argv.slice(2);
   const name = args[0];
-
-  if (!name || name.startsWith('-')) {
+  if (!name || name.startsWith("-")) {
     console.log(`
   Usage: npx create-swarming-plugin <name> [--type source|theme|renderer]
 
@@ -26,85 +19,73 @@ function main() {
     npx create-swarming-plugin my-theme --type theme
     npx create-swarming-plugin my-renderer --type renderer
 `);
-    process.exit(name === '--help' || name === '-h' ? 0 : 1);
+    process.exit(name === "--help" || name === "-h" ? 0 : 1);
   }
-
-  const typeIdx = args.indexOf('--type');
-  const type = typeIdx !== -1 ? args[typeIdx + 1] : 'source';
-  if (!PLUGIN_TYPES.includes(type as typeof PLUGIN_TYPES[number])) {
-    console.error(`Invalid plugin type: ${type}. Must be one of: ${PLUGIN_TYPES.join(', ')}`);
+  const typeIdx = args.indexOf("--type");
+  const type = typeIdx !== -1 ? args[typeIdx + 1] : "source";
+  if (!PLUGIN_TYPES.includes(type)) {
+    console.error(`Invalid plugin type: ${type}. Must be one of: ${PLUGIN_TYPES.join(", ")}`);
     process.exit(1);
   }
-
   const dir = resolve(process.cwd(), name);
-
   if (existsSync(dir)) {
     console.error(`Directory "${name}" already exists.`);
     process.exit(1);
   }
-
-  console.log(`\n  Creating swarming ${type} plugin: ${name}\n`);
-
-  // Create directory structure
-  mkdirSync(join(dir, 'src'), { recursive: true });
-  mkdirSync(join(dir, 'dev'), { recursive: true });
-
-  // Determine npm keyword
-  const keyword = type === 'theme' ? 'swarming-theme' : type === 'renderer' ? 'swarming-renderer' : 'swarming-plugin';
-  const packageName = name.startsWith('swarming-') ? name : `swarming-${type === 'source' ? 'plugin' : type}-${name}`;
-
-  // package.json
+  console.log(`
+  Creating swarming ${type} plugin: ${name}
+`);
+  mkdirSync(join(dir, "src"), { recursive: true });
+  mkdirSync(join(dir, "dev"), { recursive: true });
+  const keyword = type === "theme" ? "swarming-theme" : type === "renderer" ? "swarming-renderer" : "swarming-plugin";
+  const packageName = name.startsWith("swarming-") ? name : `swarming-${type === "source" ? "plugin" : type}-${name}`;
   writeFileSync(
-    join(dir, 'package.json'),
+    join(dir, "package.json"),
     JSON.stringify(
       {
         name: packageName,
-        version: '0.1.0',
+        version: "0.1.0",
         description: `Swarming ${type} plugin`,
-        main: './src/index.ts',
-        types: './src/index.ts',
-        keywords: ['swarming', keyword, type],
-        license: 'MIT',
+        main: "./src/index.ts",
+        types: "./src/index.ts",
+        keywords: ["swarming", keyword, type],
+        license: "MIT",
         peerDependencies: {
-          '@web3viz/core': '>=0.1.0',
+          "@web3viz/core": ">=0.1.0"
         },
         devDependencies: {
-          '@web3viz/core': '*',
-          typescript: '^5.5.0',
-        },
+          "@web3viz/core": "*",
+          typescript: "^5.5.0"
+        }
       },
       null,
-      2,
-    ) + '\n',
+      2
+    ) + "\n"
   );
-
-  // tsconfig.json
   writeFileSync(
-    join(dir, 'tsconfig.json'),
+    join(dir, "tsconfig.json"),
     JSON.stringify(
       {
         compilerOptions: {
-          target: 'ES2020',
-          module: 'ESNext',
-          moduleResolution: 'bundler',
+          target: "ES2020",
+          module: "ESNext",
+          moduleResolution: "bundler",
           strict: true,
           esModuleInterop: true,
-          jsx: 'react-jsx',
+          jsx: "react-jsx",
           declaration: true,
-          outDir: 'dist',
-          rootDir: 'src',
+          outDir: "dist",
+          rootDir: "src"
         },
-        include: ['src'],
+        include: ["src"]
       },
       null,
-      2,
-    ) + '\n',
+      2
+    ) + "\n"
   );
-
-  // Source plugin template
-  if (type === 'source') {
+  if (type === "source") {
     writeFileSync(
-      join(dir, 'src', 'index.ts'),
+      join(dir, "src", "index.ts"),
       `import { definePlugin } from '@web3viz/core/plugin';
 
 export interface ${toPascal(name)}Config {
@@ -157,11 +138,11 @@ export const ${toCamel(name)} = definePlugin<${toPascal(name)}Config>({
 });
 
 export default ${toCamel(name)};
-`,
+`
     );
-  } else if (type === 'theme') {
+  } else if (type === "theme") {
     writeFileSync(
-      join(dir, 'src', 'index.ts'),
+      join(dir, "src", "index.ts"),
       `import { definePlugin } from '@web3viz/core/plugin';
 
 export const ${toCamel(name)} = definePlugin({
@@ -184,11 +165,11 @@ export const ${toCamel(name)} = definePlugin({
 });
 
 export default ${toCamel(name)};
-`,
+`
     );
   } else {
     writeFileSync(
-      join(dir, 'src', 'index.ts'),
+      join(dir, "src", "index.ts"),
       `import { definePlugin } from '@web3viz/core/plugin';
 
 export const ${toCamel(name)} = definePlugin({
@@ -214,13 +195,11 @@ export const ${toCamel(name)} = definePlugin({
 });
 
 export default ${toCamel(name)};
-`,
+`
     );
   }
-
-  // Dev playground
   writeFileSync(
-    join(dir, 'dev', 'playground.tsx'),
+    join(dir, "dev", "playground.tsx"),
     `/**
  * Local development playground.
  *
@@ -233,36 +212,31 @@ export default ${toCamel(name)};
 //
 // export default function Playground() {
 //   return (
-//     <SwarmingProvider plugins={[${toCamel(name)}(${type === 'source' ? "{ url: 'ws://localhost:8080' }" : ''})]}>
+//     <SwarmingProvider plugins={[${toCamel(name)}(${type === "source" ? "{ url: 'ws://localhost:8080' }" : ""})]}>
 //       {/* Your visualization component here */}
 //     </SwarmingProvider>
 //   );
 // }
-`,
+`
   );
-
   console.log(`  Created ${dir}/`);
   console.log(`    src/index.ts        Plugin definition`);
   console.log(`    dev/playground.tsx   Local dev harness`);
   console.log(`    package.json`);
   console.log(`    tsconfig.json`);
-  console.log(`\n  Next steps:`);
+  console.log(`
+  Next steps:`);
   console.log(`    cd ${name}`);
   console.log(`    npm install`);
   console.log(`    # Edit src/index.ts to implement your plugin`);
-  console.log(`    npm publish  # When ready to share\n`);
+  console.log(`    npm publish  # When ready to share
+`);
 }
-
-function toPascal(s: string): string {
-  return s
-    .replace(/[-_]+/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .replace(/\s+/g, '');
+function toPascal(s) {
+  return s.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()).replace(/\s+/g, "");
 }
-
-function toCamel(s: string): string {
+function toCamel(s) {
   const p = toPascal(s);
   return p[0].toLowerCase() + p.slice(1);
 }
-
 main();

@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/assets/hero.gif" alt="Real-time Web3 + AI Agent Visualization" width="800" />
+  <img src="docs/assets/svg/network-animation.svg" alt="Real-time Web3 + AI Agent Visualization" width="800" />
 </p>
 
 <p align="center">
@@ -12,7 +12,11 @@
 </p>
 
 <p align="center">
-  <a href="https://swarming.dev/world"><strong>Live Demo</strong></a> · <a href="docs/"><strong>Documentation</strong></a> · <a href="https://swarming.dev/demos"><strong>Demos</strong></a> · <a href="https://swarming.dev/benchmarks"><strong>Benchmarks</strong></a>
+  <a href="https://github.com/nirholas/visualize-web3-realtime"><strong>Repository</strong></a> · <a href="docs/"><strong>Documentation</strong></a> · <a href="README.md#demo-scenarios-6"><strong>Demos</strong></a> · <a href="README.md#performance"><strong>Benchmarks</strong></a>
+</p>
+
+<p align="center">
+  <sub>The hosted demo at swarming.dev is offline while hosting is being migrated. Run <code>npm run dev</code> from a clone for the full live experience.</sub>
 </p>
 
 > Conventional graph libraries render each node as an individual DOM element or canvas draw — $O(n)$ draw calls per frame. swarming uses GPU-instanced rendering: a single `InstancedMesh` call submits all node geometry in one batch, while a `SpatialHash` grid resolves proximity queries in $O(1)$ amortized time. The result is 5,000+ live-streaming nodes at 60fps in a standard browser, with force-directed physics running per-frame.
@@ -29,10 +33,12 @@ npm install && npm run dev
 
 Open **http://localhost:3100** — live visualization starts immediately. No API keys needed for the default providers.
 
-Or use the packages directly:
+Or use the packages directly. They are npm **workspace** packages inside this repo and are not published to the public registry yet, so consume them from a clone rather than from `npm install`:
 
 ```bash
-npm install @web3viz/core @web3viz/react-graph
+git clone https://github.com/nirholas/visualize-web3-realtime.git
+cd visualize-web3-realtime
+npm install          # links every packages/* workspace
 ```
 
 ```tsx
@@ -43,12 +49,14 @@ function App() {
 }
 ```
 
-Or scaffold a full project:
+Or scaffold a full project with the in-repo generators (also unpublished, run them from the clone):
 
 ```bash
-npx create-swarming-app my-viz       # React + swarming, ready to go
-npx create-swarming-plugin my-plugin  # Plugin scaffold with hot reload
+node packages/create-swarming-app/dist/index.js my-viz       # React + swarming, ready to go
+node packages/create-swarming-plugin/dist/index.js my-plugin  # Plugin scaffold with hot reload
 ```
+
+Build the generators first with `npm run build -w create-swarming-app -w create-swarming-plugin`.
 
 ### What You Get
 
@@ -74,68 +82,56 @@ localhost:3100/
 <table>
 <tr>
 <td width="33%" align="center">
-<img src="docs/assets/feature-performance.gif" alt="60fps performance" width="240" /><br />
 <strong>GPU-instanced rendering</strong><br />
 <sub>Single draw call for 5,000 nodes via InstancedMesh. SpatialHash grid for O(1) proximity queries.</sub>
 </td>
 <td width="33%" align="center">
-<img src="docs/assets/feature-websocket.gif" alt="Any data source" width="240" /><br />
 <strong>Streaming data providers</strong><br />
 <sub>WebSocket, REST, SSE, or custom callback. Event buffering with backpressure handling.</sub>
 </td>
 <td width="33%" align="center">
-<img src="docs/assets/feature-physics.gif" alt="Force-directed physics" width="240" /><br />
 <strong>Force-directed simulation</strong><br />
 <sub>d3-force-3d with framerate-independent damping, configurable charge/spring constants, Barnes-Hut optimization.</sub>
 </td>
 </tr>
 <tr>
 <td width="33%" align="center">
-<img src="docs/assets/feature-interaction.gif" alt="Mouse interaction" width="240" /><br />
 <strong>Interaction model</strong><br />
 <sub>GPU raycasting for hover/click. Mouse-repulsion force field. Inertial camera with fly-to interpolation.</sub>
 </td>
 <td width="33%" align="center">
-<img src="docs/assets/feature-themes.gif" alt="Themes" width="240" /><br />
 <strong>Design system</strong><br />
 <sub>Token-based theming with dark/light presets. CSS custom properties. Full component library.</sub>
 </td>
 <td width="33%" align="center">
-<img src="docs/assets/feature-export.gif" alt="Export & share" width="240" /><br />
 <strong>Capture & export</strong><br />
 <sub>WebGL canvas snapshot with metadata overlay. Share URLs with encoded state. Embeddable widget.</sub>
 </td>
 </tr>
 <tr>
 <td width="33%" align="center">
-<img src="docs/assets/feature-ai.gif" alt="AI chat assistant" width="240" /><br />
 <strong>AI scene control</strong><br />
 <sub>Natural language graph manipulation via Claude Sonnet tool-use. 5 scene tools.</sub>
 </td>
 <td width="33%" align="center">
-<img src="docs/assets/feature-agents.gif" alt="Agent monitoring" width="240" /><br />
 <strong>Agent orchestration</strong><br />
 <sub>Task DAG visualization. Tool call tracing. Sub-agent spawning. Reasoning state rendering.</sub>
 </td>
 <td width="33%" align="center">
-<img src="docs/assets/feature-wasm.gif" alt="WASM physics" width="240" /><br />
 <strong>WASM Barnes-Hut</strong><br />
 <sub>Rust-compiled N-body simulation via WebAssembly. 3-5x throughput vs JavaScript d3-force.</sub>
 </td>
 </tr>
 <tr>
 <td width="33%" align="center">
-<img src="docs/assets/feature-collab.gif" alt="Desktop shell" width="240" /><br />
 <strong>Desktop shell</strong><br />
 <sub>Windowed UI with taskbar, start menu, z-ordering. State persistence via localStorage.</sub>
 </td>
 <td width="33%" align="center">
-<img src="docs/assets/feature-editor.gif" alt="Scrollytelling" width="240" /><br />
 <strong>Scroll-driven narrative</strong><br />
 <sub>GLSL shader scenes, particle systems, timeline-synchronized animation keyframes.</sub>
 </td>
 <td width="33%" align="center">
-<img src="docs/assets/feature-multiframework.gif" alt="Multi-framework" width="240" /><br />
 <strong>Multi-framework</strong><br />
 <sub>React, Vue, Svelte, React Native, vanilla JS, CDN. Same engine, different bindings.</sub>
 </td>
@@ -384,9 +380,12 @@ import { SwarmingGraph } from '@swarming/svelte'
 <SwarmingGraph {nodes} {edges} />
 ```
 
-**Vanilla JS / CDN**
+**Vanilla JS / UMD bundle**
+
+There is no CDN build yet (the `swarming` package is unpublished). Build the UMD bundle from a clone with `npm run build -w swarming` and serve `packages/swarming/dist/swarming.umd.js` yourself:
+
 ```html
-<script src="https://unpkg.com/swarming"></script>
+<script src="/swarming.umd.js"></script>
 <div id="viz"></div>
 <script>
   Swarming.create('#viz', { source: 'wss://your-stream.com' })
@@ -742,9 +741,9 @@ swarming is open to contributions. Areas where contributions have the highest im
 - **Accessibility** — keyboard navigation, screen reader support, high-contrast themes
 - **Testing** — unit and integration tests for core simulation and provider modules
 
-The most valuable contribution is a **worked example**: run swarming on your own data, document the result, and submit it to the [Showcase Gallery](https://swarming.dev/showcase).
+The most valuable contribution is a **worked example**: run swarming on your own data, document the result, and open a pull request against [the repository](https://github.com/nirholas/visualize-web3-realtime). The hosted showcase gallery is offline while hosting is being migrated.
 
-<a href="CONTRIBUTING.md">Contributing Guide</a> · <a href="https://swarming.dev/showcase">Showcase Gallery</a>
+<a href="CONTRIBUTING.md">Contributing Guide</a> · <a href="https://github.com/nirholas/visualize-web3-realtime/pulls">Open a Pull Request</a>
 
 <img src="docs/assets/svg/footer-wave.svg" alt="" width="100%" />
 
