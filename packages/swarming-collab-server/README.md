@@ -1,6 +1,6 @@
 # swarming-collab-server
 
-WebSocket relay for multiplayer [swarming](https://www.npmjs.com/package/swarming) sessions.
+WebSocket relay for multiplayer [swarming](https://www.npmjs.com/package/@nirholas/swarming) sessions.
 Peers join a room and share cursors, cameras, node selections, annotations and presenter mode in
 real time. The server keeps no database: rooms live in memory and are cleaned up five minutes
 after the last peer leaves.

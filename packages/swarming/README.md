@@ -1,4 +1,4 @@
-# swarming
+# @nirholas/swarming
 
 3D force-directed graph visualization for the browser. Thousands of nodes, bloom, and a physics
 simulation, driven by a WebSocket stream or static data. Use it from a `<script>` tag with no
@@ -15,7 +15,7 @@ The UMD bundle includes React, Three.js and React Three Fiber and exposes `windo
 
 ```html
 <div id="viz" style="width: 100%; height: 600px"></div>
-<script src="https://unpkg.com/swarming/dist/swarming.umd.js"></script>
+<script src="https://unpkg.com/@nirholas/swarming/dist/swarming.umd.js"></script>
 <script>
   const viz = Swarming.create('#viz', { source: 'wss://my-data-stream' });
   viz.on('data', ({ nodeCount, edgeCount }) => console.log(nodeCount, edgeCount));
@@ -25,7 +25,7 @@ The UMD bundle includes React, Three.js and React Three Fiber and exposes `windo
 ### ES module
 
 ```bash
-npm install swarming react react-dom three @react-three/fiber @react-three/drei @react-three/postprocessing postprocessing
+npm install @nirholas/swarming react react-dom three @react-three/fiber @react-three/drei @react-three/postprocessing postprocessing
 ```
 
 The script-tag bundle needs none of these; they are peers of the ES module build only.
@@ -33,7 +33,7 @@ The script-tag bundle needs none of these; they are peers of the ES module build
 ## Quick start
 
 ```ts
-import { Swarming } from 'swarming';
+import { Swarming } from '@nirholas/swarming';
 
 const viz = Swarming.create('#viz', {
   data: {
@@ -121,7 +121,7 @@ interface SwarmingEdge {
 Inside an existing React Three Fiber app, render the scene component directly:
 
 ```tsx
-import { SwarmingRenderer } from 'swarming';
+import { SwarmingRenderer } from '@nirholas/swarming';
 
 <SwarmingRenderer
   topTokens={hubs}

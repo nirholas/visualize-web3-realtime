@@ -1,5 +1,5 @@
 {
-  "name": "swarming",
+  "name": "@nirholas/swarming",
   "version": "0.1.0",
   "description": "3D force-directed graph visualization: render thousands of nodes via CDN script tag or ES module",
   "license": "SEE LICENSE IN LICENSE",

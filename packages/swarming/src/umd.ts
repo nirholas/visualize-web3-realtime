@@ -5,7 +5,7 @@
 // Exposes `window.Swarming` with an imperative API.
 //
 // Usage:
-//   <script src="https://unpkg.com/swarming/dist/swarming.umd.js"></script>
+//   <script src="https://unpkg.com/@nirholas/swarming/dist/swarming.umd.js"></script>
 //   <script>
 //     Swarming.create('#viz', { source: 'wss://...' })
 //   </script>

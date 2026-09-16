@@ -1,7 +1,7 @@
 # swarming-physics
 
 Barnes-Hut 3D force simulation compiled to WebAssembly, built for
-[swarming](https://www.npmjs.com/package/swarming) graph visualization. Charge (repulsion) is
+[swarming](https://www.npmjs.com/package/@nirholas/swarming) graph visualization. Charge (repulsion) is
 approximated with an octree in O(n log n), so large graphs stay interactive.
 
 ## Install
