@@ -1,19 +1,30 @@
 {
   "name": "swarming-physics",
   "version": "0.1.0",
-  "description": "WASM Barnes-Hut force simulation for swarming — 3-5x faster than d3-force-3d",
-  "license": "Apache-2.0",
+  "description": "WebAssembly Barnes-Hut 3D force simulation for swarming graph visualization",
+  "license": "SEE LICENSE IN LICENSE",
+  "type": "module",
   "main": "./pkg/swarming_physics.js",
   "types": "./pkg/swarming_physics.d.ts",
+  "exports": {
+    ".": {
+      "types": "./pkg/swarming_physics.d.ts",
+      "import": "./pkg/swarming_physics.js"
+    },
+    "./swarming_physics_bg.wasm": "./pkg/swarming_physics_bg.wasm",
+    "./package.json": "./package.json"
+  },
   "files": [
     "pkg",
     "src",
-    "Cargo.toml"
+    "Cargo.toml",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
-    "build": "wasm-pack build --target web --out-dir pkg --release",
-    "build:bundler": "wasm-pack build --target bundler --out-dir pkg --release",
-    "build:nodejs": "wasm-pack build --target nodejs --out-dir pkg --release",
+    "build": "wasm-pack build --target web --out-dir pkg --release && node -e \"for(const f of ['.gitignore','package.json','README.md','LICENSE'])require('fs').rmSync('pkg/'+f,{force:true})\"",
+    "build:bundler": "wasm-pack build --target bundler --out-dir pkg --release && node -e \"for(const f of ['.gitignore','package.json','README.md','LICENSE'])require('fs').rmSync('pkg/'+f,{force:true})\"",
+    "build:nodejs": "wasm-pack build --target nodejs --out-dir pkg --release && node -e \"for(const f of ['.gitignore','package.json','README.md','LICENSE'])require('fs').rmSync('pkg/'+f,{force:true})\"",
     "clean": "rm -rf pkg target"
   },
   "keywords": [

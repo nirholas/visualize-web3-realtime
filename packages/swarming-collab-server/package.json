@@ -2,7 +2,7 @@
   "name": "swarming-collab-server",
   "version": "0.1.0",
   "description": "WebSocket relay server for swarming multiplayer collaboration",
-  "license": "Apache-2.0",
+  "license": "SEE LICENSE IN LICENSE",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
@@ -10,7 +10,9 @@
   },
   "files": [
     "dist",
-    "Dockerfile"
+    "Dockerfile",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc",
