@@ -1,0 +1,28 @@
+# visualize-web3-realtime
+
+> Real-time multi-chain transaction visualizer: watch Pump.fun, Raydium, Uniswap & PancakeSwap trades as physics-based particle nodes on a dark canvas
+
+visualize-web3-realtime is an open-source repository by nirholas, part of the three.ws ecosystem.
+
+## Docs
+
+- [README](https://github.com/nirholas/visualize-web3-realtime/blob/HEAD/README.md): install, usage and reference
+- [Get Started in 30 Seconds](https://github.com/nirholas/visualize-web3-realtime/blob/HEAD/README.md#get-started-in-30-seconds)
+- [Features](https://github.com/nirholas/visualize-web3-realtime/blob/HEAD/README.md#features)
+- [Supported Chains & Data Sources](https://github.com/nirholas/visualize-web3-realtime/blob/HEAD/README.md#supported-chains-data-sources)
+- [Pages & Routes](https://github.com/nirholas/visualize-web3-realtime/blob/HEAD/README.md#pages-routes)
+- [Architecture](https://github.com/nirholas/visualize-web3-realtime/blob/HEAD/README.md#architecture)
+- [Desktop Shell UI](https://github.com/nirholas/visualize-web3-realtime/blob/HEAD/README.md#desktop-shell-ui)
+- [AI Integration](https://github.com/nirholas/visualize-web3-realtime/blob/HEAD/README.md#ai-integration)
+- [ZK Proof Verification](https://github.com/nirholas/visualize-web3-realtime/blob/HEAD/README.md#zk-proof-verification)
+- [AGENTS.md](https://github.com/nirholas/visualize-web3-realtime/blob/HEAD/AGENTS.md): guidance for coding agents
+- [Full text for LLMs](https://github.com/nirholas/visualize-web3-realtime/blob/HEAD/llms-full.txt): the README inlined
+
+## Project
+
+- [Source](https://github.com/nirholas/visualize-web3-realtime)
+- [Issues](https://github.com/nirholas/visualize-web3-realtime/issues)
+- [Discussions](https://github.com/nirholas/visualize-web3-realtime/discussions)
+- [Homepage](https://swarming.world)
+- [three.ws](https://three.ws): the platform this is part of
+- [All repositories by nirholas](https://github.com/nirholas/nirholas#readme)

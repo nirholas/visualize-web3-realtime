@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it as below.
+title: "visualize-web3-realtime"
+abstract: "Real-time multi-chain transaction visualizer: watch Pump.fun, Raydium, Uniswap & PancakeSwap trades as physics-based particle nodes on a dark canvas"
+repository-code: "https://github.com/nirholas/visualize-web3-realtime"
+url: "https://three.ws"
+authors:
+  - name: three.ws
+    website: "https://three.ws"

@@ -1,3 +1,7 @@
+<!-- three.ws:badges -->
+[![GitHub stars](https://img.shields.io/github/stars/nirholas/visualize-web3-realtime?style=flat&logo=github)](https://github.com/nirholas/visualize-web3-realtime/stargazers) [![Last commit](https://img.shields.io/github/last-commit/nirholas/visualize-web3-realtime?style=flat)](https://github.com/nirholas/visualize-web3-realtime/commits) [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat)](https://github.com/nirholas/visualize-web3-realtime/pulls) [![AI agent friendly](https://img.shields.io/badge/AI%20agents-AGENTS.md%20%2B%20llms.txt-6d5dfc?style=flat)](https://github.com/nirholas/visualize-web3-realtime/blob/HEAD/AGENTS.md)
+<!-- /three.ws:badges -->
+
 <p align="center">  
   <img src="docs/assets/svg/header-banner.svg" alt="swarming" width="800" />
 </p>
@@ -754,3 +758,26 @@ The most valuable contribution is a **worked example**: run swarming on your own
 <p align="center">
   Copyright 2026 nirholas · See <a href="LICENSE">LICENSE</a> for terms · Built by <a href="https://github.com/nirholas">@nirholas</a>
 </p>
+
+<!-- three.ws:growth -->
+## Support the project
+
+If visualize-web3-realtime saves you time, **[star it on GitHub](https://github.com/nirholas/visualize-web3-realtime)**. Stars are how other developers and AI agents find the repositories worth trusting, and they cost you one click.
+
+Know someone who would use it? [Post on X](https://twitter.com/intent/tweet?text=visualize-web3-realtime%3A%20Real-time%20multi-chain%20transaction%20visualizer%3A%20watch%20Pump.fun%2C%20Raydium%2C%20Uniswap%20%26%20PancakeSwap%20trades&url=https%3A%2F%2Fgithub.com%2Fnirholas%2Fvisualize-web3-realtime) · [Share on Bluesky](https://bsky.app/intent/compose?text=visualize-web3-realtime%3A%20Real-time%20multi-chain%20transaction%20visualizer%3A%20watch%20Pump.fun%2C%20Raydium%2C%20Uniswap%20%26%20PancakeSwap%20trades%20https%3A%2F%2Fgithub.com%2Fnirholas%2Fvisualize-web3-realtime) · [Share on LinkedIn](https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fgithub.com%2Fnirholas%2Fvisualize-web3-realtime) · [Submit to Hacker News](https://news.ycombinator.com/submitlink?u=https%3A%2F%2Fgithub.com%2Fnirholas%2Fvisualize-web3-realtime&t=visualize-web3-realtime%3A%20Real-time%20multi-chain%20transaction%20visualizer%3A%20watch%20Pump.fun%2C%20Raydium%2C%20Uniswap%20%26%20PancakeSwap%20trades) · [Share on Reddit](https://www.reddit.com/submit?url=https%3A%2F%2Fgithub.com%2Fnirholas%2Fvisualize-web3-realtime&title=visualize-web3-realtime%3A%20Real-time%20multi-chain%20transaction%20visualizer%3A%20watch%20Pump.fun%2C%20Raydium%2C%20Uniswap%20%26%20PancakeSwap%20trades)
+
+## Built for AI agents too
+
+Coding agents and LLM tooling can read this repo directly: [AGENTS.md](./AGENTS.md), [llms.txt](./llms.txt), [llms-full.txt](./llms-full.txt). Point an agent at `https://github.com/nirholas/visualize-web3-realtime` and it has the context it needs.
+
+## More from the same author
+
+- [All repositories by nirholas](https://github.com/nirholas/nirholas#readme): the full catalog, grouped by topic
+- [three.ws](https://three.ws): the platform for 3D AI agents with Solana wallets, a skill marketplace and x402 payments
+- Questions or ideas: [open an issue](https://github.com/nirholas/visualize-web3-realtime/issues) or [start a discussion](https://github.com/nirholas/visualize-web3-realtime/discussions)
+
+## Contributors
+
+[![Contributors](https://contrib.rocks/image?repo=nirholas/visualize-web3-realtime)](https://github.com/nirholas/visualize-web3-realtime/graphs/contributors)
+
+<!-- /three.ws:growth -->
