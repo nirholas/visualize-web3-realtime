@@ -6,6 +6,6 @@
   "main": "tailwind.config.ts",
   "files": ["tailwind.config.ts"],
   "devDependencies": {
-    "tailwindcss": "^3.4.0"
+    "tailwindcss": "^4.3.3"
   }
 }
