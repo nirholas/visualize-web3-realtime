@@ -93,7 +93,7 @@
     "eslint-config-next": "14.2.0",
     "jsdom": "^29.0.1",
     "postcss": "^8.4.0",
-    "tailwindcss": "^3.4.0",
+    "tailwindcss": "^4.3.3",
     "turbo": "^2.0.0",
     "typescript": "^5.5.0",
     "vitest": "^4.1.2"
