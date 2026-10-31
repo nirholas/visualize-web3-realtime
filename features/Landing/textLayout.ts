@@ -147,7 +147,7 @@ export function layoutColumn(
     for (let si = 0; si < orderedSlots.length; si++) {
       const slot = orderedSlots[si]!
       const slotWidth = slot.right - slot.left
-      const line = layoutNextLine(prepared, cursor, slotWidth)
+      const line = layoutNextLine(prepared, slotWidth, cursor)
       if (line === null) {
         textExhausted = true
         break

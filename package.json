@@ -50,8 +50,8 @@
     "prepare": "cp scripts/pre-commit .git/hooks/pre-commit 2>/dev/null && chmod +x .git/hooks/pre-commit 2>/dev/null || true"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.82.0",
-    "@chenglou/pretext": "^0.0.4",
+    "@anthropic-ai/sdk": "^1.3.0",
+    "@chenglou/pretext": "^1.0.0",
     "@codemirror/autocomplete": "^6.20.1",
     "@codemirror/lang-javascript": "^6.2.5",
     "@codemirror/state": "^6.6.0",

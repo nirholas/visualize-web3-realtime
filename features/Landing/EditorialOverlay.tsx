@@ -147,7 +147,7 @@ function layoutColumn(
     // Fill each slot with text
     for (const slot of slots) {
       const slotWidth = slot.right - slot.left
-      const line = layoutNextLine(prepared, cursor, slotWidth)
+      const line = layoutNextLine(prepared, slotWidth, cursor)
       if (line === null) {
         textExhausted = true
         break
