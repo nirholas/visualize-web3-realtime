@@ -18,7 +18,7 @@
     "@web3viz/ui": "*",
     "@web3viz/utils": "*",
     "framer-motion": "^11.0.0",
-    "next": "^14.2.0",
+    "next": "^15.5.28",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "three": "^0.169.0"
@@ -31,7 +31,7 @@
     "@web3viz/tailwind-config": "*",
     "@web3viz/tsconfig": "*",
     "autoprefixer": "^10.4.0",
-    "postcss": "^8.4.0",
+    "postcss": "^8.5.23",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.5.0"
   }

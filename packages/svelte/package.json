@@ -18,11 +18,20 @@
       }
     }
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "sideEffects": false,
   "keywords": [
-    "3d", "force-graph", "visualization", "svelte", "sveltekit",
-    "webgl", "swarming", "realtime"
+    "3d",
+    "force-graph",
+    "visualization",
+    "svelte",
+    "sveltekit",
+    "webgl",
+    "swarming",
+    "realtime"
   ],
   "scripts": {
     "build": "tsup",
@@ -37,7 +46,7 @@
     "svelte": ">=4.0.0"
   },
   "devDependencies": {
-    "svelte": "^4.0.0",
+    "svelte": "^5.55.7",
     "tsup": "^8.0.0",
     "typescript": "^5.5.0"
   }

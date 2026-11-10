@@ -27,10 +27,18 @@
     "expo-gl": ">=13.0.0"
   },
   "peerDependenciesMeta": {
-    "expo-haptics": { "optional": true },
-    "expo-battery": { "optional": true },
-    "expo-screen-orientation": { "optional": true },
-    "expo-gl": { "optional": true }
+    "expo-haptics": {
+      "optional": true
+    },
+    "expo-battery": {
+      "optional": true
+    },
+    "expo-screen-orientation": {
+      "optional": true
+    },
+    "expo-gl": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/react": "^18.3.0",

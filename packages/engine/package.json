@@ -18,11 +18,22 @@
       }
     }
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "sideEffects": false,
   "keywords": [
-    "3d", "force-graph", "visualization", "webgl", "three",
-    "network", "graph", "swarming", "realtime", "engine"
+    "3d",
+    "force-graph",
+    "visualization",
+    "webgl",
+    "three",
+    "network",
+    "graph",
+    "swarming",
+    "realtime",
+    "engine"
   ],
   "scripts": {
     "build": "tsup",

@@ -4,7 +4,9 @@
   "private": true,
   "license": "Apache-2.0",
   "main": "tailwind.config.ts",
-  "files": ["tailwind.config.ts"],
+  "files": [
+    "tailwind.config.ts"
+  ],
   "devDependencies": {
     "tailwindcss": "^3.4.0"
   }

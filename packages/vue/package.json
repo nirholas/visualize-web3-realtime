@@ -18,11 +18,21 @@
       }
     }
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "sideEffects": false,
   "keywords": [
-    "3d", "force-graph", "visualization", "vue", "vue3",
-    "webgl", "swarming", "realtime", "nuxt"
+    "3d",
+    "force-graph",
+    "visualization",
+    "vue",
+    "vue3",
+    "webgl",
+    "swarming",
+    "realtime",
+    "nuxt"
   ],
   "scripts": {
     "build": "tsup",

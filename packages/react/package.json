@@ -18,11 +18,20 @@
       }
     }
   },
-  "files": ["dist", "README.md"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "sideEffects": false,
   "keywords": [
-    "3d", "force-graph", "visualization", "react", "three",
-    "webgl", "swarming", "realtime"
+    "3d",
+    "force-graph",
+    "visualization",
+    "react",
+    "three",
+    "webgl",
+    "swarming",
+    "realtime"
   ],
   "scripts": {
     "build": "tsup",
