@@ -1,0 +1,23 @@
+{
+  "name": "visualize-web3-realtime",
+  "owner": {
+    "name": "nirholas"
+  },
+  "description": "Embed the Swarming 3D force-directed graph from a script tag or ES module, fed by static data or a WebSocket.",
+  "plugins": [
+    {
+      "name": "swarming-graph",
+      "source": "./plugins/swarming-graph",
+      "description": "Embed the Swarming 3D force-directed graph from a script tag or ES module, fed by static data or a WebSocket.",
+      "category": "design",
+      "tags": [
+        "visualization",
+        "3d-graph",
+        "force-graph",
+        "threejs",
+        "websocket",
+        "react"
+      ]
+    }
+  ]
+}
